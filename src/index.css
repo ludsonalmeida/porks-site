@@ -415,12 +415,12 @@ a{text-decoration:none;color:inherit}
 .cc-hi{display:flex;align-items:center;gap:12px;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;color:var(--aged);text-transform:uppercase;letter-spacing:.06em}
 .cc-hi-ic{font-size:1.2rem}
 .cc-breweries{background:#fff;padding:28px 5%;margin-top:40px}
-.cc-brew-label{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#999;margin-bottom:20px;text-align:center}
-.cc-brew-logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:32px}
-.cc-brew-item{display:flex;align-items:center;justify-content:center;height:80px;min-width:120px}
-.cc-brew-item img{max-height:72px;max-width:160px;width:auto;object-fit:contain;filter:grayscale(10%)}
-.cc-brew-text{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#555;letter-spacing:.08em}
-@media(max-width:768px){.cc-grid{grid-template-columns:1fr;gap:40px}.cc-brew-logos{gap:24px}.cc-brew-item{min-width:90px;height:60px}.cc-brew-item img{max-height:52px;max-width:120px}}
+.cc-brew-label{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#bbb;margin-bottom:28px;text-align:center}
+.cc-brew-logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:48px}
+.cc-brew-item{display:flex;align-items:center;justify-content:center;height:120px;min-width:160px}
+.cc-brew-item img{max-height:110px;max-width:220px;width:auto;object-fit:contain}
+.cc-brew-text{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#444;letter-spacing:.08em}
+@media(max-width:768px){.cc-grid{grid-template-columns:1fr;gap:40px}.cc-brew-logos{gap:32px}.cc-brew-item{min-width:130px;height:90px}.cc-brew-item img{max-height:80px;max-width:170px}}
 
 /* ─ REVIEWS ─ */
 .reviews{background:var(--dark);padding:60px 0 50px}
