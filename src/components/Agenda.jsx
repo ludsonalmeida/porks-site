@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import useInstagramAgenda from '../hooks/useInstagramAgenda'
 
 const WA = 'https://wa.me/5561935003917?text=Quero+fazer+minha+reserva'
@@ -43,9 +44,21 @@ function IgPostCard({ post }) {
 
 export default function Agenda() {
   const { post } = useInstagramAgenda()
+  const sectionRef = useRef(null)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const ob = new IntersectionObserver(
+      entries => entries.forEach(x => { if (x.isIntersecting) { x.target.classList.add('in'); ob.unobserve(x.target) } }),
+      { threshold: 0.05, rootMargin: '0px 0px 0px 0px' }
+    )
+    section.querySelectorAll('.rv:not(.in)').forEach(e => ob.observe(e))
+    return () => ob.disconnect()
+  }, [post])
 
   return (
-    <section className="agenda pad-sm" id="agenda" style={{paddingTop:8}}>
+    <section className="agenda pad-sm" id="agenda" style={{paddingTop:8}} ref={sectionRef}>
       <div className="wrap">
         <div className="ag-head rv">
           <div>
