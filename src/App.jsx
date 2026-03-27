@@ -17,6 +17,7 @@ import CtaBand from './components/CtaBand'
 import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Sticky from './components/Sticky'
+import WaFloat from './components/WaFloat'
 
 export default function App() {
   useReveal()
@@ -48,6 +49,7 @@ export default function App() {
       <Faq />
       <Footer />
       <Sticky />
+      <WaFloat />
     </>
   )
 }
