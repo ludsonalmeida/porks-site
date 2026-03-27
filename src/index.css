@@ -322,6 +322,20 @@ a{text-decoration:none;color:inherit}
 .ag-link{font-family:'Barlow Condensed',sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);display:flex;align-items:center;gap:5px;transition:gap .2s,color .2s}
 .ag-link:hover{gap:9px;color:var(--red)}
 
+/* ─ AGENDA INSTAGRAM CARD ─ */
+.ag-ig-card{display:flex;gap:0;background:var(--ink);border-radius:8px;overflow:hidden;text-decoration:none;transition:transform .2s,box-shadow .2s;margin-bottom:4px}
+.ag-ig-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.ag-ig-img{width:240px;min-width:240px;overflow:hidden}
+.ag-ig-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.ag-ig-card:hover .ag-ig-img img{transform:scale(1.04)}
+.ag-ig-body{padding:20px 24px;display:flex;flex-direction:column;gap:12px;flex:1}
+.ag-ig-badge{display:inline-flex;align-items:center;gap:7px;font-family:'Barlow Condensed',sans-serif;font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#E1306C;background:rgba(225,48,108,.12);padding:4px 10px;border-radius:20px;width:fit-content}
+.ag-ig-caption{font-family:'Barlow',sans-serif;font-size:.78rem;line-height:1.65;color:rgba(255,255,255,.75);flex:1;white-space:pre-line}
+.ag-ig-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(255,255,255,.1);padding-top:10px}
+.ag-ig-date{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.ag-ig-cta{font-family:'Barlow Condensed',sans-serif;font-size:.66rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--amb)}
+@media(max-width:600px){.ag-ig-card{flex-direction:column}.ag-ig-img{width:100%;min-width:unset;height:200px}}
+
 /* ─ ANIVERSÁRIO ─ */
 .aniversario{display:grid;grid-template-columns:1.05fr 1fr;background:var(--k-lt)}
 .aniv-photo{position:relative;overflow:hidden;min-height:560px}

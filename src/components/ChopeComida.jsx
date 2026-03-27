@@ -2,7 +2,7 @@ const breweries = [
   { name: 'Biomma', logo: 'https://assets.untappd.com/site/brewery_logos/brewery-483650_3f93a.jpeg' },
   { name: 'Colombina', logo: 'https://cdn.awsli.com.br/1577/1577274/logo/dc92f2836b.png' },
   { name: 'Cruls', logo: 'https://static.wixstatic.com/media/50d772_2a9b16e063cd4fe2b538f6d795466d84~mv2.png' },
-  { name: 'Biela Bier', logo: null },
+  { name: 'Biela Bier', logo: 'https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/Logo%20Biela%20Cervejaria%20Png.png' },
   { name: 'Puhls Beer', logo: null },
 ]
 

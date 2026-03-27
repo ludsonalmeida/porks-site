@@ -4,7 +4,7 @@ export default function Hero() {
   return (
     <section className="hero" id="top">
       <div className="hero-bg">
-        <img src="/images/hero-bg.jpg" alt="Porks Sobradinho" loading="eager" />
+        <img src="https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/p9.jpg" alt="Porks Sobradinho" loading="eager" />
       </div>
       <div className="hero-ov" />
 
