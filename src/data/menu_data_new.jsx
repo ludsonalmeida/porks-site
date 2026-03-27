@@ -1,0 +1,601 @@
+// src/data/menu_data_new_ui.js
+
+/* =========================
+ * CATEGORIAS
+ * ========================= */
+export const itemCategories = [
+  { id: 'burgers',       title: 'Burgers', order: 1 },
+  { id: 'sanduiches',    title: 'Sanduíches', order: 2 },
+  { id: 'torresmos',     title: 'Torresmos', order: 3 },
+  { id: 'petiscos',      title: 'Petiscos Individuais', order: 4 },
+  { id: 'compartilhar',  title: 'Para Compartilhar', order: 5 },
+  { id: 'doces',         title: 'Doces', order: 6 },
+];
+
+export const drinkCategories = [
+  { id: 'gin',         title: 'Gin', order: 1 },
+  { id: 'caipis',      title: 'Caipis', order: 2 },
+  { id: 'vodka',       title: 'Vodka', order: 3 },
+  { id: 'experimente', title: 'Experimente', order: 4 },
+  { id: 'sem-alcool',  title: '0 Álcool', order: 5 },
+];
+
+/* Helpers para agrupar mantendo a ordem das categorias */
+const groupByCategory = (items, categories) =>
+  categories
+    .slice()
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+    .map(cat => ({
+      id: cat.id,
+      title: cat.title,
+      items: items.filter(it => it.categoryId === cat.id),
+    }))
+    .filter(group => group.items.length > 0);
+
+/* =========================
+ * ITENS DE COMIDA (flat + categoria)
+ * ========================= */
+export const initialItems = [
+  // === Burgers ===
+  {
+    id: 'food-oldwest-burger',
+    categoryId: 'burgers',
+    title: 'OldWest Burger',
+    subtitle: 'Burgers',
+    subtitle2: 'Suculenta costelinha de porco grelhada, coberta por queijo canastra derretido e geleia picante.',
+    price: '27.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/oldwest.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-porks-bacon-burger',
+    categoryId: 'burgers',
+    title: 'Porks Bacon Burger',
+    subtitle: 'Burgers',
+    subtitle2: 'Blend especial de porco com cheddar cremoso e fatias crocantes de bacon.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/burger-porksbacon.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-blues-burger',
+    categoryId: 'burgers',
+    title: 'Blues Burger',
+    subtitle: 'Burgers',
+    subtitle2: 'Gorgonzola intenso, bacon caramelizado e carne suculenta formam essa combinação irresistível.',
+    price: '29.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/bluesburger.jpg',
+    liked: false,
+  },
+
+  // === Sanduíches ===
+  {
+    id: 'food-pork-burrito',
+    categoryId: 'sanduiches',
+    title: 'Pork Burrito',
+    subtitle: 'Estilo Mexicano',
+    subtitle2: 'Tortilla quentinha abraça pernil desfiado, cheddar derretido e sour cream—puro conforto em suas mãos.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/porks-burrito.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-pernil-municipal',
+    categoryId: 'sanduiches',
+    title: 'Pernil Municipal',
+    subtitle: 'Sanduíches',
+    subtitle2: 'Pernil macio marinado por horas, queijo mussarela e maionese artesanal—simples, mas inesquecível.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/pernilmunicipal.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-americano',
+    categoryId: 'sanduiches',
+    title: 'Americano',
+    subtitle: 'Sanduíches',
+    subtitle2: 'Alcatra macia, alface crocante e queijo derretido para um clássico que nunca falha.',
+    price: '29.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/americano.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-choripan',
+    categoryId: 'sanduiches',
+    title: 'Choripan',
+    subtitle: 'Sanduíches',
+    subtitle2: 'Linguiça suculenta e temperada, servida com chimichurri fresco.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/choripan.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-pao-bife-classico',
+    categoryId: 'sanduiches',
+    title: 'Pão c/ Bife Clássico',
+    subtitle: 'Sanduíches',
+    subtitle2: 'Bife suculento, queijo derretido e cebolas caramelizadas—cada mordida é pura nostalgia.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/paocombife.jpg',
+    liked: false,
+  },
+
+  // === Torresmos ===
+  {
+    id: 'food-porkspoca',
+    categoryId: 'torresmos',
+    title: 'Porkspoca',
+    subtitle: 'Torresmos',
+    subtitle2: 'Pururuca de primeira, crocante e sequinha, temperada com lemon pepper.',
+    price: '12.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/porkspoca.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-torresmo-mineiro',
+    categoryId: 'torresmos',
+    title: 'Torresmo Mineiro',
+    subtitle: 'Torresmos',
+    subtitle2: 'Fatias finas e crocantes, com sal leve e aquela textura que vicia.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/torresmineiro.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-mix-de-torresmos',
+    categoryId: 'torresmos',
+    title: 'Mix de Torresmos',
+    subtitle: 'Torresmos',
+    subtitle2: 'Seleção premium de três texturas: crocante, pururuca e de tira.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/mixdetorresmo.jpg',
+    liked: false,
+  },
+
+  // === Petiscos Individuais ===
+  {
+    id: 'food-costelinha-bbq',
+    categoryId: 'petiscos',
+    title: 'Costelinha BBQ',
+    subtitle: 'Petiscos Individuais',
+    subtitle2: 'Costelinha ao molho BBQ com cerveja defumada.',
+    price: '32.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/costelinhabbq.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-linguicinha-artesanal',
+    categoryId: 'petiscos',
+    title: 'Linguiçinha Artesanal',
+    subtitle: 'Petiscos Individuais',
+    subtitle2: 'Linguiça de pernil e especiarias, servida com limão.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/linguicinha2.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-bacon-melado',
+    categoryId: 'petiscos',
+    title: 'Bei c/ Melado',
+    subtitle: 'Petiscos Individuais',
+    subtitle2: 'Tiras de bacon cobertas c/ melado de cana.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/beiconmelado.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-queijinho-empanadinho',
+    categoryId: 'petiscos',
+    title: 'Queijinho Empanadinho',
+    subtitle: 'Petiscos Individuais',
+    subtitle2: 'Gouda empanado c/ melado.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/queijinho2.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-porks-fritas',
+    categoryId: 'petiscos',
+    title: 'Porks Fritas',
+    subtitle: 'Petiscos Individuais',
+    subtitle2: 'Batata crocante c/ páprica picante e maionese temperada.',
+    price: '20.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/porksfritas.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-pastelinhos',
+    categoryId: 'petiscos',
+    title: 'Pasteiszinhos de Queijo',
+    subtitle: 'Petiscos Individuais',
+    subtitle2: 'Pasteizinhos de queijo estilo boteco',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/pastelinos.jpg',
+    liked: false,
+  },
+
+  // === Para Compartilhar ===
+  {
+    id: 'food-fish-and-chips-comp',
+    categoryId: 'compartilhar',
+    title: 'Fish and Chips',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Iscas de peixe frito com batata rúsica c/ molho da casa.',
+    price: '45.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/fishchips.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-file-gorgonzola',
+    categoryId: 'compartilhar',
+    title: 'Filé c/ Gorgonzola',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Alcatra ao molho de gorgonzola e fritas.',
+    price: '48.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/filecomfritas.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-file-fritas',
+    categoryId: 'compartilhar',
+    title: 'Filé c/ Fritas',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Alcatra c/ cerveja preta, bacon e fritas.',
+    price: '45.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/filecomfritas2.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-costelinha-bbq-rustica',
+    categoryId: 'compartilhar',
+    title: 'Costelinha BBQ c/ Rústica',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Costelinha com batata rústica.',
+    price: '48.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/costelinharustica.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-batata-tropeira',
+    categoryId: 'compartilhar',
+    title: 'Batata Tropeira',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Batata, pernil desfiado e BBQ.',
+    price: '40.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/batatatropeira.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-hot-wings',
+    categoryId: 'compartilhar',
+    title: 'Hot Wings',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Asinhas temperadas picantes.',
+    price: '30.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/hotwings.jpg',
+    liked: false,
+  },
+  {
+    id: 'food-fucking-fritas',
+    categoryId: 'compartilhar',
+    title: 'Fucking Fritas',
+    subtitle: 'Para Compartilhar',
+    subtitle2: 'Fritas com cheddar e bacon.',
+    price: '35.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/fknfritas.jpg',
+    liked: false,
+  },
+
+  // === Doces ===
+  {
+    id: 'food-mini-churros',
+    categoryId: 'doces',
+    title: 'Mini Churros',
+    subtitle: 'Doces',
+    subtitle2: 'Mini churros com doce de leite.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/minichurros.jpg',
+    liked: false,
+  },
+];
+
+/* Agrupado por categoria (opcional para usar no front) */
+export const itemsByCategory = groupByCategory(initialItems, itemCategories);
+
+/* =========================
+ * PROMOS
+ * ========================= */
+export const initialPromos = [
+  {
+    id: 'promo-fucking-fritas',
+    title: 'Fucking Fritas',
+    subtitle: 'Promoção',
+    subtitle2: 'Fritas c/ cheddar e bacon.',
+    price: '29.90',
+    oldPrice: '35.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/fknfritas.jpg',
+    liked: false,
+  },
+  {
+    id: 'promo-porks-bacon-burger',
+    title: 'Porks Bacon Burger',
+    subtitle: 'Promoção',
+    subtitle2: 'Blend de porco, cheddar e bacon.',
+    price: '22.90',
+    oldPrice: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/burger-porksbacon.jpg',
+    liked: false,
+  },
+  {
+    id: 'promo-mini-churros',
+    title: 'Mini Churros',
+    subtitle: 'Promoção',
+    subtitle2: 'Mini churros com doce de leite.',
+    price: '19.90',
+    oldPrice: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/minichurros.jpg',
+    liked: false,
+  },
+];
+
+/* =========================
+ * DRINKS (flat + categoria)
+ * ========================= */
+/* =========================
+ * DRINKS (flat + categoria)
+ * ========================= */
+export const initialDrinks = [
+  // === Gin ===
+  {
+    id: 'drink-tropical-gin',
+    categoryId: 'gin',
+    title: 'Tropical Gin',
+    subtitle: 'Gin',
+    subtitle2: 'Gin com Monster Tropical e laranja.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/tropical.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-lady-pig',
+    categoryId: 'gin',
+    title: 'Lady Pig',
+    subtitle: 'Gin',
+    subtitle2: 'Gin, tônica, xarope de morango e limão.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/ladypig.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-valerie-gin',
+    categoryId: 'gin',
+    title: 'Valerie Gin',
+    subtitle: 'Gin',
+    subtitle2: 'Gin, tônica, frutas vermelhas.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/valeriegin.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-hellboy',
+    categoryId: 'gin',
+    title: 'Hellboy',
+    subtitle: 'Gin',
+    subtitle2: 'Gin, Campari, limão e tônica.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/hellboy.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-gin-loco',
+    categoryId: 'gin',
+    title: 'Gin Loco',
+    subtitle: 'Gin',
+    subtitle2: 'Gin, Monster Mango Loco e laranja.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/ginloco.jpg',
+    liked: false,
+  },
+
+  // === Caipis ===
+  {
+    id: 'drink-caipi-bananinha',
+    categoryId: 'caipis',
+    title: 'Caipi Bananinha',
+    subtitle: 'Caipis',
+    subtitle2: 'Limão, vodka, licor de banana.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/caipi-banana.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-caipi-jambu',
+    categoryId: 'caipis',
+    title: 'Caipi Jambu',
+    subtitle: 'Caipis',
+    subtitle2: 'Limão com licor de jambu.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/jambu.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-caipi-limao',
+    categoryId: 'caipis',
+    title: 'Caipi Limão',
+    subtitle: 'Caipis',
+    subtitle2: 'Limão, açúcar e vodka.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/caipi-limao.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-caipi-maracuja-canela',
+    categoryId: 'caipis',
+    title: 'Caipi Maracujá c/ Canela',
+    subtitle: 'Caipis',
+    subtitle2: 'Maracujá, canela e vodka.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/caipi-maracuja.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-caipi-morango',
+    categoryId: 'caipis',
+    title: 'Caipi Morango',
+    subtitle: 'Caipis',
+    subtitle2: 'Morango, açúcar e vodka.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/caipi-morango.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-caipi-frutas-vermelhas',
+    categoryId: 'caipis',
+    title: 'Caipi Frutas Vermelhas',
+    subtitle: 'Caipis',
+    subtitle2: 'Mix de frutas vermelhas.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/caipi-frutasv.jpg',
+    liked: false,
+  },
+  
+  // === Vodka ===
+  {
+    id: 'drink-moscow-mule',
+    categoryId: 'vodka',
+    title: 'Moscow Mule',
+    subtitle: 'Vodka',
+    subtitle2: 'Vodka, gengibre e limão com espuma.',
+    price: '28.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/moscowmule.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-pink-mule',
+    categoryId: 'vodka',
+    title: 'Pink Mule',
+    subtitle: 'Vodka',
+    subtitle2: 'Vodka de frutas vermelhas e gengibre.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/pinkmule.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-porkmate',
+    categoryId: 'vodka',
+    title: 'Porksmate',
+    subtitle: 'Vodka',
+    subtitle2: 'Vodka, mate torrado e limão.',
+    price: '25.00',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/porksmate.jpg',
+    liked: false,
+  },
+
+  // === Experimente ===
+  {
+    id: 'drink-exp-bananinha',
+    categoryId: 'experimente',
+    title: 'Bananinha',
+    subtitle: 'Experimente',
+    subtitle2: 'Shot de licor de banana c/ espuma.',
+    price: '15',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/bananinha.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-exp-shot-tequila',
+    categoryId: 'experimente',
+    title: 'Shot Tequila',
+    subtitle: 'Experimente',
+    subtitle2: 'Shot de tequila.',
+    price: '20',
+    image: '',
+    liked: false,
+  },
+  {
+    id: 'drink-exp-shot-jambu',
+    categoryId: 'experimente',
+    title: 'Shot Jambu',
+    subtitle: 'Experimente',
+    subtitle2: 'Shot de jambu.',
+    price: '15',
+    image: '',
+    liked: false,
+  },
+  {
+    id: 'drink-exp-campari',
+    categoryId: 'experimente',
+    title: 'Campari',
+    subtitle: 'Experimente',
+    subtitle2: 'Shot de Campari.',
+    price: '15',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/shotcampari.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-exp-jack-coke',
+    categoryId: 'experimente',
+    title: 'Jack & Coke',
+    subtitle: 'Experimente',
+    subtitle2: 'Bourbon e Coca-Cola.',
+    price: '25',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/jackcoke.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-exp-maracujack',
+    categoryId: 'experimente',
+    title: 'Maracujack',
+    subtitle: 'Experimente',
+    subtitle2: 'Jack Fire e maracujá.',
+    price: '30',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/maracujack.jpg',
+    liked: false,
+  },
+
+  // === 0 Álcool ===
+  {
+    id: 'drink-zero-capri',
+    categoryId: 'sem-alcool',
+    title: 'Capri',
+    subtitle: '0 Álcool',
+    subtitle2: 'Maçã verde, morango ou limão siciliano.',
+    price: '15',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/capri.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-zero-soda-italiana',
+    categoryId: 'sem-alcool',
+    title: 'Soda Italiana',
+    subtitle: '0 Álcool',
+    subtitle2: 'Maçã verde, morango ou limão siciliano.',
+    price: '15',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/sodaitaliana.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-zero-punch',
+    categoryId: 'sem-alcool',
+    title: 'Punch',
+    subtitle: '0 Álcool',
+    subtitle2: 'Spritz cítrico e morangos.',
+    price: '20',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/punch-semalcool.jpg',
+    liked: false,
+  },
+  {
+    id: 'drink-zero-monster',
+    categoryId: 'sem-alcool',
+    title: 'Energético Monster',
+    subtitle: '0 Álcool',
+    subtitle2: 'Todos os sabores, consulte no balcão.',
+    price: '16',
+    image: 'https://porks.nyc3.cdn.digitaloceanspaces.com/cardapio/drinks/monster.jpg',
+    liked: false,
+  },
+];
+
+
+/* Agrupado por categoria (opcional) */
+export const drinksByCategory = groupByCategory(initialDrinks, drinkCategories);
