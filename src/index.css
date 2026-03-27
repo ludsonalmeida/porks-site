@@ -209,7 +209,7 @@ a{text-decoration:none;color:inherit}
 .tick-sep{font-size:.6rem;color:rgba(24,14,4,.58);padding:0 4px;vertical-align:middle}
 
 /* ─ IDENTIDADE ─ */
-.identity{background:var(--k);position:relative;overflow:hidden}
+.identity{background:var(--k);position:relative;overflow:hidden;margin-bottom:-1px}
 .identity::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(24,14,4,.055) 39px,rgba(24,14,4,.055) 40px)}
 .identity::after{content:'';position:absolute;top:-8px;right:-8px;width:140px;height:90px;background:rgba(192,32,26,.09);clip-path:polygon(100% 0,100% 65%,72% 88%,48% 68%,22% 82%,0 55%,8% 20%,35% 0);filter:url(#rip);pointer-events:none}
 .id-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;position:relative;z-index:1}
