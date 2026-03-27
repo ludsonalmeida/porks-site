@@ -32,7 +32,7 @@ export default function Reviews() {
             <span className="rv-t2">DO PORKS ★</span>
           </div>
           <div className="rv-badge rv d1">
-            <div className="rv-badge-score">4.9</div>
+            <div className="rv-badge-score">4.6</div>
             <div className="rv-badge-info">
               <StarRow />
               <span className="rv-badge-src">Google Meu Negócio</span>

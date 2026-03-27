@@ -17,16 +17,6 @@ export default function ChopeComida() {
             <span className="cc-t2">15 ROTULOS</span>
             <span className="cc-t3">ARTESANAIS ★</span>
             <p className="cc-p">Receitas premiadas das melhores cervejarias do cerrado. Colombina e Cruls na torneira, sempre gelado, sempre especial.</p>
-            <div className="cc-logos">
-              {breweries.map(b => (
-                <div key={b.name} className="cc-logo">
-                  {b.logo
-                    ? <img src={b.logo} alt={b.name} loading="lazy" />
-                    : <span className="cc-logo-text">{b.name}</span>
-                  }
-                </div>
-              ))}
-            </div>
           </div>
           <div className="cc-block cc-food rv d1">
             <div className="cc-ey">Gastronomia</div>
@@ -40,6 +30,20 @@ export default function ChopeComida() {
               <div className="cc-hi"><span className="cc-hi-ic">🔥</span><span>Receitas autorais</span></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="cc-breweries rv">
+        <div className="cc-brew-label">Cervejarias parceiras</div>
+        <div className="cc-brew-logos">
+          {breweries.map(b => (
+            <div key={b.name} className="cc-brew-item">
+              {b.logo
+                ? <img src={b.logo} alt={b.name} loading="lazy" />
+                : <span className="cc-brew-text">{b.name}</span>
+              }
+            </div>
+          ))}
         </div>
       </div>
     </section>
