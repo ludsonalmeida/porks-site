@@ -443,6 +443,29 @@ const menuSections = [
 
 export default function CardapioPage() {
 
+  // Neutraliza estilos globais do porks-site
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'cardapio-reset';
+    style.textContent = `
+      body, body::before, body::after {
+        background: #f5f5f5 !important;
+        font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif !important;
+        color: #000 !important;
+        all: unset;
+        background: #f5f5f5 !important;
+        display: block;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      body::before, body::after {
+        content: none !important;
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { style.remove(); };
+  }, []);
 
   // **Modal de flyer no load**
   const [flyerOpen, setFlyerOpen] = useState(true);

@@ -1,16 +1,20 @@
-import { StrictMode } from 'react'
+import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import App from './App.jsx'
-import CardapioPage from './components/CardapioPage.jsx'
+
+// Lazy load: cada rota carrega seu próprio CSS sem conflito
+const App = lazy(() => import('./App.jsx'))
+const CardapioPage = lazy(() => import('./components/CardapioPage.jsx'))
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/cardapio" element={<CardapioPage />} />
-        <Route path="/*" element={<App />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/cardapio" element={<CardapioPage />} />
+          <Route path="/*" element={<App />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   </StrictMode>,
 )
