@@ -100,23 +100,31 @@ export default function AdminRadio({ pass }) {
       <div style={R.tops}>
         <div style={R.topBox}>
           <div style={R.topTitle}>TOP ARTISTAS</div>
-          {topArtists.slice(0,8).map((a, i) => (
-            <div key={a.artist} style={R.topRow}>
-              <span style={R.topRank}>#{i+1}</span>
-              <span style={R.topName}>{a.artist}</span>
-              <span style={R.topCount}>{a._count?.artist || a.count}</span>
-            </div>
-          ))}
+          {topArtists.slice(0,8).map((a, i) => {
+            const name  = Array.isArray(a) ? a[0] : (a.artist || a.name || '')
+            const count = Array.isArray(a) ? a[1] : (a._count?.artist || a.count || 0)
+            return (
+              <div key={name} style={R.topRow}>
+                <span style={R.topRank}>#{i+1}</span>
+                <span style={R.topName}>{name}</span>
+                <span style={R.topCount}>{count}</span>
+              </div>
+            )
+          })}
         </div>
         <div style={R.topBox}>
           <div style={R.topTitle}>TOP MÚSICAS</div>
-          {topTracks.slice(0,8).map((t, i) => (
-            <div key={t.trackName} style={R.topRow}>
-              <span style={R.topRank}>#{i+1}</span>
-              <span style={R.topName}>{t.trackName}</span>
-              <span style={R.topCount}>{t._count?.trackName || t.count}</span>
-            </div>
-          ))}
+          {topTracks.slice(0,8).map((t, i) => {
+            const name  = Array.isArray(t) ? t[0] : (t.trackName || t.name || '')
+            const count = Array.isArray(t) ? t[1] : (t._count?.trackName || t.count || 0)
+            return (
+              <div key={name} style={R.topRow}>
+                <span style={R.topRank}>#{i+1}</span>
+                <span style={R.topName}>{name}</span>
+                <span style={R.topCount}>{count}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
