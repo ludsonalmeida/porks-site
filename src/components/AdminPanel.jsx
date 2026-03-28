@@ -33,7 +33,10 @@ export default function AdminPanel() {
   const [cards, setCards] = useState(DEFAULT_CARDS)
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState({})
-  const [tab, setTab] = useState('hero')
+  const [tab, setTab] = useState(() => {
+    const h = window.location.hash.replace('#', '')
+    return ['hero', 'cervejarias', 'radio'].includes(h) ? h : 'hero'
+  })
   const [brews, setBrews] = useState(DEFAULT_BREWERIES)
   const [brewSaved, setBrewSaved] = useState(false)
   const [brewUploading, setBrewUploading] = useState({})
@@ -178,7 +181,7 @@ export default function AdminPanel() {
           <button
             key={t.id}
             style={{ ...S.tabBtn, ...(tab === t.id ? S.tabBtnActive : {}) }}
-            onClick={() => setTab(t.id)}
+            onClick={() => { setTab(t.id); window.location.hash = t.id }}
           >
             <span style={S.tabIcon}>{t.icon}</span> {t.label}
           </button>

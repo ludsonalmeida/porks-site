@@ -167,7 +167,7 @@ export default function AdminRadio({ pass }) {
   )
 
   const { requests = [], total = 0, stats = {}, topArtists = [], topTracks = [],
-          uniqueSessions = 0, totalAll = 0, currentPage = 1, totalPages = 1,
+          uniqueSessions = 0, uniqueTables = 0, totalAll = 0, currentPage = 1, totalPages = 1,
           hourCount = {}, dayCount = {} } = data || {}
 
   const approvalRate = totalAll > 0 ? Math.round(((stats.APPROVED || 0) / totalAll) * 100) : 0
@@ -178,13 +178,14 @@ export default function AdminRadio({ pass }) {
     if (r.albumArt && !artMap[r.trackName]) artMap[r.trackName] = r.albumArt
   }
 
+  const avgPerPerson = uniqueSessions > 0 ? (totalAll / uniqueSessions).toFixed(1) : '—'
+
   const statCards = [
     { label: 'Total pedidos',  value: totalAll,            color: INK },
+    { label: '👤 Pessoas',     value: uniqueSessions,      color: AMB, sub: `${avgPerPerson} pedidos/pessoa`, highlight: true },
     { label: 'Aprovados',      value: stats.APPROVED || 0, color: '#2e7d32' },
     { label: 'Rejeitados',     value: stats.REJECTED || 0, color: '#c62828' },
-    { label: 'Duplicados',     value: stats.DUPLICATE || 0, color: '#e65100' },
-    { label: 'Cooldown',       value: stats.COOLDOWN || 0,  color: '#1565c0' },
-    { label: 'Sessões únicas', value: uniqueSessions,       color: AMB },
+    { label: 'Cooldown',       value: stats.COOLDOWN || 0, color: '#1565c0' },
   ]
 
   // Hourly chart
@@ -198,9 +199,10 @@ export default function AdminRadio({ pass }) {
       {/* Stat cards */}
       <div style={R.statGrid}>
         {statCards.map(sc => (
-          <div key={sc.label} style={R.statCard}>
+          <div key={sc.label} style={sc.highlight ? { ...R.statCard, border: `2px solid ${AMB}`, background: '#fffaf4' } : R.statCard}>
             <div style={{ ...R.statValue, color: sc.color }}>{sc.value}</div>
             <div style={R.statLabel}>{sc.label}</div>
+            {sc.sub && <div style={{ fontSize: 10, color: AMB, marginTop: 2, fontWeight: 600 }}>{sc.sub}</div>}
           </div>
         ))}
         <div style={R.statCard}>
