@@ -148,6 +148,9 @@ export default function AdminRadio({ pass }) {
     window.open(`${CSV}?${params}`, '_blank')
   }
 
+  // hooks must be before any early returns
+  const insights = useMemo(() => generateInsights(data || {}), [data])
+
   if (loading && !data) return (
     <div style={R.loading}>
       <div style={R.spinner} />
@@ -166,8 +169,6 @@ export default function AdminRadio({ pass }) {
   const { requests = [], total = 0, stats = {}, topArtists = [], topTracks = [],
           uniqueSessions = 0, totalAll = 0, currentPage = 1, totalPages = 1,
           hourCount = {}, dayCount = {} } = data || {}
-
-  const insights = useMemo(() => generateInsights(data || {}), [data])
 
   const approvalRate = totalAll > 0 ? Math.round(((stats.APPROVED || 0) / totalAll) * 100) : 0
 
