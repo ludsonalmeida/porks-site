@@ -67,9 +67,16 @@ export default function AdminRadio({ pass }) {
   )
 
   const { requests = [], total = 0, stats = {}, topArtists = [], topTracks = [],
-          uniqueSessions = 0, totalAll = 0, currentPage = 1, totalPages = 1 } = data || {}
+          uniqueSessions = 0, totalAll = 0, currentPage = 1, totalPages = 1,
+          hourCount = {}, dayCount = {} } = data || {}
 
   const approvalRate = totalAll > 0 ? Math.round(((stats.APPROVED || 0) / totalAll) * 100) : 0
+
+  // Build album art map from requests
+  const artMap = {}
+  for (const r of requests) {
+    if (r.albumArt && !artMap[r.trackName]) artMap[r.trackName] = r.albumArt
+  }
 
   const statCards = [
     { label: 'Total pedidos',  value: totalAll,            color: INK },
@@ -79,6 +86,12 @@ export default function AdminRadio({ pass }) {
     { label: 'Cooldown',       value: stats.COOLDOWN || 0,  color: '#1565c0' },
     { label: 'Sessões únicas', value: uniqueSessions,       color: AMB },
   ]
+
+  // Hourly chart
+  const maxHour = Math.max(...Array.from({length:24},(_,h) => hourCount[h]||0), 1)
+  // Daily chart
+  const sortedDays = Object.entries(dayCount).sort((a,b) => a[0].localeCompare(b[0]))
+  const maxDay = Math.max(...sortedDays.map(d => Number(d[1])), 1)
 
   return (
     <div>
@@ -96,6 +109,39 @@ export default function AdminRadio({ pass }) {
         </div>
       </div>
 
+      {/* Charts */}
+      <div style={R.charts}>
+        <div style={R.chartBox}>
+          <div style={R.chartTitle}>PEDIDOS POR HORÁRIO</div>
+          <div style={R.barChart}>
+            {Array.from({length:24},(_,h) => {
+              const c = hourCount[h] || 0
+              const pct = Math.round((c / maxHour) * 100)
+              return (
+                <div key={h} style={R.barCol} title={`${h}h: ${c}`}>
+                  <div style={{...R.bar, height: `${Math.max(pct,2)}%`, background: pct>60?'#c62828':pct>30?AMB:CREAM2}} />
+                  <span style={R.barLabel}>{h}h</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <div style={R.chartBox}>
+          <div style={R.chartTitle}>PEDIDOS POR DIA</div>
+          <div style={R.barChart}>
+            {sortedDays.map(([day, count]) => {
+              const pct = Math.round((Number(count) / maxDay) * 100)
+              return (
+                <div key={day} style={R.barCol} title={`${day}: ${count}`}>
+                  <div style={{...R.bar, height: `${Math.max(pct,2)}%`, background: pct>60?'#c62828':pct>30?AMB:CREAM2}} />
+                  <span style={R.barLabel}>{day.slice(5)}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* Top artists + tracks */}
       <div style={R.tops}>
         <div style={R.topBox}>
@@ -107,7 +153,7 @@ export default function AdminRadio({ pass }) {
               <div key={name} style={R.topRow}>
                 <span style={R.topRank}>#{i+1}</span>
                 <span style={R.topName}>{name}</span>
-                <span style={R.topCount}>{count}</span>
+                <span style={R.topCount}>{count}x</span>
               </div>
             )
           })}
@@ -115,13 +161,17 @@ export default function AdminRadio({ pass }) {
         <div style={R.topBox}>
           <div style={R.topTitle}>TOP MÚSICAS</div>
           {topTracks.slice(0,8).map((t, i) => {
-            const name  = Array.isArray(t) ? t[0] : (t.trackName || t.name || '')
-            const count = Array.isArray(t) ? t[1] : (t._count?.trackName || t.count || 0)
+            const rawName = Array.isArray(t) ? t[0] : (t.trackName || t.name || '')
+            const count   = Array.isArray(t) ? t[1] : (t._count?.trackName || t.count || 0)
+            // rawName format: "Track — Artist"
+            const trackName = rawName.includes(' — ') ? rawName.split(' — ')[0] : rawName
+            const art = artMap[rawName] || artMap[trackName]
             return (
-              <div key={name} style={R.topRow}>
+              <div key={rawName} style={R.topRow}>
+                {art && <img src={art} alt="" style={R.topArt} />}
                 <span style={R.topRank}>#{i+1}</span>
-                <span style={R.topName}>{name}</span>
-                <span style={R.topCount}>{count}</span>
+                <span style={R.topName}>{trackName}</span>
+                <span style={R.topCount}>{count}x</span>
               </div>
             )
           })}
@@ -160,7 +210,12 @@ export default function AdminRadio({ pass }) {
               return (
                 <tr key={r.id} style={R.tr}>
                   <td style={R.td}>{dt}</td>
-                  <td style={{ ...R.td, fontWeight: 600 }}>{r.trackName}</td>
+                  <td style={R.td}>
+                    <div style={{ display:'flex', alignItems:'center', gap: 8 }}>
+                      {r.albumArt && <img src={r.albumArt} alt="" style={R.topArt} />}
+                      <span style={{ fontWeight: 600 }}>{r.trackName}</span>
+                    </div>
+                  </td>
                   <td style={R.td}>{r.artist}</td>
                   <td style={R.td}>
                     <span style={{ ...R.badge, background: STATUS_COLOR[r.status] || '#555' }}>
@@ -221,6 +276,15 @@ const R = {
   statValue: { fontFamily: BEBAS, fontSize: '2rem', lineHeight: 1, letterSpacing: '.04em' },
   statLabel: { fontFamily: BARLOW_C, fontSize: '.58rem', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: MUTED, marginTop: 4 },
 
+  charts: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
+  chartBox: { background: CREAM, border: `2px solid ${INK}`, padding: 16, boxShadow: `3px 3px 0 ${CREAM2}` },
+  chartTitle: { fontFamily: BEBAS, fontSize: '1rem', letterSpacing: '.1em', color: INK, marginBottom: 12 },
+  barChart: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 80 },
+  barCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', cursor: 'default' },
+  bar: { width: '100%', borderRadius: '2px 2px 0 0', transition: 'height .3s' },
+  barLabel: { fontSize: '.45rem', color: MUTED, marginTop: 2, whiteSpace: 'nowrap' },
+
+  topArt: { width: 28, height: 28, objectFit: 'cover', borderRadius: 2, marginRight: 4, flexShrink: 0 },
   tops: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
   topBox: { background: CREAM, border: `2px solid ${INK}`, padding: 16, boxShadow: `3px 3px 0 ${CREAM2}` },
   topTitle: { fontFamily: BEBAS, fontSize: '1.1rem', letterSpacing: '.1em', color: INK, marginBottom: 12, borderBottom: `1px dashed ${CREAM2}`, paddingBottom: 8 },
