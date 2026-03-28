@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 
 import { waLink } from '../utils/wa.js'
 
+const IFOOD = 'https://www.ifood.com.br/delivery/brasilia-df/porks-sobradinho-sobradinho/e42c5658-b382-44e4-a6e8-5259c3c07726'
+
 const links = [
   { href: '#shows', label: 'Shows' },
   { href: '#ocasioes', label: 'Ocasiões' },
@@ -32,6 +34,7 @@ export default function Nav() {
         </a>
         <ul className="nav-links">
           {links.map(l => <li key={l.href}><a href={l.href}>{l.label}</a></li>)}
+          <li><a href={IFOOD} target="_blank" rel="noopener noreferrer" className="nav-delivery">Delivery</a></li>
         </ul>
         <div className="nav-acts">
           <a href={waLink('nav')} className="btn btn-ghost btn-sm" style={{clipPath:'none'}}>WhatsApp</a>
@@ -43,6 +46,7 @@ export default function Nav() {
       </div>
       <div className={`mob-menu${mobOpen ? ' open' : ''}`}>
         {links.map(l => <a key={l.href} href={l.href} onClick={close}>{l.label}</a>)}
+        <a href={IFOOD} target="_blank" rel="noopener noreferrer" onClick={close}>Delivery</a>
         <a href={waLink('nav')} onClick={close}>WhatsApp</a>
         <a href="#cta" className="hi" onClick={close}>⚡ Reservar agora</a>
       </div>

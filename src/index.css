@@ -158,6 +158,8 @@ a{text-decoration:none;color:inherit}
   border-bottom:3px solid transparent;margin-bottom:-3px;transition:color .15s,border-color .15s;
 }
 .nav-links a:hover{color:var(--aged);border-color:var(--amb)}
+.nav-delivery{color:var(--amb) !important;border-color:rgba(204,106,10,.3) !important}
+.nav-delivery:hover{border-color:var(--amb) !important}
 .nav-acts{display:flex;gap:8px;align-items:center}
 .nav-acts .btn{padding:7px 14px;font-size:.65rem}
 .hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px}
