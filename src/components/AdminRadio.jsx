@@ -1,7 +1,104 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 
 const API = 'https://musica.sobradinhoporks.com.br/admin/api/remote'
 const CSV = 'https://musica.sobradinhoporks.com.br/admin/api/remote-csv'
+
+// ── Genre classifier ──────────────────────────────────────────────────────────
+const GENRES = {
+  'rock nacional':   ['legião urbana','charlie brown jr','titãs','sepultura','raimundos','capital inicial','engenheiros do hawaii','paralamas','skank','jota quest','nando reis','los hermanos','fresno','supercombo','leall','a.c.e'],
+  'rock internacional': ['nirvana','system of a down','linkin park','metallica','red hot chili peppers','foo fighters','pearl jam','radiohead','the beatles','pink floyd','queen','acdc','guns n roses','iron maiden','avenged sevenfold','green day'],
+  'hip-hop / trap':  ['matuê','yago oproprio','lil peep','xxxtentacion','drake','travis scott','juice wrld','the weeknd','post malone','eminem','kanye west','kendrick lamar','j. cole','wc no beat','bk brj','outra vez','baco exu do blues','djonga','filipe ret','orochi','veigh'],
+  'r&b / soul':      ['sza','beyoncé','frank ocean','d\'angelo','alicia keys','john legend','miguel','h.e.r.','jorja smith','giveon','doja cat','ari lennox','summer walker'],
+  'mpb / sertanejo': ['chico buarque','caetano veloso','gilberto gil','maria bethânia','djavan','seu jorge','criolo','ana carolina','marisa monte','elba ramalho','roberto carlos','zé ramalho','geraldo azevedo','raul seixas'],
+  'pop':             ['taylor swift','ariana grande','billie eilish','olivia rodrigo','harry styles','ed sheeran','shawn mendes','camila cabello','selena gomez','dua lipa'],
+}
+
+function classifyGenres(topArtists) {
+  const scores = {}
+  for (const a of topArtists) {
+    const artist = (Array.isArray(a) ? a[0] : a.artist || '').toLowerCase()
+    const count  = Array.isArray(a) ? a[1] : (a.count || 1)
+    for (const [genre, list] of Object.entries(GENRES)) {
+      if (list.some(g => artist.includes(g) || g.includes(artist.split(' ')[0]))) {
+        scores[genre] = (scores[genre] || 0) + count
+      }
+    }
+  }
+  return Object.entries(scores).sort((a, b) => b[1] - a[1])
+}
+
+function peakHours(hourCount) {
+  const sorted = Object.entries(hourCount).sort((a, b) => Number(b[1]) - Number(a[1]))
+  return sorted.slice(0, 3).map(([h]) => `${h}h`)
+}
+
+function generateInsights(data) {
+  const { topArtists = [], topTracks = [], stats = {}, totalAll = 0,
+          uniqueSessions = 0, hourCount = {}, dayCount = {} } = data
+
+  const insights = []
+  const genreRanking = classifyGenres(topArtists)
+  const total = Object.values(stats).reduce((s, v) => s + v, 0) || totalAll
+
+  // Genre profile
+  if (genreRanking.length > 0) {
+    const [g1, g2] = genreRanking
+    const pct = total > 0 ? Math.round((g1[1] / total) * 100) : 0
+    if (g2) {
+      insights.push({ icon: '🎸', title: 'Perfil musical', text: `Público tem forte presença de **${g1[0]}** (${pct}% dos pedidos). Segunda corrente: **${g2[0]}** — mistura típica de quem curte rock mas também consome urbano.` })
+    } else {
+      insights.push({ icon: '🎸', title: 'Perfil musical', text: `Pedidos concentrados em **${g1[0]}** — público coeso e com gosto bem definido.` })
+    }
+  }
+
+  // Peak hours
+  const peaks = peakHours(hourCount)
+  if (peaks.length > 0) {
+    const lateNight = peaks.some(h => parseInt(h) >= 22 || parseInt(h) <= 3)
+    insights.push({ icon: '🕐', title: 'Horário de pico', text: `Maior movimento de pedidos às **${peaks.join(', ')}**. ${lateNight ? 'Público noturno — chega mais tarde e fica até fechar.' : 'Público que chega mais cedo e aquece antes da meia-noite.'}` })
+  }
+
+  // Approval rate
+  const approved = stats.APPROVED || 0
+  const rejected = stats.REJECTED || 0
+  const rate = total > 0 ? Math.round((approved / total) * 100) : 0
+  if (rate >= 70) {
+    insights.push({ icon: '✅', title: 'Curadoria alinhada', text: `Taxa de aprovação de **${rate}%** — o DJ está bem sintonizado com o gosto do público. Poucos pedidos fora do perfil da casa.` })
+  } else if (rate >= 50) {
+    insights.push({ icon: '⚠️', title: 'Curadoria moderada', text: `${rate}% de aprovação — parte dos pedidos está sendo recusada. Pode indicar pedidos fora do estilo ou alta frequência de músicas repetidas.` })
+  } else {
+    insights.push({ icon: '🔴', title: 'Alta taxa de rejeição', text: `Apenas ${rate}% aprovados. O perfil do público pode estar divergindo do repertório do DJ — vale alinhar.` })
+  }
+
+  // Duplicate signals
+  const dupRate = total > 0 ? Math.round(((stats.DUPLICATE || 0) / total) * 100) : 0
+  if (dupRate >= 15) {
+    const topTrack = Array.isArray(topTracks[0]) ? topTracks[0][0].split(' — ')[0] : ''
+    insights.push({ icon: '🔁', title: 'Músicas queridinhas', text: `${dupRate}% dos pedidos são duplicatas — o público pede as mesmas músicas várias vezes. ${topTrack ? `"${topTrack}" é a mais disputada.` : ''} Sinal de que essas faixas são must-play.` })
+  }
+
+  // Session diversity
+  if (uniqueSessions > 0 && totalAll > 0) {
+    const avgPerSession = (totalAll / uniqueSessions).toFixed(1)
+    if (parseFloat(avgPerSession) >= 3) {
+      insights.push({ icon: '👥', title: 'Público engajado', text: `Média de **${avgPerSession} pedidos por mesa/pessoa** — público muito participativo. Quem usa o jukebox, usa bastante.` })
+    } else {
+      insights.push({ icon: '👥', title: 'Participação distribuída', text: `**${uniqueSessions} sessões únicas** com média de ${avgPerSession} pedidos cada — base ampla de usuários, participação bem distribuída.` })
+    }
+  }
+
+  // Day patterns
+  const sortedDays = Object.entries(dayCount).sort((a, b) => Number(b[1]) - Number(a[1]))
+  if (sortedDays.length >= 2) {
+    const [bestDay] = sortedDays
+    const dayNames = { '0': 'Dom', '1': 'Seg', '2': 'Ter', '3': 'Qua', '4': 'Qui', '5': 'Sex', '6': 'Sáb' }
+    const d = new Date(bestDay[0] + 'T12:00:00')
+    const weekday = dayNames[d.getDay()] || bestDay[0].slice(5)
+    insights.push({ icon: '📅', title: 'Melhor dia', text: `**${weekday} (${bestDay[0].slice(5)})** foi o dia com mais pedidos (${bestDay[1]}). Programar shows ou promoções nesse dia pode ampliar ainda mais o engajamento.` })
+  }
+
+  return insights
+}
 
 const STATUS_COLOR = {
   APPROVED: '#2e7d32', REJECTED: '#c62828', DUPLICATE: '#e65100',
@@ -70,6 +167,8 @@ export default function AdminRadio({ pass }) {
           uniqueSessions = 0, totalAll = 0, currentPage = 1, totalPages = 1,
           hourCount = {}, dayCount = {} } = data || {}
 
+  const insights = useMemo(() => generateInsights(data || {}), [data])
+
   const approvalRate = totalAll > 0 ? Math.round(((stats.APPROVED || 0) / totalAll) * 100) : 0
 
   // Build album art map from requests
@@ -108,6 +207,23 @@ export default function AdminRadio({ pass }) {
           <div style={R.statLabel}>Taxa aprovação</div>
         </div>
       </div>
+
+      {/* Insights */}
+      {insights.length > 0 && (
+        <div style={R.insightGrid}>
+          {insights.map((ins, i) => (
+            <div key={i} style={R.insightCard}>
+              <div style={R.insightIcon}>{ins.icon}</div>
+              <div style={R.insightTitle}>{ins.title}</div>
+              <div style={R.insightText}>
+                {ins.text.split('**').map((part, j) =>
+                  j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Charts */}
       <div style={R.charts}>
@@ -274,6 +390,12 @@ const R = {
   statCard: { background: CREAM, border: `2px solid ${INK}`, padding: '14px 16px', boxShadow: `3px 3px 0 ${CREAM2}` },
   statValue: { fontFamily: BEBAS, fontSize: '2rem', lineHeight: 1, letterSpacing: '.04em' },
   statLabel: { fontFamily: SYS, fontSize: '.7rem', fontWeight: 600, color: MUTED, marginTop: 6 },
+
+  insightGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12, marginBottom: 28 },
+  insightCard: { background: '#fff8ee', border: `2px solid ${AMB}`, padding: '14px 16px', boxShadow: `3px 3px 0 #e8d4b0` },
+  insightIcon: { fontSize: '1.4rem', marginBottom: 6 },
+  insightTitle: { fontFamily: SYS, fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.07em', color: AMB, marginBottom: 6 },
+  insightText: { fontFamily: SYS, fontSize: '.88rem', color: INK, lineHeight: 1.5 },
 
   charts: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
   chartBox: { background: CREAM, border: `2px solid ${INK}`, padding: 16, boxShadow: `3px 3px 0 ${CREAM2}` },
