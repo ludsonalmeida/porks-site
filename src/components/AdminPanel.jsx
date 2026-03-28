@@ -399,7 +399,6 @@ const S = {
   page: {
     minHeight: '100vh',
     background: CREAM,
-    backgroundImage: `repeating-linear-gradient(0deg,transparent,transparent 31px,${DIVIDER} 31px,${DIVIDER} 32px)`,
     fontFamily: BARLOW,
     color: INK,
   },
