@@ -438,13 +438,20 @@ a{text-decoration:none;color:inherit}
 .cc-highlights{display:flex;flex-direction:column;gap:12px}
 .cc-hi{display:flex;align-items:center;gap:12px;font-family:'Barlow Condensed',sans-serif;font-size:.82rem;font-weight:700;color:var(--aged);text-transform:uppercase;letter-spacing:.06em}
 .cc-hi-ic{font-size:1.2rem}
-.cc-breweries{background:#fff;padding:28px 5%;margin-top:40px}
-.cc-brew-label{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#bbb;margin-bottom:28px;text-align:center}
-.cc-brew-logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:48px}
-.cc-brew-item{display:flex;align-items:center;justify-content:center;height:120px;min-width:160px}
-.cc-brew-item img{max-height:110px;max-width:220px;width:auto;object-fit:contain}
-.cc-brew-text{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#444;letter-spacing:.08em}
-@media(max-width:768px){.cc-grid{grid-template-columns:1fr;gap:40px}.cc-brew-logos{gap:32px}.cc-brew-item{min-width:130px;height:90px}.cc-brew-item img{max-height:80px;max-width:170px}}
+.cc-breweries{background:#fff;padding:28px 0 32px;margin-top:40px;overflow:hidden}
+.cc-brew-label{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#bbb;margin-bottom:24px;text-align:center}
+.cc-brew-track-wrap{overflow:hidden;position:relative}
+.cc-brew-track-wrap::before,.cc-brew-track-wrap::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+.cc-brew-track-wrap::before{left:0;background:linear-gradient(to right,#fff,transparent)}
+.cc-brew-track-wrap::after{right:0;background:linear-gradient(to left,#fff,transparent)}
+.cc-brew-track{display:flex;align-items:center;gap:56px;width:max-content;animation:brew-scroll 18s linear infinite}
+.cc-brew-track:hover{animation-play-state:paused}
+@keyframes brew-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.cc-brew-item{display:flex;align-items:center;justify-content:center;height:90px;flex-shrink:0}
+.cc-brew-item img{max-height:80px;max-width:160px;width:auto;object-fit:contain;filter:grayscale(1);opacity:.7;transition:filter .3s,opacity .3s}
+.cc-brew-item img:hover{filter:grayscale(0);opacity:1}
+.cc-brew-text{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:#888;letter-spacing:.08em}
+@media(max-width:768px){.cc-grid{grid-template-columns:1fr;gap:40px}.cc-brew-item{height:70px}.cc-brew-item img{max-height:60px;max-width:120px}}
 
 /* ─ REVIEWS ─ */
 .reviews{background:var(--dark);padding:60px 0 50px}

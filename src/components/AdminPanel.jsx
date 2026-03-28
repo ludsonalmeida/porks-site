@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getHeroCards, saveHeroCards, DEFAULT_CARDS } from '../utils/heroCards.js'
+import { getBreweries, saveBreweries, DEFAULT_BREWERIES } from '../utils/breweriesCards.js'
 import AdminRadio from './AdminRadio.jsx'
 
 const PASS = import.meta.env.VITE_ADMIN_PASS || 'porks2026'
@@ -33,6 +34,8 @@ export default function AdminPanel() {
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState({})
   const [tab, setTab] = useState('hero')
+  const [brews, setBrews] = useState(DEFAULT_BREWERIES)
+  const [brewSaved, setBrewSaved] = useState(false)
   const fileRefs = useRef({})
 
   useEffect(() => {
@@ -40,8 +43,29 @@ export default function AdminPanel() {
   }, [])
 
   useEffect(() => {
-    if (authed) setCards(getHeroCards())
+    if (authed) {
+      setCards(getHeroCards())
+      setBrews(getBreweries())
+    }
   }, [authed])
+
+  function updateBrew(id, field, value) {
+    setBrews(bs => bs.map(b => b.id === id ? { ...b, [field]: value } : b))
+    setBrewSaved(false)
+  }
+  function addBrew() {
+    const newId = Date.now()
+    setBrews(bs => [...bs, { id: newId, name: '', logo: '' }])
+  }
+  function removeBrew(id) {
+    setBrews(bs => bs.filter(b => b.id !== id))
+  }
+  function handleBrewSave(e) {
+    e.preventDefault()
+    saveBreweries(brews.filter(b => b.name))
+    setBrewSaved(true)
+    setTimeout(() => setBrewSaved(false), 3500)
+  }
 
   function login(e) {
     e.preventDefault()
@@ -135,8 +159,9 @@ export default function AdminPanel() {
       {/* Tabs de navegação */}
       <div style={S.tabBar}>
         {[
-          { id: 'hero',  label: 'Hero Cards', icon: '▣' },
-          { id: 'radio', label: 'Rádio',      icon: '♫' },
+          { id: 'hero',       label: 'Hero Cards',   icon: '▣' },
+          { id: 'cervejarias', label: 'Cervejarias',  icon: '🍺' },
+          { id: 'radio',      label: 'Rádio',        icon: '♫' },
         ].map(t => (
           <button
             key={t.id}
@@ -273,6 +298,47 @@ export default function AdminPanel() {
             ★ SALVAR TODOS OS CARDS
           </button>
         </form>
+          </>
+        )}
+
+        {tab === 'cervejarias' && (
+          <>
+            {brewSaved && (
+              <div style={S.banner} role="status" aria-live="polite">
+                <span style={S.bannerIcon}>✓</span>
+                Cervejarias salvas! Recarregue o site para ver as mudanças.
+              </div>
+            )}
+            <p style={S.pageDesc}>
+              Gerencie as cervejarias parceiras que aparecem no carrossel.
+            </p>
+            <form onSubmit={handleBrewSave}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {brews.map((b) => (
+                  <div key={b.id} style={S.brewRow}>
+                    <input
+                      style={{ ...S.input, flex: '0 0 140px' }}
+                      placeholder="Nome"
+                      value={b.name || ''}
+                      onChange={e => updateBrew(b.id, 'name', e.target.value)}
+                    />
+                    <input
+                      style={{ ...S.input, flex: 1 }}
+                      placeholder="URL do logo (https://...)"
+                      value={b.logo || ''}
+                      onChange={e => updateBrew(b.id, 'logo', e.target.value)}
+                      type="url"
+                    />
+                    {b.logo && <img src={b.logo} alt={b.name} style={S.brewThumb} onError={e => e.target.style.display='none'} />}
+                    <button type="button" style={S.removeBtn} onClick={() => removeBrew(b.id)}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" style={{ ...S.saveBtn, background: '#3a2a10', marginTop: 16, marginBottom: 8 }} onClick={addBrew}>
+                + Adicionar cervejaria
+              </button>
+              <button type="submit" style={S.saveBtn}>★ SALVAR CERVEJARIAS</button>
+            </form>
           </>
         )}
 
@@ -589,5 +655,17 @@ const S = {
     cursor: 'pointer',
     boxShadow: `4px 4px 0 ${REDDK}`,
     transition: 'transform .1s, box-shadow .1s',
+  },
+  brewRow: {
+    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+  },
+  brewThumb: {
+    height: 40, maxWidth: 60, objectFit: 'contain', borderRadius: 4,
+    background: '#fff', padding: 2,
+  },
+  removeBtn: {
+    background: 'none', border: `1px solid ${REDDK}`, color: RED,
+    width: 32, height: 32, borderRadius: 4, cursor: 'pointer',
+    fontFamily: BEBAS, fontSize: '1rem', flexShrink: 0,
   },
 }

@@ -1,12 +1,9 @@
-const breweries = [
-  { name: 'Biomma', logo: 'https://assets.untappd.com/site/brewery_logos/brewery-483650_3f93a.jpeg' },
-  { name: 'Colombina', logo: 'https://cdn.awsli.com.br/1577/1577274/logo/dc92f2836b.png' },
-  { name: 'Cruls', logo: 'https://static.wixstatic.com/media/50d772_2a9b16e063cd4fe2b538f6d795466d84~mv2.png' },
-  { name: 'Biela Bier', logo: 'https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/logo-biela.png' },
-  { name: 'Puhls Beer', logo: null },
-]
+import { getBreweries } from '../utils/breweriesCards.js'
 
 export default function ChopeComida() {
+  const breweries = getBreweries().filter(b => b.name)
+  const items = [...breweries, ...breweries] // duplicate for seamless loop
+
   return (
     <section className="cc" id="chope">
       <div className="wrap">
@@ -35,15 +32,17 @@ export default function ChopeComida() {
 
       <div className="cc-breweries rv">
         <div className="cc-brew-label">Cervejarias parceiras</div>
-        <div className="cc-brew-logos">
-          {breweries.map(b => (
-            <div key={b.name} className="cc-brew-item">
-              {b.logo
-                ? <img src={b.logo} alt={b.name} loading="lazy" />
-                : <span className="cc-brew-text">{b.name}</span>
-              }
-            </div>
-          ))}
+        <div className="cc-brew-track-wrap">
+          <div className="cc-brew-track">
+            {items.map((b, i) => (
+              <div key={i} className="cc-brew-item">
+                {b.logo
+                  ? <img src={b.logo} alt={b.name} loading="lazy" />
+                  : <span className="cc-brew-text">{b.name}</span>
+                }
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
