@@ -258,56 +258,55 @@ const CREAM2 = '#e8dcc6'
 const INK    = '#2e1c08'
 const AMB    = '#cc6a0a'
 const MUTED  = '#7a5c35'
-const BARLOW_C = "'Barlow Condensed', sans-serif"
-const BARLOW   = "'Barlow', sans-serif"
-const BEBAS    = "'Bebas Neue', sans-serif"
+const SYS = "system-ui, -apple-system, 'Segoe UI', sans-serif"
+const BEBAS = "'Bebas Neue', sans-serif"
 
 const R = {
   loading: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '80px 0', color: MUTED },
   spinner: { width: 36, height: 36, border: `3px solid ${CREAM2}`, borderTop: `3px solid ${AMB}`, borderRadius: '50%', animation: 'spin 1s linear infinite' },
-  loadingText: { fontFamily: BARLOW_C, fontSize: '.7rem', fontWeight: 800, letterSpacing: '.2em', textTransform: 'uppercase' },
+  loadingText: { fontFamily: SYS, fontSize: '.8rem', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase' },
   errorBox: { background: '#fff0f0', border: `2px solid #c62828`, padding: 24, borderRadius: 4, marginTop: 24 },
   errorTitle: { fontFamily: BEBAS, fontSize: '1.4rem', color: '#c62828', letterSpacing: '.08em', marginBottom: 8 },
-  errorMsg: { fontFamily: BARLOW, fontSize: '.9rem', color: '#c62828', marginBottom: 16 },
-  retryBtn: { fontFamily: BEBAS, fontSize: '1rem', letterSpacing: '.1em', background: '#c62828', color: '#fff', border: 'none', padding: '8px 20px', cursor: 'pointer' },
+  errorMsg: { fontFamily: SYS, fontSize: '.9rem', color: '#c62828', marginBottom: 16 },
+  retryBtn: { fontFamily: SYS, fontSize: '.9rem', fontWeight: 700, background: '#c62828', color: '#fff', border: 'none', padding: '8px 20px', cursor: 'pointer', borderRadius: 4 },
 
   statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 12, marginBottom: 28 },
   statCard: { background: CREAM, border: `2px solid ${INK}`, padding: '14px 16px', boxShadow: `3px 3px 0 ${CREAM2}` },
   statValue: { fontFamily: BEBAS, fontSize: '2rem', lineHeight: 1, letterSpacing: '.04em' },
-  statLabel: { fontFamily: BARLOW_C, fontSize: '.58rem', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', color: MUTED, marginTop: 4 },
+  statLabel: { fontFamily: SYS, fontSize: '.7rem', fontWeight: 600, color: MUTED, marginTop: 6 },
 
   charts: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
   chartBox: { background: CREAM, border: `2px solid ${INK}`, padding: 16, boxShadow: `3px 3px 0 ${CREAM2}` },
-  chartTitle: { fontFamily: BEBAS, fontSize: '1rem', letterSpacing: '.1em', color: INK, marginBottom: 12 },
+  chartTitle: { fontFamily: SYS, fontSize: '.8rem', fontWeight: 700, color: INK, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.06em' },
   barChart: { display: 'flex', alignItems: 'flex-end', gap: 2, height: 80 },
   barCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', cursor: 'default' },
   bar: { width: '100%', borderRadius: '2px 2px 0 0', transition: 'height .3s' },
-  barLabel: { fontSize: '.45rem', color: MUTED, marginTop: 2, whiteSpace: 'nowrap' },
+  barLabel: { fontFamily: SYS, fontSize: '.55rem', color: MUTED, marginTop: 3, whiteSpace: 'nowrap' },
 
-  topArt: { width: 28, height: 28, objectFit: 'cover', borderRadius: 2, marginRight: 4, flexShrink: 0 },
+  topArt: { width: 30, height: 30, objectFit: 'cover', borderRadius: 3, marginRight: 4, flexShrink: 0 },
   tops: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
   topBox: { background: CREAM, border: `2px solid ${INK}`, padding: 16, boxShadow: `3px 3px 0 ${CREAM2}` },
-  topTitle: { fontFamily: BEBAS, fontSize: '1.1rem', letterSpacing: '.1em', color: INK, marginBottom: 12, borderBottom: `1px dashed ${CREAM2}`, paddingBottom: 8 },
-  topRow: { display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: `1px solid ${CREAM2}` },
-  topRank: { fontFamily: BEBAS, fontSize: '.9rem', color: AMB, minWidth: 28 },
-  topName: { fontFamily: BARLOW, fontSize: '.85rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  topCount: { fontFamily: BEBAS, fontSize: '.9rem', color: MUTED },
+  topTitle: { fontFamily: SYS, fontSize: '.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: INK, marginBottom: 12, borderBottom: `1px solid ${CREAM2}`, paddingBottom: 8 },
+  topRow: { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: `1px solid ${CREAM2}` },
+  topRank: { fontFamily: SYS, fontSize: '.75rem', fontWeight: 700, color: AMB, minWidth: 28 },
+  topName: { fontFamily: SYS, fontSize: '.9rem', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: INK },
+  topCount: { fontFamily: SYS, fontSize: '.8rem', fontWeight: 600, color: MUTED },
 
   filterBar: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center' },
-  filterSelect: { fontFamily: BARLOW_C, fontSize: '.8rem', fontWeight: 700, letterSpacing: '.08em', padding: '8px 10px', background: CREAM, border: `1.5px solid ${INK}`, color: INK, cursor: 'pointer', minHeight: 44 },
-  filterInput: { fontFamily: BARLOW, fontSize: '.85rem', padding: '8px 10px', background: CREAM, border: `1.5px solid ${CREAM2}`, borderBottom: `1.5px solid ${INK}`, color: INK, outline: 'none', minHeight: 44, flex: '1 1 140px' },
-  csvBtn: { fontFamily: BEBAS, fontSize: '1rem', letterSpacing: '.1em', padding: '8px 18px', background: INK, color: CREAM, border: 'none', cursor: 'pointer', minHeight: 44 },
+  filterSelect: { fontFamily: SYS, fontSize: '.85rem', padding: '8px 10px', background: CREAM, border: `1.5px solid ${INK}`, color: INK, cursor: 'pointer', minHeight: 44, borderRadius: 4 },
+  filterInput: { fontFamily: SYS, fontSize: '.85rem', padding: '8px 10px', background: CREAM, border: `1.5px solid ${CREAM2}`, borderBottom: `1.5px solid ${INK}`, color: INK, outline: 'none', minHeight: 44, flex: '1 1 140px' },
+  csvBtn: { fontFamily: SYS, fontSize: '.85rem', fontWeight: 700, padding: '8px 18px', background: INK, color: CREAM, border: 'none', cursor: 'pointer', minHeight: 44, borderRadius: 4 },
 
   tableWrap: { overflowX: 'auto', border: `2px solid ${INK}`, background: CREAM, boxShadow: `4px 4px 0 ${CREAM2}` },
-  table: { width: '100%', borderCollapse: 'collapse', fontFamily: BARLOW, fontSize: '.82rem' },
-  th: { fontFamily: BARLOW_C, fontSize: '.62rem', fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', padding: '10px 12px', background: INK, color: CREAM, textAlign: 'left', whiteSpace: 'nowrap' },
+  table: { width: '100%', borderCollapse: 'collapse', fontFamily: SYS, fontSize: '.88rem' },
+  th: { fontFamily: SYS, fontSize: '.72rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '10px 12px', background: INK, color: CREAM, textAlign: 'left', whiteSpace: 'nowrap' },
   tr: { borderBottom: `1px solid ${CREAM2}` },
-  td: { padding: '9px 12px', color: INK, verticalAlign: 'middle' },
-  badge: { fontFamily: BARLOW_C, fontSize: '.6rem', fontWeight: 800, letterSpacing: '.12em', color: '#fff', padding: '3px 8px', textTransform: 'uppercase', display: 'inline-block' },
+  td: { padding: '10px 12px', color: INK, verticalAlign: 'middle' },
+  badge: { fontFamily: SYS, fontSize: '.7rem', fontWeight: 700, color: '#fff', padding: '3px 9px', textTransform: 'uppercase', display: 'inline-block', borderRadius: 3 },
 
   pag: { display: 'flex', alignItems: 'center', gap: 4, marginTop: 16, flexWrap: 'wrap' },
-  pagInfo: { fontFamily: BARLOW_C, fontSize: '.65rem', fontWeight: 700, letterSpacing: '.1em', color: MUTED, marginRight: 8 },
-  pagBtn: { fontFamily: BARLOW_C, fontSize: '.75rem', fontWeight: 700, letterSpacing: '.08em', padding: '6px 10px', background: CREAM, border: `1.5px solid ${CREAM2}`, color: INK, cursor: 'pointer', minWidth: 36, minHeight: 36 },
+  pagInfo: { fontFamily: SYS, fontSize: '.8rem', color: MUTED, marginRight: 8 },
+  pagBtn: { fontFamily: SYS, fontSize: '.8rem', fontWeight: 600, padding: '6px 10px', background: CREAM, border: `1.5px solid ${CREAM2}`, color: INK, cursor: 'pointer', minWidth: 36, minHeight: 36, borderRadius: 4 },
   pagBtnActive: { background: INK, color: CREAM, border: `1.5px solid ${INK}` },
-  pagEllipsis: { fontFamily: BARLOW, color: MUTED, padding: '0 4px' },
+  pagEllipsis: { fontFamily: SYS, color: MUTED, padding: '0 4px' },
 }
