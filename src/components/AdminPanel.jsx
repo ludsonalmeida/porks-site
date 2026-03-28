@@ -36,7 +36,9 @@ export default function AdminPanel() {
   const [tab, setTab] = useState('hero')
   const [brews, setBrews] = useState(DEFAULT_BREWERIES)
   const [brewSaved, setBrewSaved] = useState(false)
+  const [brewUploading, setBrewUploading] = useState({})
   const fileRefs = useRef({})
+  const brewFileRefs = useRef({})
 
   useEffect(() => {
     if (sessionStorage.getItem('porks_admin') === '1') setAuthed(true)
@@ -60,6 +62,16 @@ export default function AdminPanel() {
   function removeBrew(id) {
     setBrews(bs => bs.filter(b => b.id !== id))
   }
+  async function handleBrewUpload(id, file) {
+    if (!file) return
+    setBrewUploading(u => ({ ...u, [id]: true }))
+    try {
+      const b64 = await resizeToBase64(file)
+      updateBrew(id, 'logo', b64)
+    } catch (_) {}
+    setBrewUploading(u => ({ ...u, [id]: false }))
+  }
+
   function handleBrewSave(e) {
     e.preventDefault()
     saveBreweries(brews.filter(b => b.name))
@@ -142,7 +154,7 @@ export default function AdminPanel() {
     <div style={S.page}>
       {/* Topbar */}
       <div style={S.topbar}>
-        <a href="/" style={S.back}>← Ver site</a>
+        <a href="/" target="_blank" rel="noopener noreferrer" style={S.back}>← Ver site</a>
         <div style={S.topCenter}>
           <span style={S.topBadge}>BACKSTAGE</span>
           <span style={S.topTitle}>PORKS ADMIN</span>
@@ -315,22 +327,38 @@ export default function AdminPanel() {
             <form onSubmit={handleBrewSave}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {brews.map((b) => (
-                  <div key={b.id} style={S.brewRow}>
-                    <input
-                      style={{ ...S.input, flex: '0 0 140px' }}
-                      placeholder="Nome"
-                      value={b.name || ''}
-                      onChange={e => updateBrew(b.id, 'name', e.target.value)}
-                    />
-                    <input
-                      style={{ ...S.input, flex: 1 }}
-                      placeholder="URL do logo (https://...)"
-                      value={b.logo || ''}
-                      onChange={e => updateBrew(b.id, 'logo', e.target.value)}
-                      type="url"
-                    />
+                  <div key={b.id} style={{ ...S.brewRow, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px dashed ${CREAM2}` }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <input
+                        style={S.input}
+                        placeholder="Nome da cervejaria"
+                        value={b.name || ''}
+                        onChange={e => updateBrew(b.id, 'name', e.target.value)}
+                      />
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input
+                          ref={el => brewFileRefs.current[b.id] = el}
+                          type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={e => handleBrewUpload(b.id, e.target.files[0])}
+                        />
+                        <button
+                          type="button"
+                          style={{ ...S.uploadBtn, flex: '0 0 auto', padding: '8px 12px', fontSize: '.7rem', marginBottom: 0 }}
+                          onClick={() => brewFileRefs.current[b.id]?.click()}
+                          disabled={!!brewUploading[b.id]}
+                        >
+                          {brewUploading[b.id] ? '...' : '↑ Upload'}
+                        </button>
+                        <input
+                          style={{ ...S.input, flex: 1, marginBottom: 0 }}
+                          placeholder="ou URL do logo (https://...)"
+                          value={(b.logo && !b.logo.startsWith('data:')) ? b.logo : ''}
+                          onChange={e => updateBrew(b.id, 'logo', e.target.value)}
+                        />
+                      </div>
+                    </div>
                     {b.logo && <img src={b.logo} alt={b.name} style={S.brewThumb} onError={e => e.target.style.display='none'} />}
-                    <button type="button" style={S.removeBtn} onClick={() => removeBrew(b.id)}>✕</button>
+                    <button type="button" style={S.removeBtnSm} onClick={() => removeBrew(b.id)}>✕</button>
                   </div>
                 ))}
               </div>
@@ -571,7 +599,7 @@ const S = {
     padding: '4px 12px',
   },
   imgWrap: {
-    position: 'relative', width: '100%', height: 160, overflow: 'hidden',
+    position: 'relative', width: '100%', aspectRatio: '4/5', overflow: 'hidden',
     background: CREAM2,
   },
   cardImg: {
@@ -663,7 +691,7 @@ const S = {
     height: 40, maxWidth: 60, objectFit: 'contain', borderRadius: 4,
     background: '#fff', padding: 2,
   },
-  removeBtn: {
+  removeBtnSm: {
     background: 'none', border: `1px solid ${REDDK}`, color: RED,
     width: 32, height: 32, borderRadius: 4, cursor: 'pointer',
     fontFamily: BEBAS, fontSize: '1rem', flexShrink: 0,
