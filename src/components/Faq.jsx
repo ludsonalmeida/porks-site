@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const WA = 'https://wa.me/5561935003917?text=Oi%2C+tenho+uma+d%C3%BAvida'
+import { waLink } from '../utils/wa.js'
 const items = [
   { q: 'Como funciona a reserva?', a: 'Entre em contato pelo WhatsApp com data, horário e número de pessoas. Confirmamos a disponibilidade e garantimos seu espaço. Rápido, sem burocracia.' },
   { q: 'Quais tipos de reserva existem?', a: 'Mesa avulsa, aniversário, confraternização/grupos e eventos corporativos. É só nos contar o motivo.' },
@@ -23,7 +23,7 @@ export default function Faq() {
             <span className="faq-t2">TE AJUDAR? ★</span>
           </div>
           <p className="faq-p rv d2">Tire suas dúvidas. Fale direto no WhatsApp — resposta rápida.</p>
-          <a href={WA} className="btn btn-amb rv d3">⚡ Falar no WhatsApp</a>
+          <a href={waLink('faq')} className="btn btn-amb rv d3">⚡ Falar no WhatsApp</a>
         </div>
         <div className="faq-list rv d1">
           {items.map((it, i) => (

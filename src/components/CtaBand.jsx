@@ -1,4 +1,4 @@
-const WA = 'https://wa.me/5561935003917?text=Quero+fazer+minha+reserva'
+import { waLink } from '../utils/wa.js'
 
 export default function CtaBand() {
   return (
@@ -9,7 +9,7 @@ export default function CtaBand() {
         <span className="cta-t3">SUA MESA GARANTIDA. ★</span>
       </div>
       <div className="cta-btns rv d2">
-        <a href={WA} className="btn btn-yel btn-lg">⚡ Reservar agora</a>
+        <a href={waLink('cta')} className="btn btn-yel btn-lg">⚡ Reservar agora</a>
         <a href="#ocasioes" className="btn btn-ghost">Ver ocasiões</a>
       </div>
     </div>

@@ -179,9 +179,9 @@ a{text-decoration:none;color:inherit}
 .hero-ey{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:var(--amb);display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .hero-ey::before{content:'';width:18px;height:2px;background:var(--amb)}
 .ht1{font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:clamp(.72rem,.95vw,.92rem);font-weight:800;color:#d2a06b;text-transform:uppercase;letter-spacing:.2em;display:block;margin-bottom:10px;opacity:.96}
-.ht2{font-family:'Bebas Neue',sans-serif;font-size:clamp(3.2rem,7.1vw,6rem);line-height:.84;color:var(--aged);display:block;letter-spacing:.01em;text-wrap:balance;text-shadow:0 3px 22px rgba(0,0,0,.22)}
+.ht2{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,6vw,5rem);line-height:.88;color:var(--aged);display:block;letter-spacing:.01em;text-shadow:0 3px 22px rgba(0,0,0,.22)}
 .ht2 .r{color:var(--red);font-size:.62em;vertical-align:middle;margin-left:.04em;display:inline-block;transform:translateY(-.04em)}
-.ht3{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(1.45rem,2.8vw,2.5rem);line-height:.96;color:#e18a16;display:block;max-width:14ch;letter-spacing:.02em;text-shadow:0 2px 12px rgba(0,0,0,.18)}
+.ht3{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(1.1rem,2.2vw,2rem);line-height:.96;color:#e18a16;display:block;letter-spacing:.02em;white-space:nowrap;text-shadow:0 2px 12px rgba(0,0,0,.18)}
 .hero-sub{font-family:'Barlow',sans-serif;font-size:clamp(.9rem,1.12vw,1rem);line-height:1.78;color:#d7b287;max-width:560px;margin:18px 0 26px;text-shadow:0 2px 16px rgba(0,0,0,.18)}
 .hero-btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px}
 .hero-rider{display:flex;gap:0;padding-top:20px;border-top:1px solid rgba(204,106,10,.22)}
@@ -191,7 +191,7 @@ a{text-decoration:none;color:inherit}
 .ri-l{font-family:'Barlow Condensed',sans-serif;font-size:.54rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ilt);margin-top:3px}
 .hero-stickers{display:flex;flex-direction:column;align-items:center;gap:16px;flex-shrink:0;position:relative;padding:26px 22px 22px;border-radius:28px;isolation:isolate;max-width:392px;width:100%}
 .hero-stickers::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,7,3,.94),rgba(24,14,4,.88));backdrop-filter:blur(12px);border:1px solid rgba(240,224,192,.2);border-radius:28px;box-shadow:0 24px 70px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.06);z-index:-1}
-.hero-stickers .ticket{filter:none;box-shadow:0 12px 28px rgba(0,0,0,.26)}
+.hero-stickers .hero-deck{display:block;height:480px;margin:0;width:100%}
 .hero-stickers .ticket .tl{font-size:.56rem;letter-spacing:.19em}
 .hero-stickers .ticket .tv{font-size:1.6rem;line-height:1.02;letter-spacing:.01em}
 .hero-stickers .ticket .ts{font-size:.62rem;letter-spacing:.13em;color:#5b3d1d}
@@ -201,10 +201,34 @@ a{text-decoration:none;color:inherit}
 .hs-l1{transform:rotate(0deg);margin-right:0}
 .hs-t2{transform:rotate(-1deg);margin-right:0;min-width:286px;width:286px}
 
+/* ─ HERO DECK (mobile card fan) ─ */
+.hero-deck{display:none;position:relative;height:460px;margin:20px 0 56px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;padding-top:12px}
+.hd-card{position:absolute;left:50%;top:0;transition:transform .42s cubic-bezier(.34,1.4,.64,1),opacity .42s ease,z-index 0s .42s}
+.hd-ticket{filter:none;box-shadow:0 10px 32px rgba(0,0,0,.4);min-width:250px;width:250px}
+.hd-tape{position:absolute;top:-10px;left:50%;transform:translateX(-50%) rotate(-2deg);width:48px}
+/* front */
+.hd-p0{transform:translateX(-50%) rotate(1deg) translateY(0px);z-index:3;opacity:1}
+/* right-back */
+.hd-p1{transform:translateX(-18%) rotate(10deg) translateY(8px) scale(.82);transform-origin:top center;z-index:2;opacity:.78}
+/* left-back */
+.hd-p2{transform:translateX(-82%) rotate(-10deg) translateY(8px) scale(.82);transform-origin:top center;z-index:1;opacity:.68}
+.hd-has-img{padding:0;overflow:hidden}
+.hd-has-img::before,.hd-has-img::after{display:none}
+.hd-img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.hd-text{padding:8px 16px 10px}
+.hd-cta-btn{display:block;text-align:center;background:var(--amb);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.08em;padding:9px 16px;border-radius:4px;text-decoration:none;margin-top:8px;white-space:nowrap}
+.hd-nav{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px}
+.hd-nav-btn{background:none;border:1px solid rgba(204,106,10,.4);color:var(--amb);font-size:1.2rem;line-height:1;width:26px;height:26px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .2s}
+.hd-nav-btn:hover{background:rgba(204,106,10,.15)}
+.hd-dots{display:flex;gap:5px;align-items:center}
+.hd-dot{width:5px;height:5px;border-radius:50%;background:rgba(204,106,10,.3);transition:background .2s}
+.hd-dot-on{background:var(--amb)}
+
 /* ─ TICKER ─ */
 .ticker{background:var(--k-lt);overflow:hidden;padding:8px 0;position:relative;z-index:2}
 .ticker-track{display:flex;animation:tick 38s linear infinite;width:max-content}
 @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .tick-i{display:inline;padding:0 12px;font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.08em;color:#1a0d03;white-space:nowrap;text-shadow:0 1px 0 rgba(255,255,255,.12)}
 .tick-sep{font-size:.6rem;color:rgba(24,14,4,.58);padding:0 4px;vertical-align:middle}
 
@@ -506,6 +530,7 @@ footer{background:var(--dark);border-top:3px solid var(--amb)}
 /* ─ RESPONSIVE ─ */
 @media(max-width:1100px){
   .hero-body{grid-template-columns:1fr}.hero-stickers{display:none}
+  .hero-deck{display:block}
   .id-inner{grid-template-columns:1fr}
   .occ-grid{grid-template-columns:1fr 1fr}.occ-r2{grid-template-columns:1fr 1fr}
   .pq-layout{grid-template-columns:1fr;gap:48px}

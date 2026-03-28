@@ -1,7 +1,7 @@
-const WA = 'https://wa.me/5561935003917'
+import { waLink } from '../utils/wa.js'
 
 const grid1 = [
-  { img: 'https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/p1.jpg', h: 370, bar: 'r', tag: '★ Mesa avulsa', title: 'Reserva Particular', text: 'Pra date, casal, encontro com amigos ou aquela noite que você quer começar do jeito certo.', cta: 'Reservar mesa', href: WA + '?text=Quero+fazer+uma+reserva+pra+mim' },
+  { img: 'https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/p1.jpg', h: 370, bar: 'r', tag: '★ Mesa avulsa', title: 'Reserva Particular', text: 'Pra date, casal, encontro com amigos ou aquela noite que você quer começar do jeito certo.', cta: 'Reservar mesa', waSection: 'ocasioes' },
   { img: 'https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/p2.jpg', h: 220, bar: 'r', tag: '★ Celebração', title: 'Aniversário', text: 'Junta a galera, comemora com rock, chope gelado e uma experiência feita pro seu dia.', cta: 'Fazer aniversário aqui', href: '#aniversario' },
   { img: 'https://porks.nyc3.cdn.digitaloceanspaces.com/pessoas/p3.jpg', h: 220, bar: 'a', tag: '★ Turma reunida', title: 'Confraternização', text: 'Formatura, despedida, reencontro, amigo oculto ou resenha organizada.', cta: 'Reservar para grupo', href: '#grupos' },
 ]
@@ -22,7 +22,7 @@ function Card({ d, delay }) {
         <div className="oc-tag">{d.tag}</div>
         <div className="oc-title">{d.title}</div>
         <div className="oc-text">{d.text}</div>
-        <a href={d.href} className="oc-cta">{d.cta}</a>
+        <a href={d.waSection ? waLink(d.waSection) : d.href} className="oc-cta">{d.cta}</a>
       </div>
     </div>
   )

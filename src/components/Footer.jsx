@@ -1,4 +1,4 @@
-const WA = 'https://wa.me/5561935003917?text=Quero+fazer+minha+reserva'
+import { waLink } from '../utils/wa.js'
 
 export default function Footer() {
   return (
@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="frv">
           <div className="frv-lbl">Mais rápido</div>
           <div className="frv-title">RESERVAR PELO WHATSAPP</div>
-          <a href={WA} className="btn btn-amb btn-sm">⚡ Reservar</a>
+          <a href={waLink('footer')} className="btn btn-amb btn-sm">⚡ Reservar</a>
         </div>
         <div className="frv">
           <div className="frv-lbl">Fale com a gente</div>
@@ -27,14 +27,14 @@ export default function Footer() {
           <p>Show ao vivo quase toda noite, chope gelado, comida forte. Sobradinho, DF.</p>
           <div className="ft-socs">
             <a href="#" className="ft-soc">IG</a>
-            <a href={WA} className="ft-soc">WA</a>
+            <a href={waLink('footer')} className="ft-soc">WA</a>
             <a href="#" className="ft-soc">FB</a>
           </div>
         </div>
         <div className="ft-col">
           <h5>★ Reservas</h5>
           <ul>
-            <li><a href={WA}>WhatsApp</a></li>
+            <li><a href={waLink('footer')}>WhatsApp</a></li>
             <li><a href="#aniversario">Aniversário</a></li>
             <li><a href="#grupos">Grupos</a></li>
             <li><a href="#empresa">Corporativo</a></li>

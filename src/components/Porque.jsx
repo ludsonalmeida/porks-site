@@ -1,4 +1,4 @@
-const WA = 'https://wa.me/5561935003917?text=Quero+garantir+minha+mesa'
+import { waLink } from '../utils/wa.js'
 const reasons = [
   { n: '01', t: 'Sua mesa garantida', d: 'Sem fila, sem improviso. Você chega e já tem seu espaço.' },
   { n: '02', t: 'Mais organização pra galera', d: 'Turma toda junta, com tudo combinado antes de chegar.' },
@@ -28,7 +28,7 @@ export default function Porque() {
               </div>
             ))}
           </div>
-          <a href={WA} className="btn btn-amb rv d4">⚡ Garantir minha mesa</a>
+          <a href={waLink('porque')} className="btn btn-amb rv d4">⚡ Garantir minha mesa</a>
         </div>
       </div>
     </section>

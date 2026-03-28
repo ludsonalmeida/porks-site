@@ -1,4 +1,4 @@
-const WA = 'https://wa.me/5561935003917?text=Quero+fazer+uma+reserva+para+empresa'
+import { waLink } from '../utils/wa.js'
 const feats = [
   { ic: '🎸', t: 'Música ao vivo inclusa', d: 'Shows quase todas as noites — entretenimento sem custo extra.' },
   { ic: '📋', t: 'Reserva personalizada', d: 'Atendimento direto para planejar data, espaço e tamanho.' },
@@ -18,8 +18,8 @@ export default function Empresa() {
           </div>
           <p className="emp-p rv d2">Recepção de clientes, comemoração interna ou confraternização — com atendimento alinhado, reserva antecipada e a energia do Porks do seu lado.</p>
           <div className="emp-btns rv d3">
-            <a href={WA} className="btn btn-amb">⚡ Reservar evento</a>
-            <a href={WA} className="btn btn-outline">Falar com atendimento</a>
+            <a href={waLink('empresa')} className="btn btn-amb">⚡ Reservar evento</a>
+            <a href={waLink('empresa')} className="btn btn-outline">Falar com atendimento</a>
           </div>
         </div>
         <div className="emp-feats rv d2">

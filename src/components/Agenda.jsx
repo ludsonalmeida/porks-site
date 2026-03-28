@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import useInstagramAgenda from '../hooks/useInstagramAgenda'
 
-const WA = 'https://wa.me/5561935003917?text=Quero+fazer+minha+reserva'
+import { waLink } from '../utils/wa.js'
 const days = [
   { hot: true, day: '⚡ Sexta-feira · Show ao vivo', name: 'Rock ao Vivo', event: '🎸 Bandas toda sexta', desc: 'Show ao vivo sem couvert. Chega cedo e garante sua mesa.', price: 'Sem couvert', delay: 0 },
   { hot: true, day: '⚡ Sábado · Show ao vivo', name: 'Noite de Rock', event: '🎸 Bandas todo sábado', desc: 'Rock ao vivo a partir das 21h. Sem cobrança de entrada.', price: 'Sem couvert', delay: 1 },
@@ -66,7 +66,7 @@ export default function Agenda() {
             <div className="bebas" style={{fontSize:'clamp(2.5rem,5vw,4.2rem)',color:'var(--ink)',lineHeight:.9}}>VIU A AGENDA?</div>
             <div className="bebas" style={{fontSize:'clamp(2.5rem,5vw,4.2rem)',color:'var(--amb)',lineHeight:.9}}>RESERVA ANTES. ★</div>
           </div>
-          <a href={WA} className="btn btn-red rv">Ver disponibilidade →</a>
+          <a href={waLink('agenda')} className="btn btn-red rv">Ver disponibilidade →</a>
         </div>
       </div>
       <div className="ag-banner rv">
@@ -95,7 +95,7 @@ export default function Agenda() {
             </div>
             <div className="ag-bot">
               <div className="ag-price">{d.price}{d.sub && <small>{d.sub}</small>}</div>
-              <a href={WA} className="ag-link">Reservar →</a>
+              <a href={waLink('agenda')} className="ag-link">Reservar →</a>
             </div>
           </div>
         ))}

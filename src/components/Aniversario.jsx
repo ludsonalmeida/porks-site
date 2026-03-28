@@ -1,4 +1,4 @@
-const WA = 'https://wa.me/5561935003917?text=Quero+fazer+meu+anivers%C3%A1rio+no+Porks+Sobradinho'
+import { waLink } from '../utils/wa.js'
 const perks = [
   'Ideal para grupos de todos os tamanhos',
   'Show ao vivo quase toda noite',
@@ -29,7 +29,7 @@ export default function Aniversario() {
         <div className="aniv-perks rv d3">
           {perks.map(p => <div key={p} className="aniv-perk">{p}</div>)}
         </div>
-        <a href={WA} className="btn btn-amb btn-lg rv d4">⚡ Reservar meu aniversário</a>
+        <a href={waLink('aniversario')} className="btn btn-amb btn-lg rv d4">⚡ Reservar meu aniversário</a>
       </div>
     </section>
   )
