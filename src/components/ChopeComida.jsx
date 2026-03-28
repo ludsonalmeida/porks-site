@@ -1,7 +1,12 @@
-import { getBreweries } from '../utils/breweriesCards.js'
+import { useState, useEffect } from 'react'
+import { getBreweries, fetchBreweries } from '../utils/breweriesCards.js'
 
 export default function ChopeComida() {
-  const breweries = getBreweries().filter(b => b.name)
+  const [breweries, setBreweries] = useState(() => getBreweries().filter(b => b.name))
+
+  useEffect(() => {
+    fetchBreweries().then(items => setBreweries(items.filter(b => b.name)))
+  }, [])
   const items = [...breweries, ...breweries] // duplicate for seamless loop
 
   return (

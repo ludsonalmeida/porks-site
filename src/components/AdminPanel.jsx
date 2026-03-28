@@ -72,9 +72,9 @@ export default function AdminPanel() {
     setBrewUploading(u => ({ ...u, [id]: false }))
   }
 
-  function handleBrewSave(e) {
+  async function handleBrewSave(e) {
     e.preventDefault()
-    saveBreweries(brews.filter(b => b.name))
+    await saveBreweries(brews.filter(b => b.name), PASS)
     setBrewSaved(true)
     setTimeout(() => setBrewSaved(false), 3500)
   }

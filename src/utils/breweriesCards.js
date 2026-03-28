@@ -1,4 +1,5 @@
 const KEY = 'porks_breweries'
+const API = '/api/breweries'
 
 export const DEFAULT_BREWERIES = [
   { id: 1, name: 'Biomma', logo: 'https://assets.untappd.com/site/brewery_logos/brewery-483650_3f93a.jpeg' },
@@ -16,6 +17,24 @@ export function getBreweries() {
   return DEFAULT_BREWERIES
 }
 
-export function saveBreweries(items) {
+export async function fetchBreweries() {
+  try {
+    const res = await fetch(API, { cache: 'no-store' })
+    if (!res.ok) throw new Error('api')
+    const items = await res.json()
+    if (Array.isArray(items) && items.length > 0) {
+      localStorage.setItem(KEY, JSON.stringify(items))
+      return items
+    }
+  } catch (_) {}
+  return getBreweries()
+}
+
+export async function saveBreweries(items, pass) {
   localStorage.setItem(KEY, JSON.stringify(items))
+  await fetch(`${API}?pass=${encodeURIComponent(pass)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(items),
+  })
 }
