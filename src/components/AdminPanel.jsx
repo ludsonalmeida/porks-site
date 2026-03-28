@@ -104,9 +104,9 @@ export default function AdminPanel() {
     setUploading(u => ({ ...u, [id]: false }))
   }
 
-  function handleSave(e) {
+  async function handleSave(e) {
     e.preventDefault()
-    saveHeroCards(cards)
+    await saveHeroCards(cards, PASS)
     setSaved(true)
     setTimeout(() => setSaved(false), 3500)
   }

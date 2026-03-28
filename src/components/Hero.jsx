@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { waLink } from '../utils/wa.js'
-import { getHeroCards } from '../utils/heroCards.js'
+import { getHeroCards, fetchHeroCards } from '../utils/heroCards.js'
 
 const DAY_KEYWORDS = [
   'DOMINGO', 'SEGUNDA', 'TERCA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO', 'SÁBADO'
@@ -70,7 +70,12 @@ function HeroDeck() {
 }
 
 export default function Hero() {
-  const cards = getHeroCards()
+  const [cards, setCards] = useState(getHeroCards)
+
+  useEffect(() => {
+    fetchHeroCards().then(c => setCards(c))
+  }, [])
+
   const tapeIdx = cards.findIndex(c => c.tape)
 
   return (
