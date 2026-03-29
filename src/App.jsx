@@ -18,12 +18,14 @@ import Faq from './components/Faq'
 import Footer from './components/Footer'
 import Sticky from './components/Sticky'
 import WaFloat from './components/WaFloat'
+import PixelLoader from './components/PixelLoader'
 
 export default function App() {
   useReveal()
 
   return (
     <>
+      <PixelLoader />
       <SvgFilters />
       <Nav />
       {/* TOPO — Atração */}
