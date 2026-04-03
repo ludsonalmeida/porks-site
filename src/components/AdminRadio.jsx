@@ -4,19 +4,22 @@ const API = 'https://musica.sobradinhoporks.com.br/admin/api/remote'
 const CSV = 'https://musica.sobradinhoporks.com.br/admin/api/remote-csv'
 
 // ── Genre classifier ──────────────────────────────────────────────────────────
+// Normalize: strip accents + apostrophes for matching
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[''`]/g, '').toLowerCase()
+
 const GENRES = {
-  'rock nacional':   ['legião urbana','charlie brown jr','titãs','sepultura','raimundos','capital inicial','engenheiros do hawaii','paralamas','skank','jota quest','nando reis','los hermanos','fresno','supercombo','leall','a.c.e'],
-  'rock internacional': ['nirvana','system of a down','linkin park','metallica','red hot chili peppers','foo fighters','pearl jam','radiohead','the beatles','pink floyd','queen','acdc','guns n roses','iron maiden','avenged sevenfold','green day'],
-  'hip-hop / trap':  ['matuê','yago oproprio','lil peep','xxxtentacion','drake','travis scott','juice wrld','the weeknd','post malone','eminem','kanye west','kendrick lamar','j. cole','wc no beat','bk brj','outra vez','baco exu do blues','djonga','filipe ret','orochi','veigh'],
-  'r&b / soul':      ['sza','beyoncé','frank ocean','d\'angelo','alicia keys','john legend','miguel','h.e.r.','jorja smith','giveon','doja cat','ari lennox','summer walker'],
-  'mpb / sertanejo': ['chico buarque','caetano veloso','gilberto gil','maria bethânia','djavan','seu jorge','criolo','ana carolina','marisa monte','elba ramalho','roberto carlos','zé ramalho','geraldo azevedo','raul seixas'],
-  'pop':             ['taylor swift','ariana grande','billie eilish','olivia rodrigo','harry styles','ed sheeran','shawn mendes','camila cabello','selena gomez','dua lipa'],
+  'rock nacional':   ['legiao urbana','charlie brown jr','titas','sepultura','raimundos','capital inicial','engenheiros do hawaii','paralamas','skank','jota quest','nando reis','los hermanos','fresno','supercombo','a.c.e','pitty','detonautas','nx zero','cpm 22','o rappa','natiruts','cidade negra','cazuza','barao vermelho','ira','ultraje a rigor','plebe rude','biquini cavadao','planet hemp','cassia eller','ney matogrosso','patricio sid','febre90s'],
+  'rock internacional': ['nirvana','system of a down','linkin park','metallica','red hot chili peppers','foo fighters','pearl jam','radiohead','the beatles','pink floyd','queen','ac/dc','acdc','guns n roses','iron maiden','avenged sevenfold','green day','led zeppelin','deep purple','black sabbath','whitesnake','van halen','bon jovi','def leppard','scorpions','ozzy','motorhead','judas priest','alice in chains','soundgarden','rage against','arctic monkeys','the strokes','muse','oasis','u2','the who','jimi hendrix','aerosmith','kiss','the offspring','blink-182','blink 182','sum 41','limp bizkit','creed','slipknot','ramones','deftones','audioslave','korn','silverchair','nickelback','thirty seconds to mars','disturbed','jeff buckley','tina turner','cyndi lauper','kaleo','the neighbourhood','twenty one pilots','gorillaz','the calling','chase atlantic'],
+  'hip-hop / trap':  ['matue','yago oproprio','lil peep','xxxtentacion','drake','travis scott','juice wrld','the weeknd','post malone','eminem','kanye west','kendrick lamar','j. cole','wc no beat','bk brj','outra vez','baco exu do blues','djonga','filipe ret','orochi','veigh','racionais','mano brown','sabotage','criolo','nognog','teto','mc poze','mc ryan','leall','marcelo d2','black alien','conecrew','froid','sant','pecaos'],
+  'r&b / soul':      ['sza','beyonce','frank ocean','dangelo','alicia keys','john legend','miguel','h.e.r.','jorja smith','giveon','doja cat','ari lennox','summer walker','tim maia','jorge ben','jorge ben jor','steve lacy','amy winehouse','willow'],
+  'mpb / sertanejo': ['chico buarque','caetano veloso','gilberto gil','maria bethania','djavan','seu jorge','ana carolina','marisa monte','elba ramalho','roberto carlos','ze ramalho','geraldo azevedo','raul seixas','novos baianos','alceu valenca','belchior','gonzaguinha','luiz gonzaga','milton nascimento','elis regina','gal costa','tom jobim','vinicius de moraes','chitaozinho','jorge e mateus','jorge & mateus'],
+  'pop':             ['taylor swift','ariana grande','billie eilish','olivia rodrigo','harry styles','ed sheeran','shawn mendes','camila cabello','selena gomez','dua lipa','bruno mars','miley cyrus','lady gaga','katy perry','rihanna','adele','coldplay','imagine dragons','maroon 5','one republic','onerepublic','the anxiety'],
 }
 
 function classifyGenres(topArtists) {
   const scores = {}
   for (const a of topArtists) {
-    const artist = (Array.isArray(a) ? a[0] : a.artist || '').toLowerCase()
+    const artist = norm(Array.isArray(a) ? a[0] : a.artist || '')
     const count  = Array.isArray(a) ? a[1] : (a.count || 1)
     for (const [genre, list] of Object.entries(GENRES)) {
       if (list.some(g => artist.includes(g) || g.includes(artist.split(' ')[0]))) {
@@ -30,6 +33,110 @@ function classifyGenres(topArtists) {
 function peakHours(hourCount) {
   const sorted = Object.entries(hourCount).sort((a, b) => Number(b[1]) - Number(a[1]))
   return sorted.slice(0, 3).map(([h]) => `${h}h`)
+}
+
+// ── Repertoire recommendations ───────────────────────────────────────────────
+const BAND_RECS = {
+  'rock nacional': {
+    cover: ['Legião Urbana','Capital Inicial','Paralamas do Sucesso','Titãs','Engenheiros do Hawaii','Charlie Brown Jr','Raimundos','Barão Vermelho','Skank','Nando Reis'],
+    style: 'Rock nacional clássico e anos 90/2000. Público quer cantar junto — priorize hits conhecidos.',
+    setlistTip: 'Abra com energia (Raimundos/CBJR), meio com clássicos emocionantes (Legião/Capital), feche com singalong (Paralamas/Skank).',
+    energy: 'média-alta',
+    audience: '25-45 anos, nostálgico, cresceu com MTV Brasil e rádio rock. Bebe cerveja artesanal ou long neck, vai em grupo de amigos. Canta junto e se emociona com clássicos. Fiel — volta toda semana se o repertório agradar.',
+  },
+  'rock internacional': {
+    cover: ['Nirvana','Foo Fighters','Red Hot Chili Peppers','Pearl Jam','Linkin Park','Green Day','System of a Down','Queens of the Stone Age','Arctic Monkeys','The Strokes'],
+    style: 'Rock alternativo/grunge dos anos 90-2000. Público curte peso mas também melodia.',
+    setlistTip: 'Intercale peso (SOAD/Metallica) com grooves (RHCP/Foo Fighters). Encerre com Nirvana — sempre funciona.',
+    energy: 'alta',
+    audience: '22-40 anos, headbanger casual. Usa camiseta de banda, toma chopp ou whisky. Gosta de volume alto e guitarra distorcida. Fica até fechar e pede bis. Vem sozinho ou em dupla, não precisa de grupo pra curtir.',
+  },
+  'hip-hop / trap': {
+    cover: ['Matuê','Yago Oproprio','Filipe Ret','Veigh','Orochi','WC no Beat','BK','Baco Exu do Blues','Djonga','Racionais'],
+    style: 'Trap/rap BR domina. Público jovem, curte beat pesado e autotune. Shows de rap/trap ou DJ sets com vocal.',
+    setlistTip: 'DJ set com transições rápidas entre hits. Matuê e Veigh são unanimidade. Misture com trap gringo nos intervalos.',
+    energy: 'alta',
+    audience: '18-28 anos, geração Z/millennial tardio. Consome via Spotify e TikTok. Bebe drink ou cerveja barata, fica no celular filmando. Público rotativo — vem pela vibe, não pela fidelidade. Responde bem a promoções e eventos temáticos.',
+  },
+  'r&b / soul': {
+    cover: ['SZA','Frank Ocean','The Weeknd','Beyoncé','D\'Angelo','Jorja Smith','Giveon','H.E.R.','Alicia Keys','Erykah Badu'],
+    style: 'R&B contemporâneo com raízes soul. Público sofisticado, curte vibe mais intimista.',
+    setlistTip: 'Comece suave (Frank Ocean/Giveon), suba gradualmente (SZA/Beyoncé). Ótimo pra noites mais chill.',
+    energy: 'média-baixa',
+    audience: '22-35 anos, urbano e antenado. Curte estética, vai bem vestido. Prefere cocktail ou vinho. Público de casal ou grupo pequeno. Valoriza ambiente e iluminação tanto quanto a música. Bom pra noites de quarta/quinta.',
+  },
+  'mpb / sertanejo': {
+    cover: ['Djavan','Seu Jorge','Criolo','Raul Seixas','Zé Ramalho','Gilberto Gil','Caetano Veloso','Tim Maia','Jorge Ben Jor','Novos Baianos'],
+    style: 'MPB raiz com pegada brasileira forte. Público valoriza qualidade musical e letra.',
+    setlistTip: 'Tim Maia e Jorge Ben Jor esquentam qualquer pista. Raul Seixas é coringa. Djavan pra momentos mais suaves.',
+    energy: 'média',
+    audience: '30-55 anos, público raiz brasileiro. Entende de música, valoriza letra e harmonia. Bebe cachaça premium, vinho ou chopp. Fica sentado conversando e prestando atenção na banda. Ticket médio alto — consome mais e reclama menos.',
+  },
+  'pop': {
+    cover: ['Dua Lipa','Harry Styles','Taylor Swift','Billie Eilish','Olivia Rodrigo','The Weeknd','Bruno Mars','Ed Sheeran','Ariana Grande','Miley Cyrus'],
+    style: 'Pop mainstream global. Público eclético, funciona bem como ponte entre gêneros.',
+    setlistTip: 'Use como transição entre blocos de rock e rap. Bruno Mars e Dua Lipa são universais.',
+    energy: 'média-alta',
+    audience: '18-35 anos, generalista. Não é fã de um gênero específico — vai pelo hit do momento. Público de aniversário, rolê casual e primeiro encontro. Bebe de tudo, fica em grupo grande. Bom pra lotar em noites fracas.',
+  },
+}
+
+function generateRepertoire(data) {
+  const { topArtists = [], topTracks = [], stats = {}, totalAll = 0 } = data
+  const genreRanking = classifyGenres(topArtists)
+  if (genreRanking.length === 0) return null
+
+  const classifiedTotal = genreRanking.reduce((s, [, c]) => s + c, 0)
+  const recs = []
+
+  // All genres get recommendations
+  for (let i = 0; i < genreRanking.length; i++) {
+    const [genre, count] = genreRanking[i]
+    const pct = classifiedTotal > 0 ? Math.round((count / classifiedTotal) * 100) : 0
+    const rec = BAND_RECS[genre]
+    if (!rec) continue
+
+    // Find which artists from this genre were actually requested
+    const genreArtists = GENRES[genre] || []
+    const requestedFromGenre = topArtists
+      .filter(a => {
+        const name = norm(Array.isArray(a) ? a[0] : a.artist || '')
+        return genreArtists.some(g => name.includes(g) || g.includes(name.split(' ')[0]))
+      })
+      .map(a => ({
+        name: Array.isArray(a) ? a[0] : a.artist,
+        count: Array.isArray(a) ? a[1] : (a.count || 1),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+
+    // Suggest cover bands that match but weren't requested (discovery)
+    const requestedNames = requestedFromGenre.map(a => a.name.toLowerCase())
+    const discovery = rec.cover.filter(b => !requestedNames.some(r => b.toLowerCase().includes(r) || r.includes(b.toLowerCase())))
+      .slice(0, 4)
+
+    recs.push({
+      genre,
+      pct,
+      rank: i + 1,
+      style: rec.style,
+      setlistTip: rec.setlistTip,
+      energy: rec.energy,
+      audience: rec.audience,
+      requested: requestedFromGenre,
+      discovery,
+      allCovers: rec.cover,
+    })
+  }
+
+  // Must-play songs (approved + duplicates = high demand)
+  const mustPlay = topTracks.slice(0, 6).map(t => {
+    const name = Array.isArray(t) ? t[0] : (t.trackName || '')
+    const count = Array.isArray(t) ? t[1] : (t.count || 0)
+    return { name, count }
+  })
+
+  return { recs, mustPlay, genreRanking }
 }
 
 function generateInsights(data) {
@@ -150,6 +257,7 @@ export default function AdminRadio({ pass }) {
 
   // hooks must be before any early returns
   const insights = useMemo(() => generateInsights(data || {}), [data])
+  const repertoire = useMemo(() => generateRepertoire(data || {}), [data])
 
   if (loading && !data) return (
     <div style={R.loading}>
@@ -227,6 +335,235 @@ export default function AdminRadio({ pass }) {
           ))}
         </div>
       )}
+
+      {/* Repertoire Recommendations */}
+      {repertoire && repertoire.recs.length > 0 && (() => {
+        const topRecs = repertoire.recs.filter(r => r.rank <= 3)
+        const otherRecs = repertoire.recs.filter(r => r.rank > 3)
+        const totalClassified = repertoire.genreRanking.reduce((s, [, c]) => s + c, 0)
+        return (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: SYS, fontSize: '.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: INK, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+            🎤 RECOMENDAÇÕES DE REPERTÓRIO
+          </div>
+          <div style={{ fontFamily: SYS, fontSize: '.78rem', color: MUTED, marginBottom: 16, lineHeight: 1.5 }}>
+            Análise baseada em <strong>{totalClassified} pedidos classificados</strong> em {repertoire.genreRanking.length} gêneros. Os percentuais refletem a proporção real de cada gênero sobre o total de pedidos identificados.
+          </div>
+
+          {/* Must-play setlist */}
+          {repertoire.mustPlay.length > 0 && (
+            <div style={{ background: '#1a1a1a', border: `2px solid ${AMB}`, padding: 20, marginBottom: 20, boxShadow: `4px 4px 0 ${CREAM2}` }}>
+              <div style={{ fontFamily: SYS, fontSize: '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: AMB, marginBottom: 12 }}>
+                🔥 SETLIST OBRIGATÓRIA — Músicas que o público MAIS pede
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {repertoire.mustPlay.map((t, i) => (
+                  <div key={i} style={{ background: i < 3 ? AMB : '#333', color: i < 3 ? '#fff' : CREAM, padding: '8px 14px', fontFamily: SYS, fontSize: '.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, borderRadius: 4 }}>
+                    <span style={{ fontSize: '.7rem', opacity: .7 }}>#{i+1}</span>
+                    {t.name.includes(' — ') ? t.name.split(' — ')[0] : t.name}
+                    <span style={{ fontSize: '.7rem', fontWeight: 400, opacity: .6 }}>{t.count}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TOP 3 Section */}
+          <div style={{ fontFamily: SYS, fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: AMB, marginBottom: 10 }}>
+            🏆 TOP 3 — GÊNEROS DOMINANTES
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 14, marginBottom: 24 }}>
+            {topRecs.map((rec) => (
+              <div key={rec.genre} style={{
+                background: rec.rank === 1 ? '#fff8ee' : CREAM,
+                border: `2px solid ${rec.rank === 1 ? AMB : INK}`,
+                padding: 18,
+                boxShadow: rec.rank === 1 ? `4px 4px 0 #e8d4b0` : `3px 3px 0 ${CREAM2}`,
+                position: 'relative',
+              }}>
+                {/* Rank badge */}
+                <div style={{
+                  position: 'absolute', top: -10, left: 14,
+                  background: rec.rank === 1 ? AMB : rec.rank === 2 ? '#78909c' : '#8d6e63',
+                  color: '#fff', fontFamily: SYS, fontSize: '.65rem', fontWeight: 700,
+                  padding: '2px 10px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: '.05em',
+                }}>
+                  {rec.rank === 1 ? '👑 #1 DOMINANTE' : rec.rank === 2 ? '🥈 #2' : '🥉 #3'}
+                </div>
+
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, marginTop: 6 }}>
+                  <div style={{ fontFamily: SYS, fontSize: rec.rank === 1 ? '.85rem' : '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: rec.rank === 1 ? AMB : INK }}>
+                    {rec.genre}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontFamily: SYS, fontSize: rec.rank === 1 ? '.85rem' : '.7rem', fontWeight: 700, color: rec.rank === 1 ? AMB : MUTED }}>{rec.pct}%</span>
+                    <span style={{ fontFamily: SYS, fontSize: '.65rem', fontWeight: 700, color: '#fff', background: rec.energy === 'alta' ? '#c62828' : rec.energy === 'média-alta' ? AMB : rec.energy === 'média' ? '#1565c0' : '#546e7a', padding: '2px 8px', borderRadius: 3, textTransform: 'uppercase' }}>
+                      {rec.energy}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Style description */}
+                <div style={{ fontFamily: SYS, fontSize: '.85rem', color: INK, lineHeight: 1.5, marginBottom: 12, padding: '8px 10px', background: 'rgba(0,0,0,.04)', borderLeft: `3px solid ${rec.rank === 1 ? AMB : MUTED}` }}>
+                  {rec.style}
+                </div>
+
+                {/* Most requested from genre */}
+                {rec.requested.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontFamily: SYS, fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: MUTED, marginBottom: 6 }}>
+                      Artistas mais pedidos
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {rec.requested.map(a => (
+                        <span key={a.name} style={{ fontFamily: SYS, fontSize: '.78rem', fontWeight: 600, background: INK, color: CREAM, padding: '3px 10px', borderRadius: 3 }}>
+                          {a.name} <span style={{ fontSize: '.65rem', opacity: .6 }}>{a.count}x</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Audience profile */}
+                {rec.audience && (
+                  <div style={{ marginBottom: 12, padding: '10px 12px', background: 'rgba(46,28,8,.06)', borderRadius: 4, border: `1px solid ${CREAM2}` }}>
+                    <div style={{ fontFamily: SYS, fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: AMB, marginBottom: 6 }}>
+                      👥 Perfil do público
+                    </div>
+                    <div style={{ fontFamily: SYS, fontSize: '.8rem', color: INK, lineHeight: 1.5 }}>
+                      {rec.audience}
+                    </div>
+                  </div>
+                )}
+
+                {/* Discovery / cover suggestions */}
+                {rec.discovery.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontFamily: SYS, fontSize: '.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: AMB, marginBottom: 6 }}>
+                      💡 Bandas recomendadas pra cover/show
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {rec.discovery.map(b => (
+                        <span key={b} style={{ fontFamily: SYS, fontSize: '.78rem', fontWeight: 500, background: '#fff', border: `1.5px solid ${AMB}`, color: INK, padding: '3px 10px', borderRadius: 3 }}>
+                          {b}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Setlist tip */}
+                <div style={{ fontFamily: SYS, fontSize: '.82rem', color: INK, lineHeight: 1.5, padding: '8px 10px', background: rec.rank === 1 ? 'rgba(204,106,10,.08)' : 'rgba(0,0,0,.03)', borderRadius: 4 }}>
+                  <strong style={{ color: AMB }}>Dica de setlist:</strong> {rec.setlistTip}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* OTHER GENRES Section */}
+          {otherRecs.length > 0 && (
+            <>
+              <div style={{ fontFamily: SYS, fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: MUTED, marginBottom: 10 }}>
+                📊 DEMAIS GÊNEROS — Presença menor mas relevante
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 10, marginBottom: 20 }}>
+                {otherRecs.map((rec) => (
+                  <div key={rec.genre} style={{
+                    background: CREAM, border: `1.5px solid ${CREAM2}`, padding: 14,
+                    opacity: 0.85,
+                  }}>
+                    {/* Header compact */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ fontFamily: SYS, fontSize: '.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', color: MUTED }}>
+                        #{rec.rank} {rec.genre}
+                      </div>
+                      <span style={{ fontFamily: SYS, fontSize: '.7rem', fontWeight: 600, color: MUTED }}>{rec.pct}%</span>
+                    </div>
+
+                    {/* Style - compact */}
+                    <div style={{ fontFamily: SYS, fontSize: '.8rem', color: INK, lineHeight: 1.4, marginBottom: 10, padding: '6px 8px', background: 'rgba(0,0,0,.03)', borderLeft: `2px solid ${CREAM2}` }}>
+                      {rec.style}
+                    </div>
+
+                    {/* Requested artists */}
+                    {rec.requested.length > 0 && (
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontFamily: SYS, fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', color: MUTED, marginBottom: 4 }}>Pedidos</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                          {rec.requested.map(a => (
+                            <span key={a.name} style={{ fontFamily: SYS, fontSize: '.72rem', fontWeight: 600, background: '#e8dcc6', color: INK, padding: '2px 8px', borderRadius: 3 }}>
+                              {a.name} <span style={{ fontSize: '.6rem', opacity: .5 }}>{a.count}x</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Discovery compact */}
+                    {rec.discovery.length > 0 && (
+                      <div>
+                        <div style={{ fontFamily: SYS, fontSize: '.65rem', fontWeight: 700, textTransform: 'uppercase', color: MUTED, marginBottom: 4 }}>Sugestões</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                          {rec.discovery.map(b => (
+                            <span key={b} style={{ fontFamily: SYS, fontSize: '.72rem', fontWeight: 500, background: '#fff', border: `1px solid ${CREAM2}`, color: MUTED, padding: '2px 8px', borderRadius: 3 }}>
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Setlist tip compact */}
+                    <div style={{ fontFamily: SYS, fontSize: '.75rem', color: MUTED, lineHeight: 1.4, marginTop: 8, fontStyle: 'italic' }}>
+                      {rec.setlistTip}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary analysis */}
+              <div style={{ background: '#1a1a1a', border: `2px solid ${INK}`, padding: 18, boxShadow: `3px 3px 0 ${CREAM2}` }}>
+                <div style={{ fontFamily: SYS, fontSize: '.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: AMB, marginBottom: 10 }}>
+                  📋 ANÁLISE GERAL DO PERFIL MUSICAL
+                </div>
+                <div style={{ fontFamily: SYS, fontSize: '.85rem', color: CREAM, lineHeight: 1.6 }}>
+                  {repertoire.genreRanking.map(([genre, count], i) => {
+                    const pct = totalClassified > 0 ? Math.round((count / totalClassified) * 100) : 0
+                    return (
+                      <div key={genre} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{ fontFamily: SYS, fontSize: '.7rem', fontWeight: 700, color: i < 3 ? AMB : '#78909c', minWidth: 28 }}>#{i+1}</span>
+                        <span style={{ flex: 1, fontWeight: i < 3 ? 700 : 400, color: i < 3 ? '#fff' : '#aaa' }}>{genre}</span>
+                        <div style={{ width: 120, height: 8, background: '#333', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', background: i === 0 ? AMB : i < 3 ? '#78909c' : '#555', borderRadius: 4 }} />
+                        </div>
+                        <span style={{ fontFamily: SYS, fontSize: '.75rem', fontWeight: 600, color: i < 3 ? AMB : '#888', minWidth: 40, textAlign: 'right' }}>{pct}%</span>
+                      </div>
+                    )
+                  })}
+                  <div style={{ marginTop: 14, padding: '10px 12px', background: 'rgba(204,106,10,.1)', borderRadius: 4, fontSize: '.82rem', lineHeight: 1.6, color: '#ddd' }}>
+                    <strong style={{ color: AMB }}>Conclusão:</strong>{' '}
+                    {(() => {
+                      const [g1] = repertoire.genreRanking
+                      const rockTotal = repertoire.genreRanking
+                        .filter(([g]) => g.includes('rock'))
+                        .reduce((s, [, c]) => s + c, 0)
+                      const rockPct = totalClassified > 0 ? Math.round((rockTotal / totalClassified) * 100) : 0
+                      const nonRock = repertoire.genreRanking.filter(([g]) => !g.includes('rock'))
+                      if (rockPct >= 70) {
+                        return `O público é ${rockPct}% rock (nacional + internacional). ${nonRock.length > 0 ? `Os ${100-rockPct}% restantes (${nonRock.map(([g]) => g).join(', ')}) representam pedidos pontuais — vale ter no repertório como coringa mas sem dominar o setlist.` : 'Perfil muito coeso — mantenha o foco em rock.'}`
+                      } else {
+                        return `Perfil eclético. ${g1[0]} lidera mas não domina — considere sets variados que transitem entre os gêneros.`
+                      }
+                    })()}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        )
+      })()}
 
       {/* Charts */}
       <div style={R.charts}>
