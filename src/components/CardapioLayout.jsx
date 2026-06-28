@@ -525,6 +525,17 @@ function CardapioInner() {
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // --- Modal promocional: Roleta Na Praia Festival ---
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const closeRoulette = () => {
+    setRouletteOpen(false);
+  };
+  const goRoulette = () => {
+    closeRoulette();
+    try { window.open('https://roleta.sobradinhoporks.com.br', '_blank', 'noopener,noreferrer'); }
+    catch { window.location.href = 'https://roleta.sobradinhoporks.com.br'; }
+  };
+
   // --- Avaliação de atendimento ---
   const [avalieOpen, setAvalieOpen] = useState(false);
   const [avalieAnswers, setAvalieAnswers] = useState({});
@@ -640,6 +651,12 @@ function CardapioInner() {
   }, []);
 
   useEffect(() => { const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }, []);
+
+  // Convite da roleta (Na Praia Festival) — abre a CADA carregamento do cardápio.
+  useEffect(() => {
+    const t = setTimeout(() => setRouletteOpen(true), 1400);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (nav !== 'inicio') return;
@@ -1680,6 +1697,71 @@ function CardapioInner() {
           AVALIE
         </Button>
       )}
+
+      {/* ── Modal promocional — Roleta Na Praia Festival ── */}
+      <Modal open={rouletteOpen} onClose={closeRoulette} aria-labelledby="roleta-title" sx={{ zIndex: 21000 }}>
+        <Box sx={{
+          position: 'absolute', left: '50%', top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: { xs: '90%', sm: 420 },
+          bgcolor: '#fff', color: palette.textPrimary,
+          borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.32)',
+          overflow: 'hidden',
+        }}>
+          {/* Header festivo */}
+          <Box sx={{ position: 'relative', bgcolor: '#000', color: '#fff', px: 3, pt: 3, pb: 2.5, textAlign: 'center' }}>
+            <IconButton onClick={closeRoulette} size="small" aria-label="fechar" sx={{ position: 'absolute', top: 8, right: 8, color: 'rgba(255,255,255,.9)' }}>
+              <CloseIcon />
+            </IconButton>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Box
+                component="img"
+                src="https://napraiafestival.r2.com.vc/assets/logo-napraia-AkKHDZWz.png"
+                alt="Na Praia Festival"
+                sx={{ height: 92, width: 'auto', maxWidth: '80%', objectFit: 'contain' }}
+              />
+            </Box>
+            <Box sx={{ display: 'inline-block', mt: 1.25, px: 1.5, py: .4, borderRadius: 999, bgcolor: 'rgba(255,255,255,.18)', fontSize: 10.5, fontWeight: 900, letterSpacing: .6 }}>
+              PARCEIRO OFICIAL · NA PRAIA FESTIVAL 2026
+            </Box>
+          </Box>
+
+          {/* Corpo */}
+          <Box sx={{ px: 3, py: 2.5, textAlign: 'center' }}>
+            <Typography id="roleta-title" sx={{ fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400, fontSize: 21, color: palette.headerGreen, lineHeight: 1.15, mb: 1.25 }}>
+              Quer ganhar uma cortesia?
+            </Typography>
+            <Typography sx={{ fontSize: 15, color: palette.textPrimary, lineHeight: 1.5, mb: 1 }}>
+              Cortesias pra <b>shows</b> ou <b>Day Use</b> no Na Praia Festival. Tente a sorte na roleta!
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: palette.textMuted, mb: 1.5 }}>
+              Sujeita a verificação de disponibilidade do dia escolhido.
+            </Typography>
+            <Typography sx={{ fontSize: 12.5, color: palette.headerGreen, fontWeight: 800, mb: 2.25 }}>
+              🏖️ Somos o único Porks parceiro oficial do Na Praia Festival 2026.
+            </Typography>
+
+            <Button
+              onClick={goRoulette}
+              fullWidth
+              variant="contained"
+              sx={{
+                bgcolor: '#000', color: '#fff', '&:hover': { bgcolor: '#222', color: '#fff' },
+                borderRadius: 999, fontWeight: 900, fontSize: 16, py: 1.25,
+                textTransform: 'none', boxShadow: '0 8px 24px rgba(0,0,0,.4)',
+              }}
+            >
+              🎡 Girar a roleta
+            </Button>
+            <Button
+              onClick={closeRoulette}
+              sx={{ mt: 1, borderRadius: 999, textTransform: 'none', fontWeight: 700, color: '#8A8A8A' }}
+            >
+              Agora não
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* ── Modal de Avaliação de Atendimento ── */}
       <Modal open={avalieOpen} onClose={closeAvalie} aria-labelledby="avalie-title">
