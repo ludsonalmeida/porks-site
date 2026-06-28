@@ -19,6 +19,8 @@ import {
   Button,
   Rating,
   Modal,
+  TextField,
+  Autocomplete,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import AcquisitionMachine from "../components/AcquisitionMachine";
@@ -34,6 +36,8 @@ import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
 import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
+import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import {
   initialItems,
   initialPromos,
@@ -57,9 +61,30 @@ const palette = {
   promoFg: '#C63830',
 };
 
+// Campos do modal de avaliação vivem em fundo branco, mas o tema é dark.
+// Forçamos cores legíveis (texto/label/placeholder/bordas escuros).
+const avalieFieldSX = {
+  '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#fff' },
+  '& .MuiInputBase-input': { color: '#12100B' },
+  '& .MuiInputBase-input::placeholder': { color: '#8A8A8A', opacity: 1 },
+  '& textarea::placeholder': { color: '#8A8A8A', opacity: 1 },
+  '& .MuiInputLabel-root': { color: '#5F5F5F' },
+  '& .MuiInputLabel-root.Mui-focused': { color: '#E6564F' },
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#D8D2C6' },
+  '&:hover .MuiOutlinedInput-root:not(.Mui-focused) .MuiOutlinedInput-notchedOutline': { borderColor: '#B9B2A3' },
+  '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#E6564F' },
+  '& .MuiFormHelperText-root': { color: '#8A8A8A' },
+};
+
 const SIZES = { thumb: 104, actionsCol: 44, actionsFav: 128, title: 16, price: 14.5 };
 const NAV_H = 'calc(64px + env(safe-area-inset-bottom))';
 const SINGLE_UNIT = 'Sobradinho, Distrito Federal';
+
+// Engine Porks — destino da pesquisa CSAT/NPS. Configure no .env do cardápio:
+//   VITE_ENGINE_PORKS_URL=https://engine.sobradinhoporks.com.br
+//   VITE_ENGINE_PORKS_CSAT_TOKEN=eng_pub_xxx   (token de "Captura de leads" do engine)
+const ENGINE_PORKS_URL = (import.meta.env?.VITE_ENGINE_PORKS_URL || '').replace(/\/$/, '');
+const ENGINE_PORKS_CSAT_TOKEN = import.meta.env?.VITE_ENGINE_PORKS_CSAT_TOKEN || '';
 
 // --- Feature flag para Promoções ---
 function readPromosEnabled() {
@@ -86,6 +111,20 @@ const REVIEW_URLS = [
   `https://www.google.com/maps?cid=${GOOGLE_REVIEW_CID}&hl=pt-BR`,
   `https://www.google.com.br/maps?cid=${GOOGLE_REVIEW_CID}&hl=pt-BR`,
 ];
+
+// --- Avaliação de atendimento ---
+// Perguntas de nota (estrelas de 1 a 5), na ordem de exibição.
+const AVALIE_RATINGS = [
+  { id: 'atendimento', label: 'Você foi bem atendido pelo balcão/externo?' },
+  { id: 'chope', label: 'Como estava a qualidade ou ponto do Chope/Cerveja?' },
+];
+
+// Nomes dos itens do cardápio (pratos, drinks e promos) para o autocomplete de "o que consumiu".
+const MENU_ITEM_NAMES = Array.from(new Set(
+  [...initialItems, ...initialDrinks, ...initialPromos]
+    .map(i => i?.title)
+    .filter(Boolean)
+)).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
 function GoogleGlyph({ size = 22 }) {
   return (
@@ -234,6 +273,54 @@ const StarRating = React.memo(function StarRating({ name, value, onChange }) {
     />
   );
 });
+
+/* ---- Estrelas com hint (Ruim → Neutro → Excelente) ---- */
+const RATING_HINTS = { 1: 'Ruim', 2: 'Fraco', 3: 'Neutro', 4: 'Bom', 5: 'Excelente' };
+function RatingWithHint({ name, value, onChange }) {
+  const [hover, setHover] = useState(-1);
+  const display = hover !== -1 ? hover : (Number(value) || 0);
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <Rating
+        name={name}
+        value={Number(value) || 0}
+        onChange={(_, v) => onChange(v || 0)}
+        onChangeActive={(_, h) => setHover(h)}
+        sx={{
+          '& .MuiRating-iconFilled': { color: '#FFC107' },
+          '& .MuiRating-iconHover': { color: '#FFB300' },
+          '& .MuiRating-iconEmpty': { color: '#E6E6E6' },
+          '& .MuiRating-icon': { fontSize: 40, padding: '2px' },
+        }}
+      />
+      {/* Hint fixo abaixo das estrelas (visível no toque, sem depender de hover) */}
+      <Box
+        sx={{
+          mt: .5, height: 24,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          px: display > 0 ? 1.25 : 0,
+          borderRadius: 999,
+          bgcolor: display > 0 ? '#FFF3F2' : 'transparent',
+          transition: 'all .15s',
+        }}
+      >
+        <Typography sx={{ fontWeight: 800, fontSize: 13.5, color: display > 0 ? '#E6564F' : '#9AA0A6' }}>
+          {display > 0 ? RATING_HINTS[display] : 'Toque nas estrelas para avaliar'}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/* ---- Etapas do formulário de avaliação ---- */
+const AVALIE_STEPS = [
+  { key: 'id', title: 'Identificação' },
+  { key: 'atendimento', title: 'Atendimento e bebida' },
+  { key: 'consumo', title: 'Consumo' },
+  { key: 'ambiente', title: 'Ambiente e música' },
+  { key: 'recomendacao', title: 'Recomendação' },
+  { key: 'desconto', title: 'Desconto exclusivo' },
+];
 
 /* ---- SKELETONS ---- */
 const RowSkeleton = () => (
@@ -437,6 +524,72 @@ function CardapioInner() {
   const [notice, setNotice] = useState(null);
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // --- Avaliação de atendimento ---
+  const [avalieOpen, setAvalieOpen] = useState(false);
+  const [avalieAnswers, setAvalieAnswers] = useState({});
+  const [avalieSent, setAvalieSent] = useState(false);
+  const [avalieStep, setAvalieStep] = useState(0);
+  const setAvalieAnswer = (qid, val) =>
+    setAvalieAnswers(prev => ({ ...prev, [qid]: val }));
+  const openAvalie = () => {
+    // Captura automática de data/horário da visita (não exibido ao usuário)
+    setAvalieAnswers(prev => ({ ...prev, visitadoEm: new Date().toISOString() }));
+    setAvalieStep(0);
+    setAvalieOpen(true);
+  };
+  const closeAvalie = () => {
+    setAvalieOpen(false);
+    setTimeout(() => { setAvalieSent(false); setAvalieAnswers({}); setAvalieStep(0); }, 250);
+  };
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(avalieAnswers.email || '').trim());
+  const avaliePodeEnviar =
+    String(avalieAnswers.nome || '').trim().length >= 2 && emailValido;
+  const totalAvalieSteps = AVALIE_STEPS.length;
+  const isLastAvalieStep = avalieStep === totalAvalieSteps - 1;
+  const avalieNext = () => {
+    if (avalieStep === 0 && !avaliePodeEnviar) return;
+    setAvalieStep(s => Math.min(s + 1, totalAvalieSteps - 1));
+  };
+  const avalieBack = () => setAvalieStep(s => Math.max(s - 1, 0));
+  const submitAvalie = () => {
+    if (!avaliePodeEnviar) return;
+    // Envia pro Engine Porks (CSAT & NPS). Fire-and-forget: a UX não trava nem
+    // falha se o backend estiver fora — a tela de "obrigado" aparece sempre.
+    try {
+      if (ENGINE_PORKS_URL && ENGINE_PORKS_CSAT_TOKEN) {
+        const a = avalieAnswers;
+        const payload = {
+          token: ENGINE_PORKS_CSAT_TOKEN,
+          nome: a.nome,
+          email: a.email,
+          telefone: a.querDesconto ? (a.telefone || null) : null,
+          nascimento: a.querDesconto ? (a.nascimento || null) : null,
+          visitadoEm: a.visitadoEm || null,
+          atendimento: a.atendimento || null,
+          chope: a.chope || null,
+          comida: a.comida || null,
+          comidaItem: a.comidaItem || null,
+          comidaQualidade: a.comidaQualidade || null,
+          ambiente: a.ambiente || null,
+          sabiaMusica: a.sabiaMusica || null,
+          recomenda: a.recomenda || null,
+          comentario: a.comentario || null,
+          querDesconto: !!a.querDesconto,
+          source_url: typeof window !== 'undefined' ? window.location.href : null,
+        };
+        fetch(ENGINE_PORKS_URL + '/api/track/csat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          keepalive: true,
+          mode: 'cors',
+          credentials: 'omit',
+        }).catch(() => {});
+      }
+    } catch { /* noop */ }
+    setAvalieSent(true);
+  };
 
   const [propsMarked, setPropsMarked] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cardapio/propsMarked') || '{}'); } catch { return {}; }
@@ -1494,6 +1647,406 @@ function CardapioInner() {
                 >
                   Fechar
                 </Button>
+              </Box>
+            </>
+          )}
+        </Box>
+      </Modal>
+
+      {/* ── Botão flutuante AVALIE ── */}
+      {nav !== 'musica' && !detail && !searchOpen && (
+        <Button
+          onClick={openAvalie}
+          startIcon={<RateReviewRoundedIcon />}
+          aria-label="Avaliar atendimento"
+          sx={{
+            position: 'fixed',
+            left: 14,
+            bottom: `calc(${NAV_H} + 14px)`,
+            zIndex: 1200,
+            px: 2,
+            py: 1,
+            borderRadius: 999,
+            bgcolor: palette.bannerRed,
+            color: '#fff',
+            fontWeight: 900,
+            textTransform: 'none',
+            letterSpacing: .3,
+            boxShadow: '0 6px 20px rgba(230,86,79,.45)',
+            '&:hover': { bgcolor: '#d44a43' },
+            '&:active': { transform: 'scale(0.97)' },
+          }}
+        >
+          AVALIE
+        </Button>
+      )}
+
+      {/* ── Modal de Avaliação de Atendimento ── */}
+      <Modal open={avalieOpen} onClose={closeAvalie} aria-labelledby="avalie-title">
+        <Box
+          sx={{
+            position: 'absolute', left: '50%', top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: { xs: '90%', sm: 480 },
+            maxHeight: '88vh', overflow: 'auto',
+            bgcolor: '#fff', color: palette.textPrimary,
+            borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.28)',
+            p: { xs: 2.5, sm: 3 },
+          }}
+        >
+          {avalieSent ? (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <RateReviewRoundedIcon sx={{ fontSize: 48, color: palette.bannerRed, mb: 1 }} />
+              <Typography sx={{ fontWeight: 900, fontSize: 20, mb: .5 }}>
+                Muito obrigado!
+              </Typography>
+              <Typography sx={{ color: palette.textMuted, mb: 2.5 }}>
+                {avalieAnswers.querDesconto
+                  ? 'Recebemos sua avaliação. Vamos te enviar no WhatsApp ou e-mail um cupom de desconto para a próxima visita — fique atento!'
+                  : 'Sua avaliação foi registrada. Seu feedback ajuda a gente a melhorar sempre.'}
+              </Typography>
+              <Button
+                onClick={closeAvalie}
+                variant="contained"
+                sx={{ bgcolor: palette.bannerRed, '&:hover': { bgcolor: '#d44a43' }, borderRadius: 999, px: 3, fontWeight: 900, textTransform: 'none' }}
+              >
+                Fechar
+              </Button>
+            </Box>
+          ) : (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: .5 }}>
+                <RateReviewRoundedIcon sx={{ color: palette.bannerRed }} />
+                <Typography id="avalie-title" sx={{ fontWeight: 900, fontSize: 18 }}>
+                  Avalie sua experiência
+                </Typography>
+              </Box>
+              <Typography sx={{ color: palette.textMuted, fontSize: 14, mb: 2.5 }}>
+                Leva menos de 1 minuto e ajuda demais o Porks Sobradinho.
+              </Typography>
+
+              {/* Timeline de etapas */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                {AVALIE_STEPS.map((st, i) => (
+                  <React.Fragment key={st.key}>
+                    <Box sx={{
+                      width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                      display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 900,
+                      transition: 'all .2s',
+                      ...(i === avalieStep ? { bgcolor: palette.bannerRed, color: '#fff' }
+                        : i < avalieStep ? { bgcolor: '#F4A39D', color: '#fff' }
+                          : { bgcolor: '#EDEDED', color: '#9AA0A6' }),
+                    }}>
+                      {i < avalieStep ? '✓' : i + 1}
+                    </Box>
+                    {i < AVALIE_STEPS.length - 1 && (
+                      <Box sx={{ flex: 1, height: 3, mx: .5, borderRadius: 2, bgcolor: i < avalieStep ? '#F4A39D' : '#EDEDED' }} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </Box>
+              <Typography sx={{ fontWeight: 900, fontSize: 12, color: palette.bannerRed, letterSpacing: .5 }}>
+                PASSO {avalieStep + 1} DE {totalAvalieSteps}
+              </Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: 19, mb: 2 }}>
+                {AVALIE_STEPS[avalieStep].title}
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, minHeight: 190 }}>
+                {/* Passo 1 — Identificação */}
+                {avalieStep === 0 && (
+                  <>
+                    <TextField
+                      fullWidth
+                      required
+                      label="Seu nome"
+                      value={avalieAnswers.nome || ''}
+                      onChange={(e) => setAvalieAnswer('nome', e.target.value)}
+                      sx={avalieFieldSX}
+                    />
+                    <TextField
+                      fullWidth
+                      required
+                      type="email"
+                      label="Seu e-mail"
+                      value={avalieAnswers.email || ''}
+                      onChange={(e) => setAvalieAnswer('email', e.target.value)}
+                      error={!!avalieAnswers.email && !emailValido}
+                      helperText={!!avalieAnswers.email && !emailValido ? 'E-mail inválido' : ' '}
+                      sx={avalieFieldSX}
+                    />
+                  </>
+                )}
+
+                {/* Passo 2 — Atendimento e bebida */}
+                {avalieStep === 1 && AVALIE_RATINGS.map((q) => (
+                  <Box key={q.id}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>{q.label}</Typography>
+                    <RatingWithHint
+                      name={`avalie-${q.id}`}
+                      value={avalieAnswers[q.id]}
+                      onChange={(v) => setAvalieAnswer(q.id, v)}
+                    />
+                  </Box>
+                ))}
+
+                {/* Passo 3 — Consumo de petisco/comida (condicional) */}
+                {avalieStep === 2 && (
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>
+                      Consumiu petisco ou comida?
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {['Sim', 'Não'].map((opt) => {
+                        const selected = avalieAnswers.comida === opt;
+                        return (
+                          <Chip
+                            key={opt}
+                            label={opt}
+                            clickable
+                            onClick={() => setAvalieAnswer('comida', opt)}
+                            sx={{
+                              borderRadius: 2, fontWeight: 800,
+                              ...(selected
+                                ? { bgcolor: palette.bannerRed, color: '#fff' }
+                                : { bgcolor: '#F2F5F4', color: palette.textMuted }),
+                            }}
+                          />
+                        );
+                      })}
+                    </Box>
+
+                    {avalieAnswers.comida === 'Sim' && (
+                      <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <Autocomplete
+                          freeSolo
+                          autoHighlight
+                          clearOnBlur={false}
+                          options={MENU_ITEM_NAMES}
+                          inputValue={avalieAnswers.comidaItem || ''}
+                          // Só atualiza ao digitar/limpar; a seleção é tratada no onChange.
+                          onInputChange={(_, v, reason) => {
+                            if (reason === 'input' || reason === 'clear') setAvalieAnswer('comidaItem', v);
+                          }}
+                          // Ao escolher uma sugestão, substitui só o trecho após a última vírgula
+                          // e deixa ", " pronto para o próximo item.
+                          onChange={(_, selected, reason) => {
+                            if (reason !== 'selectOption' || typeof selected !== 'string') return;
+                            const parts = (avalieAnswers.comidaItem || '').split(',');
+                            parts[parts.length - 1] = ` ${selected}`;
+                            const merged = parts.join(',').replace(/^\s+/, '') + ', ';
+                            setAvalieAnswer('comidaItem', merged);
+                          }}
+                          // Sugere com base apenas no segmento que está sendo digitado (após a última vírgula).
+                          filterOptions={(opts, state) => {
+                            const seg = state.inputValue.split(',').pop();
+                            const q = normalize(seg);
+                            if (!q) return [];
+                            const jaEscolhidos = state.inputValue
+                              .split(',').slice(0, -1).map(s => normalize(s));
+                            return opts
+                              .filter(o => normalize(o).includes(q) && !jaEscolhidos.includes(normalize(o)))
+                              .slice(0, 8);
+                          }}
+                          slotProps={{
+                            paper: { sx: { bgcolor: '#fff', color: '#12100B', borderRadius: 2, boxShadow: '0 12px 40px rgba(0,0,0,.16)' } },
+                            listbox: { sx: { '& .MuiAutocomplete-option': { fontWeight: 600 }, '& .MuiAutocomplete-option.Mui-focused': { bgcolor: '#FFF3F2' } } },
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              fullWidth
+                              label="O que você consumiu?"
+                              placeholder="Digite e separe por vírgula — sugerimos do cardápio"
+                              sx={avalieFieldSX}
+                            />
+                          )}
+                        />
+                        <Box>
+                          <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>
+                            Como estava a qualidade do produto?
+                          </Typography>
+                          <RatingWithHint
+                            name="avalie-comidaQualidade"
+                            value={avalieAnswers.comidaQualidade}
+                            onChange={(v) => setAvalieAnswer('comidaQualidade', v)}
+                          />
+                        </Box>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Passo 4 — Ambiente e música */}
+                {avalieStep === 3 && (
+                  <>
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>
+                        O ambiente te estimula a permanecer?
+                      </Typography>
+                      <RatingWithHint
+                        name="avalie-ambiente"
+                        value={avalieAnswers.ambiente}
+                        onChange={(v) => setAvalieAnswer('ambiente', v)}
+                      />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>
+                        Você sabia que pode pedir música para a nossa playlist aqui no cardápio e ela toca ao vivo pra você?
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {['Sim', 'Não'].map((opt) => {
+                          const selected = avalieAnswers.sabiaMusica === opt;
+                          return (
+                            <Chip
+                              key={opt}
+                              label={opt}
+                              clickable
+                              onClick={() => setAvalieAnswer('sabiaMusica', opt)}
+                              sx={{
+                                borderRadius: 2, fontWeight: 800,
+                                ...(selected
+                                  ? { bgcolor: palette.bannerRed, color: '#fff' }
+                                  : { bgcolor: '#F2F5F4', color: palette.textMuted }),
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    </Box>
+                  </>
+                )}
+
+                {/* Passo 5 — Recomendação (NPS 0 a 10) + comentário */}
+                {avalieStep === 4 && (
+                  <>
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>
+                        O quanto você recomendaria o Porks Sobradinho para um amigo/parente?
+                      </Typography>
+                      <RatingWithHint
+                        name="avalie-recomenda"
+                        value={avalieAnswers.recomenda}
+                        onChange={(v) => setAvalieAnswer('recomenda', v)}
+                      />
+                    </Box>
+
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: 15, mb: 1 }}>
+                        Deixe seu comentário
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        placeholder="Queremos entender o que foi melhorado e o que ainda precisa melhorar no seu ponto de vista."
+                        value={avalieAnswers.comentario || ''}
+                        onChange={(e) => setAvalieAnswer('comentario', e.target.value)}
+                        sx={avalieFieldSX}
+                      />
+                    </Box>
+                  </>
+                )}
+
+                {/* Passo 6 — Desconto exclusivo */}
+                {avalieStep === 5 && (
+                  <>
+                    <Box
+                      onClick={() => setAvalieAnswer('querDesconto', !avalieAnswers.querDesconto)}
+                      sx={{
+                        position: 'relative',
+                        display: 'flex', alignItems: 'center', gap: 1.5, p: 2,
+                        borderRadius: 2.5, cursor: 'pointer', overflow: 'hidden',
+                        border: '2px solid',
+                        transition: 'all .2s',
+                        ...(avalieAnswers.querDesconto
+                          ? { borderColor: '#1FA463', bgcolor: '#EAF8F0', boxShadow: '0 6px 20px rgba(31,164,99,.22)' }
+                          : { borderColor: '#D6F0E0', bgcolor: '#F4FBF7' }),
+                      }}
+                    >
+                      <Box sx={{
+                        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                        display: 'grid', placeItems: 'center',
+                        transition: 'all .2s',
+                        ...(avalieAnswers.querDesconto
+                          ? { bgcolor: '#1FA463', color: '#fff', boxShadow: '0 2px 10px rgba(31,164,99,.5)' }
+                          : { bgcolor: '#fff', color: '#1FA463', border: '2px solid #B8E6CC' }),
+                      }}>
+                        <CheckRoundedIcon sx={{ fontSize: 22 }} />
+                      </Box>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: 15, lineHeight: 1.25 }}>
+                          🎁 Quer ganhar um desconto exclusivo pra sua próxima visita?
+                        </Typography>
+                        <Typography sx={{ fontSize: 12.5, color: '#1FA463', fontWeight: 800, mt: .25 }}>
+                          {avalieAnswers.querDesconto ? 'Eba! Já garantido — é só preencher abaixo' : 'Toque para ativar'}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {avalieAnswers.querDesconto && (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField
+                          fullWidth
+                          type="tel"
+                          label="Telefone (WhatsApp)"
+                          placeholder="(61) 99999-9999"
+                          value={avalieAnswers.telefone || ''}
+                          onChange={(e) => setAvalieAnswer('telefone', e.target.value)}
+                          sx={avalieFieldSX}
+                        />
+                        <TextField
+                          fullWidth
+                          type="date"
+                          label="Data de nascimento"
+                          InputLabelProps={{ shrink: true }}
+                          value={avalieAnswers.nascimento || ''}
+                          onChange={(e) => setAvalieAnswer('nascimento', e.target.value)}
+                          sx={avalieFieldSX}
+                        />
+                        <Typography sx={{ fontSize: 13, color: palette.textMuted }}>
+                          Vamos te enviar no WhatsApp ou e-mail um cupom de desconto para a próxima visita. Fique atento! 🎉
+                        </Typography>
+                      </Box>
+                    )}
+                  </>
+                )}
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 1.25, mt: 3 }}>
+                <Button
+                  onClick={avalieStep === 0 ? closeAvalie : avalieBack}
+                  sx={{ flex: 1, borderRadius: 999, textTransform: 'none', fontWeight: 700, color: '#6F6F6F' }}
+                >
+                  {avalieStep === 0 ? 'Cancelar' : 'Voltar'}
+                </Button>
+                {isLastAvalieStep ? (
+                  <Button
+                    onClick={submitAvalie}
+                    disabled={!avaliePodeEnviar}
+                    variant="contained"
+                    sx={{
+                      flex: 2, bgcolor: palette.bannerRed, '&:hover': { bgcolor: '#d44a43' },
+                      '&.Mui-disabled': { bgcolor: '#E7C9C6', color: '#fff' },
+                      borderRadius: 999, fontWeight: 900, textTransform: 'none',
+                    }}
+                  >
+                    Enviar avaliação
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={avalieNext}
+                    disabled={avalieStep === 0 && !avaliePodeEnviar}
+                    variant="contained"
+                    sx={{
+                      flex: 2, bgcolor: palette.bannerRed, '&:hover': { bgcolor: '#d44a43' },
+                      '&.Mui-disabled': { bgcolor: '#E7C9C6', color: '#fff' },
+                      borderRadius: 999, fontWeight: 900, textTransform: 'none',
+                    }}
+                  >
+                    Próximo
+                  </Button>
+                )}
               </Box>
             </>
           )}
