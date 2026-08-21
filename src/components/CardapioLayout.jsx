@@ -1773,12 +1773,16 @@ function CardapioInner() {
         </Box>
       </Modal>
 
-      {/* ── Botão flutuante AVALIE ── */}
+      {/* ── Botão flutuante AVALIE — abre direto o WhatsApp do Sócio Operador.
+           O formulário NPS continua acessível só pelo QR das mesas (#avaliar). ── */}
       {nav !== 'musica' && !detail && !searchOpen && (
         <Button
-          onClick={openAvalie}
-          startIcon={<RateReviewRoundedIcon />}
-          aria-label="Avaliar atendimento"
+          component="a"
+          href={SOCIO_WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          startIcon={<WhatsAppIcon />}
+          aria-label="Falar com o Sócio Operador no WhatsApp"
           sx={{
             position: 'fixed',
             left: 14,
