@@ -77,6 +77,17 @@ const avalieFieldSX = {
 };
 
 const SIZES = { thumb: 104, actionsCol: 44, actionsFav: 128, title: 16, price: 14.5 };
+
+// `subtitle` nos dados é o rótulo da categoria (redundante com o título da seção);
+// só vale exibir quando traz informação extra (ex.: 'Estilo Mexicano', 'Promoção').
+const CATEGORY_TITLES = new Set([...itemCategories, ...drinkCategories].map((c) => c.title));
+const itemLabel = (item) =>
+  item?.subtitle && !CATEGORY_TITLES.has(item.subtitle) ? item.subtitle : null;
+
+// Preço em formato brasileiro: '27.00' → 'R$ 27,00'
+const fmtPrice = (p) => `R$ ${String(p ?? '').replace('.', ',')}`;
+
+const isDrinkItem = (item) => initialDrinks.some((d) => d.id === item?.id);
 const NAV_H = 'calc(64px + env(safe-area-inset-bottom))';
 const SINGLE_UNIT = 'Sobradinho, Distrito Federal';
 
@@ -530,11 +541,6 @@ function CardapioInner() {
   const closeRoulette = () => {
     setRouletteOpen(false);
   };
-  const goRoulette = () => {
-    closeRoulette();
-    try { window.open('https://roleta.sobradinhoporks.com.br', '_blank', 'noopener,noreferrer'); }
-    catch { window.location.href = 'https://roleta.sobradinhoporks.com.br'; }
-  };
 
   // --- Avaliação de atendimento ---
   const [avalieOpen, setAvalieOpen] = useState(false);
@@ -552,7 +558,18 @@ function CardapioInner() {
   const closeAvalie = () => {
     setAvalieOpen(false);
     setTimeout(() => { setAvalieSent(false); setAvalieAnswers({}); setAvalieStep(0); }, 250);
+    // Limpa o #avaliar da URL pra reabrir o cardápio (não a avaliação) ao recarregar
+    if (typeof window !== 'undefined' && window.location.hash === '#avaliar') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
   };
+  // Abre a avaliação automaticamente quando a URL tem #avaliar
+  // (ex.: QR code na mesa → sobradinhoporks.com.br/cardapio#avaliar)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#avaliar') {
+      openAvalie();
+    }
+  }, []);
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(avalieAnswers.email || '').trim());
   const avaliePodeEnviar =
     String(avalieAnswers.nome || '').trim().length >= 2 && emailValido;
@@ -905,18 +922,18 @@ function CardapioInner() {
                               <Typography sx={{ fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.title, lineHeight: 1.2, ...clamp(2) }}>
                                 {item.title}
                               </Typography>
-                              {item.subtitle && (
-                                <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>
-                                  {item.subtitle}
+                              {itemLabel(item) && (
+                                <Typography sx={{ mt: .25, fontSize: 12.5, fontWeight: 700, color: palette.promoFg, ...clamp(1) }}>
+                                  {itemLabel(item)}
                                 </Typography>
                               )}
                               {item.subtitle2 && (
-                                <Typography sx={{ fontSize: 13.5, color: palette.textMuted, ...clamp(1) }}>
+                                <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>
                                   {item.subtitle2}
                                 </Typography>
                               )}
                               <Typography sx={{ mt: .6, fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.price }}>
-                                R$ {item.price}
+                                {fmtPrice(item.price)}
                               </Typography>
                             </Box>
 
@@ -1020,10 +1037,10 @@ function CardapioInner() {
                             <Typography sx={{ fontFamily: '"Bitter", serif', fontWeight: 800, color: palette.textPrimary, fontSize: SIZES.title, lineHeight: 1.18, ...clamp(2) }}>
                               {item.title}
                             </Typography>
-                            {item.subtitle && <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>{item.subtitle}</Typography>}
-                            {item.subtitle2 && <Typography sx={{ fontSize: 13.5, color: palette.textMuted, ...clamp(1) }}>{item.subtitle2}</Typography>}
+                            {itemLabel(item) && <Typography sx={{ mt: .25, fontSize: 12.5, fontWeight: 700, color: palette.promoFg, ...clamp(1) }}>{itemLabel(item)}</Typography>}
+                            {item.subtitle2 && <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>{item.subtitle2}</Typography>}
                             <Typography sx={{ mt: .55, fontFamily: '"Bitter", serif', fontWeight: 800, color: palette.textPrimary, fontSize: SIZES.price }}>
-                              R$ {item.price}
+                              {fmtPrice(item.price)}
                             </Typography>
                           </Box>
                         </Box>
@@ -1075,10 +1092,10 @@ function CardapioInner() {
                           <Typography sx={{ fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.title, lineHeight: 1.2, ...clamp(2) }}>
                             {item.title}
                           </Typography>
-                          {item.subtitle && <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>{item.subtitle}</Typography>}
-                          {item.subtitle2 && <Typography sx={{ fontSize: 13.5, color: palette.textMuted, ...clamp(1) }}>{item.subtitle2}</Typography>}
+                          {itemLabel(item) && <Typography sx={{ mt: .25, fontSize: 12.5, fontWeight: 700, color: palette.promoFg, ...clamp(1) }}>{itemLabel(item)}</Typography>}
+                          {item.subtitle2 && <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>{item.subtitle2}</Typography>}
                           <Typography sx={{ mt: .6, fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.price }}>
-                            R$ {item.price}
+                            {fmtPrice(item.price)}
                           </Typography>
                         </Box>
 
@@ -1207,7 +1224,7 @@ function CardapioInner() {
             '& .Mui-selected .MuiBottomNavigationAction-label': { fontSize: '0.652rem' },
           }}
         >
-          <BottomNavigationAction label="Cardapio" value="inicio" icon={<MenuBookIcon />} />
+          <BottomNavigationAction label="Cardápio" value="inicio" icon={<MenuBookIcon />} />
           <BottomNavigationAction label="Drinks" value="drinks" icon={<LocalBarIcon />} />
           <BottomNavigationAction
             label="Busca"
@@ -1388,9 +1405,9 @@ function CardapioInner() {
                         <Typography sx={{ fontWeight: 800, color: palette.textPrimary, fontSize: 15, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.title}
                         </Typography>
-                        {(item.subtitle || item.subtitle2) && (
+                        {(item.subtitle2 || itemLabel(item)) && (
                           <Typography sx={{ mt: .25, fontSize: 13, color: palette.textMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {item.subtitle || item.subtitle2}
+                            {item.subtitle2 || itemLabel(item)}
                           </Typography>
                         )}
                       </Box>
@@ -1434,19 +1451,24 @@ function CardapioInner() {
             <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 26, color: palette.textPrimary, mb: 1 }}>
               {detail.title}
             </Typography>
-            {(detail.subtitle || detail.subtitle2) && (
+            {itemLabel(detail) && (
+              <Typography sx={{ color: palette.promoFg, fontWeight: 700, fontSize: 13.5, mb: .5 }}>
+                {itemLabel(detail)}
+              </Typography>
+            )}
+            {detail.subtitle2 && (
               <Typography sx={{ color: palette.textMuted, lineHeight: 1.6, mb: 2 }}>
-                {detail.subtitle} {detail.subtitle2 ? ` ${detail.subtitle2}` : ''}
+                {detail.subtitle2}
               </Typography>
             )}
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2, flexWrap: 'wrap' }}>
               <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 22, color: palette.textPrimary }}>
-                R$ {detail.price}
+                {fmtPrice(detail.price)}
               </Typography>
               {detail.oldPrice && (
                 <>
                   <Typography sx={{ color: '#9AA0A6', textDecoration: 'line-through', fontWeight: 600, fontSize: 14 }}>
-                    R$ {detail.oldPrice}
+                    {fmtPrice(detail.oldPrice)}
                   </Typography>
                   <Chip
                     label={`-${Math.max(0, Math.round((1 - parseFloat(detail.price) / parseFloat(detail.oldPrice)) * 100))}%`}
@@ -1495,14 +1517,19 @@ function CardapioInner() {
               </>
             )}
 
-            <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 18, color: palette.textPrimary, mb: 1 }}>
-              Sugestão de acompanhamento
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 8 }}>
-              <Chip label="Batata rústica" />
-              <Chip label="Salada verde" />
-              <Chip label="Molho da casa" />
-            </Box>
+            {!isDrinkItem(detail) && (
+              <>
+                <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 18, color: palette.textPrimary, mb: 1 }}>
+                  Sugestão de acompanhamento
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 8 }}>
+                  {/* Tema MUI global é dark: chips precisam de cor explícita no fundo branco */}
+                  <Chip label="Batata rústica" sx={{ bgcolor: '#F2F5F4', color: palette.textPrimary, fontWeight: 700 }} />
+                  <Chip label="Salada verde" sx={{ bgcolor: '#F2F5F4', color: palette.textPrimary, fontWeight: 700 }} />
+                  <Chip label="Molho da casa" sx={{ bgcolor: '#F2F5F4', color: palette.textPrimary, fontWeight: 700 }} />
+                </Box>
+              </>
+            )}
           </Box>
         </Box>
       )}
@@ -1732,7 +1759,7 @@ function CardapioInner() {
               Quer ganhar uma cortesia?
             </Typography>
             <Typography sx={{ fontSize: 15, color: palette.textPrimary, lineHeight: 1.5, mb: 1 }}>
-              Cortesias pra <b>shows</b> ou <b>Day Use</b> no Na Praia Festival. Tente a sorte na roleta!
+              Cortesias pra <b>shows</b> no Na Praia Festival e prêmios da casa. Tente a sorte na roleta!
             </Typography>
             <Typography sx={{ fontSize: 12, color: palette.textMuted, mb: 1.5 }}>
               Sujeita a verificação de disponibilidade do dia escolhido.
@@ -1741,8 +1768,33 @@ function CardapioInner() {
               🏖️ Somos o único Porks parceiro oficial do Na Praia Festival 2026.
             </Typography>
 
+            <Box sx={{
+              border: '2px dashed', borderColor: palette.headerGreen, borderRadius: 2,
+              bgcolor: 'rgba(0,0,0,.03)', px: 2, py: 1.5, mb: 2.25,
+            }}>
+              <Typography sx={{ fontSize: 11.5, color: palette.textMuted, fontWeight: 700, letterSpacing: .4, mb: .25 }}>
+                USE O CUPOM
+              </Typography>
+              <Typography sx={{ fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400, fontSize: 20, color: palette.headerGreen, letterSpacing: 1 }}>
+                PORKSSOBRADINHO
+              </Typography>
+              <Typography
+                component="a"
+                href="https://napraiafestival.r2.com.vc/?cupom=porkssobradinho"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ display: 'inline-block', mt: .75, fontSize: 12.5, fontWeight: 800, color: palette.headerGreen, textDecoration: 'underline' }}
+              >
+                Usar cupom em napraiafestival.r2.com.vc →
+              </Typography>
+            </Box>
+
             <Button
-              onClick={goRoulette}
+              component="a"
+              href="https://roleta.sobradinhoporks.com.br"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeRoulette}
               fullWidth
               variant="contained"
               sx={{
