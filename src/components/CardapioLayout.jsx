@@ -39,6 +39,7 @@ import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRigh
 import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import MusicNoteRoundedIcon from '@mui/icons-material/MusicNoteRounded';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import {
   initialItems,
   initialPromos,
@@ -335,6 +336,11 @@ function RatingWithHint({ name, value, onChange }) {
   );
 }
 
+// WhatsApp do Sócio Operador (atalho dentro do AVALIE)
+const SOCIO_WHATSAPP_URL =
+  'https://wa.me/5561999881515?text=' +
+  encodeURIComponent('Olá! Estou no Porks Sobradinho e gostaria de falar com o Sócio Operador.');
+
 /* ---- Etapas do formulário de avaliação ---- */
 const AVALIE_STEPS = [
   { key: 'id', title: 'Identificação' },
@@ -427,7 +433,7 @@ function UnitConsentScreen({ onAccepted }) {
           borderTopLeftRadius: 16, borderTopRightRadius: 16,
           p: 2,
           bgcolor: '#fff',
-          color: palette.textPrimary,
+          color: '#12100B',
           pb: 'calc(env(safe-area-inset-bottom) + 12px)',
         }}>
           <Typography sx={{ fontWeight: 900, mb: 1, color: palette.headerGreen, letterSpacing: .2 }}>
@@ -452,7 +458,7 @@ function UnitConsentScreen({ onAccepted }) {
             <Box sx={{ width: 34, display: 'grid', placeItems: 'center' }}>
               <LocationOnRoundedIcon sx={{ color: palette.ring }} />
             </Box>
-            <Typography sx={{ flex: 1, fontWeight: 800, color: palette.textPrimary }}>
+            <Typography sx={{ flex: 1, fontWeight: 800, color: '#12100B' }}>
               {SINGLE_UNIT}
             </Typography>
             <KeyboardArrowRightRoundedIcon sx={{ color: '#9AA0A6' }} />
@@ -1611,7 +1617,7 @@ function CardapioInner() {
             position: 'absolute', left: '50%', top: '50%',
             transform: 'translate(-50%, -50%)',
             width: { xs: '90%', sm: 520 },
-            bgcolor: '#fff', color: palette.textPrimary,
+            bgcolor: '#fff', color: '#12100B',
             borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.28)',
             p: { xs: 2, sm: 3 }
           }}
@@ -1628,13 +1634,13 @@ function CardapioInner() {
               <Typography sx={{ fontWeight: 800 }}>Sua avaliação:</Typography>
               <Rating value={notice.stars} readOnly size="small"
                 sx={{ '& .MuiRating-icon': { fontSize: 18 } }} />
-              <Typography sx={{ color: palette.textMuted }}>
+              <Typography sx={{ color: '#6F6F6F' }}>
                 ({notice.stars} {notice.stars === 1 ? 'estrela' : 'estrelas'})
               </Typography>
             </Box>
           ) : null}
 
-          <Typography sx={{ color: palette.textMuted, mb: 2 }}>
+          <Typography sx={{ color: '#6F6F6F', mb: 2 }}>
             Obrigado por avaliar! Você pode abrir o fluxo de recomendação no app do Google ou copiar o link.
           </Typography>
 
@@ -1680,7 +1686,7 @@ function CardapioInner() {
               <Typography sx={{ fontWeight: 800, mb: .25 }}>
                 Abra no celular
               </Typography>
-              <Typography sx={{ color: palette.textMuted, fontSize: 13 }}>
+              <Typography sx={{ color: '#6F6F6F', fontSize: 13 }}>
                 Escaneie o QR para abrir diretamente a tela de avaliação do Google.
               </Typography>
             </Box>
@@ -1702,7 +1708,7 @@ function CardapioInner() {
             top: '50%',
             transform: 'translate(-50%, -50%)',
             bgcolor: '#fff',
-            color: palette.textPrimary,
+            color: '#12100B',
             p: 2.5,
             borderRadius: 3,
             boxShadow: '0 30px 80px rgba(0,0,0,.28)',
@@ -1727,7 +1733,7 @@ function CardapioInner() {
                 />
               </Box>
 
-              <Typography sx={{ color: palette.textMuted, mb: 2 }}>
+              <Typography sx={{ color: '#6F6F6F', mb: 2 }}>
                 Obrigado pelo feedback!
               </Typography>
 
@@ -1801,7 +1807,7 @@ function CardapioInner() {
           position: 'absolute', left: '50%', top: '50%',
           transform: 'translate(-50%, -50%)',
           width: { xs: '90%', sm: 420 },
-          bgcolor: '#fff', color: palette.textPrimary,
+          bgcolor: '#fff', color: '#12100B',
           borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.32)',
           overflow: 'hidden',
         }}>
@@ -1828,10 +1834,10 @@ function CardapioInner() {
             <Typography id="roleta-title" sx={{ fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400, fontSize: 21, color: palette.headerGreen, lineHeight: 1.15, mb: 1.25 }}>
               Quer ganhar uma cortesia?
             </Typography>
-            <Typography sx={{ fontSize: 15, color: palette.textPrimary, lineHeight: 1.5, mb: 1 }}>
+            <Typography sx={{ fontSize: 15, color: '#12100B', lineHeight: 1.5, mb: 1 }}>
               Cortesias pra <b>shows</b> no Na Praia Festival e prêmios da casa. Tente a sorte na roleta!
             </Typography>
-            <Typography sx={{ fontSize: 12, color: palette.textMuted, mb: 1.5 }}>
+            <Typography sx={{ fontSize: 12, color: '#6F6F6F', mb: 1.5 }}>
               Sujeita a verificação de disponibilidade do dia escolhido.
             </Typography>
             <Typography sx={{ fontSize: 12.5, color: palette.headerGreen, fontWeight: 800, mb: 2.25 }}>
@@ -1842,7 +1848,7 @@ function CardapioInner() {
               border: '2px dashed', borderColor: palette.headerGreen, borderRadius: 2,
               bgcolor: 'rgba(0,0,0,.03)', px: 2, py: 1.5, mb: 2.25,
             }}>
-              <Typography sx={{ fontSize: 11.5, color: palette.textMuted, fontWeight: 700, letterSpacing: .4, mb: .25 }}>
+              <Typography sx={{ fontSize: 11.5, color: '#6F6F6F', fontWeight: 700, letterSpacing: .4, mb: .25 }}>
                 USE O CUPOM
               </Typography>
               <Typography sx={{ fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400, fontSize: 20, color: palette.headerGreen, letterSpacing: 1 }}>
@@ -1893,7 +1899,7 @@ function CardapioInner() {
             transform: 'translate(-50%, -50%)',
             width: { xs: '90%', sm: 480 },
             maxHeight: '88vh', overflow: 'auto',
-            bgcolor: '#fff', color: palette.textPrimary,
+            bgcolor: '#fff', color: '#12100B',
             borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.28)',
             p: { xs: 2.5, sm: 3 },
           }}
@@ -1904,7 +1910,7 @@ function CardapioInner() {
               <Typography sx={{ fontWeight: 900, fontSize: 20, mb: .5 }}>
                 Muito obrigado!
               </Typography>
-              <Typography sx={{ color: palette.textMuted, mb: 2.5 }}>
+              <Typography sx={{ color: '#6F6F6F', mb: 2.5 }}>
                 {avalieAnswers.querDesconto
                   ? 'Recebemos sua avaliação. Vamos te enviar no WhatsApp ou e-mail um cupom de desconto para a próxima visita — fique atento!'
                   : 'Sua avaliação foi registrada. Seu feedback ajuda a gente a melhorar sempre.'}
@@ -1925,9 +1931,31 @@ function CardapioInner() {
                   Avalie sua experiência
                 </Typography>
               </Box>
-              <Typography sx={{ color: palette.textMuted, fontSize: 14, mb: 2.5 }}>
+              <Typography sx={{ color: '#6F6F6F', fontSize: 14, mb: 1.5 }}>
                 Leva menos de 1 minuto e ajuda demais o Porks Sobradinho.
               </Typography>
+
+              <Button
+                component="a"
+                href={SOCIO_WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                fullWidth
+                startIcon={<WhatsAppIcon />}
+                sx={{
+                  mb: 2.5,
+                  justifyContent: 'center',
+                  borderRadius: 999,
+                  textTransform: 'none',
+                  fontWeight: 800,
+                  color: '#0E7A3D',
+                  bgcolor: '#EAF8F0',
+                  border: '1.5px solid #B8E6CC',
+                  '&:hover': { bgcolor: '#DDF3E6', borderColor: '#8FD8AF' },
+                }}
+              >
+                Fale com o Sócio Operador
+              </Button>
 
               {/* Timeline de etapas */}
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -2013,7 +2041,7 @@ function CardapioInner() {
                               borderRadius: 2, fontWeight: 800,
                               ...(selected
                                 ? { bgcolor: palette.bannerRed, color: '#fff' }
-                                : { bgcolor: '#F2F5F4', color: palette.textMuted }),
+                                : { bgcolor: '#F2F5F4', color: '#6F6F6F' }),
                             }}
                           />
                         );
@@ -2111,7 +2139,7 @@ function CardapioInner() {
                                 borderRadius: 2, fontWeight: 800,
                                 ...(selected
                                   ? { bgcolor: palette.bannerRed, color: '#fff' }
-                                  : { bgcolor: '#F2F5F4', color: palette.textMuted }),
+                                  : { bgcolor: '#F2F5F4', color: '#6F6F6F' }),
                               }}
                             />
                           );
@@ -2208,7 +2236,7 @@ function CardapioInner() {
                           onChange={(e) => setAvalieAnswer('nascimento', e.target.value)}
                           sx={avalieFieldSX}
                         />
-                        <Typography sx={{ fontSize: 13, color: palette.textMuted }}>
+                        <Typography sx={{ fontSize: 13, color: '#6F6F6F' }}>
                           Vamos te enviar no WhatsApp ou e-mail um cupom de desconto para a próxima visita. Fique atento! 🎉
                         </Typography>
                       </Box>
