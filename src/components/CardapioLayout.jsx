@@ -38,6 +38,7 @@ import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
 import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded';
 import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import MusicNoteRoundedIcon from '@mui/icons-material/MusicNoteRounded';
 import {
   initialItems,
   initialPromos,
@@ -46,20 +47,31 @@ import {
   drinkCategories,
 } from '../data/menu_data_new.jsx';
 
+// Boteco Neon: dark + acentos da identidade do site (kraft/aged, vermelho, âmbar, amarelo).
+// `cream` segue sendo o fundo das seções e `headerGreen` o vermelho dos modais claros
+// (chaves mantidas pra não tocar em todos os usos).
 const palette = {
-  page: '#FFFFFF',
-  cream: '#FBF5E9',
-  bannerRed: '#E6564F',
-  orange: '#EA5A47',
+  page: '#16100A',
+  cream: '#241A10',
+  bannerRed: '#E04A3A',
+  orange: '#E08818',
   headerGreen: '#C63830',
-  textPrimary: '#12100B',
-  textMuted: '#7D8B84',
-  divider: '#E8E0D3',
-  ring: '#EA5A47',
-  heart: '#E05657',
-  promoBg: '#FFE8E6',
-  promoFg: '#C63830',
+  textPrimary: '#F0E0C0',
+  textMuted: '#B39B77',
+  divider: 'rgba(240,224,192,.12)',
+  ring: '#E04A3A',
+  heart: '#E04A3A',
+  promoBg: 'rgba(224,74,58,.18)',
+  promoFg: '#E08818',
+  yellow: '#EAB808',
+  line: 'rgba(240,224,192,.1)',
+  navBg: '#0E0A06',
+  card2: '#2C2014',
 };
+
+const FONT_DISPLAY = "'Bebas Neue', 'Alfa Slab One', sans-serif";
+const FONT_TITLE = '"Oswald", sans-serif';
+const FONT_BODY = "'Barlow Condensed', sans-serif";
 
 // Campos do modal de avaliação vivem em fundo branco, mas o tema é dark.
 // Forçamos cores legíveis (texto/label/placeholder/bordas escuros).
@@ -189,7 +201,7 @@ const pop = keyframes`0%{transform:scale(1)}35%{transform:scale(1.28)}100%{trans
 const makeParticle = (dx, dy) => keyframes`0%{transform:translate(0,0);opacity:1}100%{transform:translate(${dx}px,${dy}px);opacity:0}`;
 const appear = keyframes`0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}`;
 const fadeIn = keyframes`0%{opacity:0}100%{opacity:1}`;
-const skBg = '#E8E5DB';
+const skBg = '#2C2014';
 
 const clamp = (lines) => ({
   display: '-webkit-box',
@@ -385,7 +397,7 @@ function UnitConsentScreen({ onAccepted }) {
   return (
     <Box sx={{
       minHeight: '100vh',
-      bgcolor: '#1b1b19',
+      bgcolor: '#16100A',
       color: '#fff',
       position: 'relative',
       pt: 'calc(env(safe-area-inset-top) + 28px)',
@@ -667,7 +679,8 @@ function CardapioInner() {
     }
   }, []);
 
-  useEffect(() => { const t = setTimeout(() => setLoading(false), 1500); return () => clearTimeout(t); }, []);
+  // Dados são locais (bundle): skeleton só o suficiente pra primeira pintura não piscar.
+  useEffect(() => { const t = setTimeout(() => setLoading(false), 400); return () => clearTimeout(t); }, []);
 
   // Convite da roleta (Na Praia Festival) — abre a CADA carregamento do cardápio.
   useEffect(() => {
@@ -841,32 +854,91 @@ function CardapioInner() {
         '.search-ov *:focus, .search-ov *:focus-visible': { outline: 'none !important', boxShadow: 'none !important' },
         '.search-ov input, .search-ov .MuiInputBase-input, .search-ov .MuiInputBase-root': { outline: 'none !important', boxShadow: 'none !important' },
         '.search-ov input::-moz-focus-inner': { border: 0 },
+        'body::before': {
+          content: '""', position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
+          backgroundSize: '400px 400px',
+        },
       }} />
+
+      {/* Marca + unidade */}
+      <Box sx={{ px: 2, pt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+        <Box>
+          <Typography sx={{ fontFamily: FONT_DISPLAY, fontSize: 30, lineHeight: .9, letterSpacing: '.14em', color: '#fff' }}>
+            PORKS
+          </Typography>
+          <Typography sx={{ fontFamily: FONT_BODY, fontSize: 9.5, fontWeight: 800, letterSpacing: '.42em', color: palette.bannerRed, textShadow: '0 0 12px rgba(224,74,58,.8)' }}>
+            PORCO &amp; CHOPE
+          </Typography>
+        </Box>
+        <Box sx={{
+          fontFamily: FONT_BODY, fontSize: 11, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase',
+          color: palette.textMuted, border: '1.5px solid rgba(240,224,192,.22)', px: 1.25, py: .75,
+          clipPath: 'polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)',
+        }}>
+          Sobradinho · DF
+        </Box>
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, pt: 1, pb: .5, fontFamily: FONT_BODY, fontSize: 9.5, fontWeight: 800, letterSpacing: '.26em', textTransform: 'uppercase', color: 'rgba(240,224,192,.4)', position: 'relative', zIndex: 1 }}>
+        <span>Chope gelado</span><span style={{ opacity: .5 }}>●</span>
+        <span>Sem couvert</span><span style={{ opacity: .5 }}>●</span>
+        <span>Rock ao vivo</span>
+      </Box>
 
       {/* Banner (apenas na home) */}
       {nav === 'inicio' && (
-        <Box sx={{ mx: 2, mt: 2, borderRadius: 2.5, overflow: 'hidden', position: 'relative', height: { xs: 220, sm: 260 }, bgcolor: palette.bannerRed }}>
-          <Box sx={{ position: 'absolute', inset: 0, display: 'flex', height: '100%', transition: 'transform .5s ease', transform: `translateX(-${slide * 100}%)` }}>
-            {slides.map((s, i) => (
-              <Box key={i} sx={{
-                minWidth: '100%', height: '100%', position: 'relative',
-                backgroundImage: `linear-gradient(90deg, ${palette.bannerRed} 0%, ${palette.bannerRed} 64%, rgba(230,86,79,0) 64%), url('${s.image}')`,
-                backgroundSize: 'cover, contain', backgroundRepeat: 'no-repeat, no-repeat',
-                backgroundPosition: 'left center, right -8px center',
-              }}>
-                <Box sx={{ px: 3, py: { xs: 3.2, sm: 3.5 }, width: '64%' }}>
-                  <Typography sx={{ color: '#fff', fontSize: 'clamp(22px, 6vw, 30px)', lineHeight: 1.02, fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400 }}>
-                    {s.title1}<Box component="span" sx={{ display: 'block' }}>{s.title2}</Box>
-                  </Typography>
-                  <Typography sx={{ color: '#FFEFEA', mt: 1.2, fontSize: { xs: 13.5, sm: 14.5 }, fontWeight: 500 }}>{s.desc}</Typography>
+        <>
+          <Box sx={{ mx: 2, mt: 1.5, borderRadius: 1.5, overflow: 'hidden', position: 'relative', height: { xs: 200, sm: 240 }, bgcolor: palette.cream, boxShadow: '0 10px 34px rgba(0,0,0,.55)' }}>
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', height: '100%', transition: 'transform .5s ease', transform: `translateX(-${slide * 100}%)` }}>
+              {slides.map((s, i) => (
+                <Box key={i} sx={{
+                  minWidth: '100%', height: '100%', position: 'relative',
+                  backgroundImage: `linear-gradient(78deg, rgba(12,8,4,.94) 8%, rgba(12,8,4,.62) 45%, rgba(12,8,4,.06) 75%), url('${s.image}')`,
+                  backgroundSize: 'cover, cover', backgroundRepeat: 'no-repeat, no-repeat',
+                  backgroundPosition: 'center, center',
+                }}>
+                  <Box sx={{ position: 'absolute', left: 16, bottom: 14, right: '30%' }}>
+                    <Box sx={{
+                      display: 'inline-block', bgcolor: palette.bannerRed, color: '#fff',
+                      fontFamily: FONT_BODY, fontSize: 9.5, fontWeight: 800, letterSpacing: '.24em', textTransform: 'uppercase',
+                      px: 1, py: .4, mb: 1, clipPath: 'polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)',
+                      boxShadow: '0 0 18px rgba(224,74,58,.55)',
+                    }}>
+                      Destaque da casa
+                    </Box>
+                    <Typography sx={{ color: '#fff', fontSize: 'clamp(28px, 9vw, 38px)', lineHeight: .9, fontFamily: FONT_DISPLAY }}>
+                      {s.title1} {s.title2}
+                    </Typography>
+                    <Typography sx={{ color: palette.textMuted, mt: .5, fontFamily: FONT_BODY, fontSize: 14.5, fontWeight: 600, lineHeight: 1.3 }}>{s.desc}</Typography>
+                  </Box>
                 </Box>
-              </Box>
+              ))}
+            </Box>
+            <Box sx={{ position: 'absolute', left: 16, top: 12, display: 'flex', gap: .75 }}>
+              {slides.map((_, i) => (
+                <Box key={i} onClick={() => setSlide(i)} sx={{ width: i === slide ? 18 : 9, height: 4, borderRadius: 2, cursor: 'pointer', bgcolor: i === slide ? palette.yellow : 'rgba(240,224,192,.35)', transition: 'all .25s' }} />
+              ))}
+            </Box>
+          </Box>
+
+          {/* Categorias — atalho pras seções */}
+          <Box sx={{ display: 'flex', gap: 1, px: 2, mt: 2, overflowX: 'auto', position: 'relative', zIndex: 1, '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }}>
+            {itemsGrouped.map((section) => (
+              <Chip
+                key={`cat-${section.id}`}
+                label={section.title}
+                clickable
+                onClick={() => document.getElementById(`sec-${section.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                sx={{
+                  flexShrink: 0, borderRadius: 1, fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase',
+                  fontSize: 12.5, letterSpacing: '.06em', color: palette.textMuted,
+                  bgcolor: palette.cream, border: `1px solid ${palette.line}`,
+                  '&:hover, &:focus': { bgcolor: palette.card2 },
+                }}
+              />
             ))}
           </Box>
-          <Box sx={{ position: 'absolute', left: '50%', bottom: 10, transform: 'translateX(-50%)', display: 'flex', gap: 1.25 }}>
-            {slides.map((_, i) => (<Box key={i} onClick={() => setSlide(i)} sx={{ width: 8, height: 8, borderRadius: '50%', cursor: 'pointer', bgcolor: i === slide ? '#fff' : 'rgba(255,255,255,.5)', outline: '2px solid rgba(255,255,255,.25)' }} />))}
-          </Box>
-        </Box>
+        </>
       )}
 
       {/* Conteúdo */}
@@ -880,24 +952,26 @@ function CardapioInner() {
               itemsGrouped.map((section, sIdx) => (
                 <Paper
                   key={section.id}
+                  id={`sec-${section.id}`}
                   elevation={0}
                   sx={{
                     p: 2,
-                    borderRadius: 2.5,
+                    borderRadius: 2,
                     backgroundColor: palette.cream,
-                    border: 'none',
+                    border: `1px solid ${palette.line}`,
                     mt: sIdx === 0 ? 0 : 2,
+                    scrollMarginTop: 12,
                   }}
                 >
-                  <Typography sx={{
-                    mb: 1.5,
-                    color: palette.headerGreen,
-                    fontSize: 22,
-                    fontFamily: "'Alfa Slab One', Georgia, serif",
-                    fontWeight: 400
-                  }}>
-                    {section.title}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, mb: 1.5 }}>
+                    <Typography sx={{ color: '#fff', fontSize: 27, fontFamily: FONT_DISPLAY, letterSpacing: '.03em', lineHeight: 1 }}>
+                      {section.title}
+                    </Typography>
+                    <Box sx={{ flex: 1, height: 2, background: `linear-gradient(90deg, ${palette.bannerRed}, transparent)`, opacity: .65 }} />
+                    <Typography sx={{ fontFamily: FONT_BODY, fontSize: 10.5, fontWeight: 800, letterSpacing: '.2em', color: palette.textMuted }}>
+                      {section.items.length} {section.items.length === 1 ? 'ITEM' : 'ITENS'}
+                    </Typography>
+                  </Box>
 
                   <Grid container direction="column">
                     {section.items.map((item, idx) => {
@@ -919,20 +993,20 @@ function CardapioInner() {
                               <Box component="img" src={item.image} alt={item.title} sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                             </Box>
                             <Box sx={{ minWidth: 0, mr: 1 }}>
-                              <Typography sx={{ fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.title, lineHeight: 1.2, ...clamp(2) }}>
+                              <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', color: '#fff', fontSize: SIZES.title, lineHeight: 1.1, ...clamp(2) }}>
                                 {item.title}
                               </Typography>
                               {itemLabel(item) && (
-                                <Typography sx={{ mt: .25, fontSize: 12.5, fontWeight: 700, color: palette.promoFg, ...clamp(1) }}>
+                                <Typography sx={{ mt: .25, fontFamily: FONT_BODY, fontSize: 12, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.promoFg, ...clamp(1) }}>
                                   {itemLabel(item)}
                                 </Typography>
                               )}
                               {item.subtitle2 && (
-                                <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>
+                                <Typography sx={{ mt: .25, fontFamily: FONT_BODY, fontSize: 14.5, fontWeight: 500, color: palette.textMuted, lineHeight: 1.3, ...clamp(2) }}>
                                   {item.subtitle2}
                                 </Typography>
                               )}
-                              <Typography sx={{ mt: .6, fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.price }}>
+                              <Typography sx={{ mt: .6, fontFamily: FONT_DISPLAY, color: palette.yellow, fontSize: 19, letterSpacing: '.03em' }}>
                                 {fmtPrice(item.price)}
                               </Typography>
                             </Box>
@@ -988,24 +1062,26 @@ function CardapioInner() {
             {drinksGrouped.map((section, sIdx) => (
               <Paper
                 key={section.id}
+                id={`sec-drink-${section.id}`}
                 elevation={0}
                 sx={{
                   p: 2,
-                  borderRadius: 2.5,
+                  borderRadius: 2,
                   backgroundColor: palette.cream,
-                  border: 'none',
+                  border: `1px solid ${palette.line}`,
                   mt: sIdx === 0 ? 0 : 2,
+                  scrollMarginTop: 12,
                 }}
               >
-                <Typography sx={{
-                  mb: 1.5,
-                  color: palette.headerGreen,
-                  fontSize: 22,
-                  fontFamily: "'Alfa Slab One', Georgia, serif",
-                  fontWeight: 400
-                }}>
-                  {section.title}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, mb: 1.5 }}>
+                  <Typography sx={{ color: '#fff', fontSize: 27, fontFamily: FONT_DISPLAY, letterSpacing: '.03em', lineHeight: 1 }}>
+                    {section.title}
+                  </Typography>
+                  <Box sx={{ flex: 1, height: 2, background: `linear-gradient(90deg, ${palette.bannerRed}, transparent)`, opacity: .65 }} />
+                  <Typography sx={{ fontFamily: FONT_BODY, fontSize: 10.5, fontWeight: 800, letterSpacing: '.2em', color: palette.textMuted }}>
+                    {section.items.length} {section.items.length === 1 ? 'ITEM' : 'ITENS'}
+                  </Typography>
+                </Box>
 
                 <Grid container direction="column">
                   {section.items.map((item, idx) => {
@@ -1027,19 +1103,19 @@ function CardapioInner() {
                             <Box component="img" src={item.image} alt={item.title} sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                             <Box
                               onClick={(e) => { e.stopPropagation(); handleFavoriteClick(item, e); }}
-                              sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(255,255,255,.82)', borderRadius: 99, display: 'grid', placeItems: 'center', p: .25 }}
+                              sx={{ position: 'absolute', top: 6, right: 6, bgcolor: 'rgba(22,16,10,.72)', border: `1px solid ${palette.line}`, borderRadius: 99, display: 'grid', placeItems: 'center', p: .25 }}
                             >
                               <HeartBurst liked={item.liked} onClick={(e) => handleFavoriteClick(item, e)} burstKey={burstKey} />
                             </Box>
                           </Box>
 
                           <Box sx={{ minWidth: 0, mr: 0.25 }}>
-                            <Typography sx={{ fontFamily: '"Bitter", serif', fontWeight: 800, color: palette.textPrimary, fontSize: SIZES.title, lineHeight: 1.18, ...clamp(2) }}>
+                            <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', color: '#fff', fontSize: SIZES.title, lineHeight: 1.1, ...clamp(2) }}>
                               {item.title}
                             </Typography>
-                            {itemLabel(item) && <Typography sx={{ mt: .25, fontSize: 12.5, fontWeight: 700, color: palette.promoFg, ...clamp(1) }}>{itemLabel(item)}</Typography>}
-                            {item.subtitle2 && <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>{item.subtitle2}</Typography>}
-                            <Typography sx={{ mt: .55, fontFamily: '"Bitter", serif', fontWeight: 800, color: palette.textPrimary, fontSize: SIZES.price }}>
+                            {itemLabel(item) && <Typography sx={{ mt: .25, fontFamily: FONT_BODY, fontSize: 12, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.promoFg, ...clamp(1) }}>{itemLabel(item)}</Typography>}
+                            {item.subtitle2 && <Typography sx={{ mt: .25, fontFamily: FONT_BODY, fontSize: 14.5, fontWeight: 500, color: palette.textMuted, lineHeight: 1.3, ...clamp(2) }}>{item.subtitle2}</Typography>}
+                            <Typography sx={{ mt: .55, fontFamily: FONT_DISPLAY, color: palette.yellow, fontSize: 19, letterSpacing: '.03em' }}>
                               {fmtPrice(item.price)}
                             </Typography>
                           </Box>
@@ -1057,12 +1133,12 @@ function CardapioInner() {
 
         {/* FAVORITOS */}
         {nav === 'fav' && (
-          <Paper elevation={0} sx={{ p: 2, borderRadius: 2.5, backgroundColor: palette.cream, border: 'none', animation: `${fadeIn} 120ms ease-out` }}>
-            <Typography sx={{ mb: 1.5, color: palette.headerGreen, fontSize: 22, fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400 }}>
+          <Paper elevation={0} sx={{ p: 2, borderRadius: 2, backgroundColor: palette.cream, border: `1px solid ${palette.line}`, animation: `${fadeIn} 120ms ease-out` }}>
+            <Typography sx={{ mb: 1.5, color: '#fff', fontSize: 27, fontFamily: FONT_DISPLAY, letterSpacing: '.03em' }}>
               Seus favoritos
             </Typography>
             {favorites.length === 0 ? (
-              <Typography sx={{ color: '#9AA0A6', textAlign: 'center', py: 4 }}>
+              <Typography sx={{ color: palette.textMuted, fontFamily: FONT_BODY, fontSize: 16, textAlign: 'center', py: 4 }}>
                 Você ainda não favoritou nenhum item.
               </Typography>
             ) : (
@@ -1089,12 +1165,12 @@ function CardapioInner() {
                         </Box>
 
                         <Box sx={{ minWidth: 0, mr: 0.5 }}>
-                          <Typography sx={{ fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.title, lineHeight: 1.2, ...clamp(2) }}>
+                          <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', color: '#fff', fontSize: SIZES.title, lineHeight: 1.1, ...clamp(2) }}>
                             {item.title}
                           </Typography>
-                          {itemLabel(item) && <Typography sx={{ mt: .25, fontSize: 12.5, fontWeight: 700, color: palette.promoFg, ...clamp(1) }}>{itemLabel(item)}</Typography>}
-                          {item.subtitle2 && <Typography sx={{ mt: .25, fontSize: 13.5, color: palette.textMuted, ...clamp(2) }}>{item.subtitle2}</Typography>}
-                          <Typography sx={{ mt: .6, fontFamily: '"Bitter", serif', fontWeight: 700, color: palette.textPrimary, fontSize: SIZES.price }}>
+                          {itemLabel(item) && <Typography sx={{ mt: .25, fontFamily: FONT_BODY, fontSize: 12, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: palette.promoFg, ...clamp(1) }}>{itemLabel(item)}</Typography>}
+                          {item.subtitle2 && <Typography sx={{ mt: .25, fontFamily: FONT_BODY, fontSize: 14.5, fontWeight: 500, color: palette.textMuted, lineHeight: 1.3, ...clamp(2) }}>{item.subtitle2}</Typography>}
+                          <Typography sx={{ mt: .6, fontFamily: FONT_DISPLAY, color: palette.yellow, fontSize: 19, letterSpacing: '.03em' }}>
                             {fmtPrice(item.price)}
                           </Typography>
                         </Box>
@@ -1152,8 +1228,8 @@ function CardapioInner() {
 
         {/* OPÇÕES */}
         {nav === 'menu' && (
-          <Paper elevation={0} sx={{ p: 2, borderRadius: 2.5, backgroundColor: palette.cream, border: 'none', animation: `${fadeIn} 120ms ease-out` }}>
-            <Typography sx={{ mb: 1.5, color: palette.headerGreen, fontSize: 28, fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400 }}>
+          <Paper elevation={0} sx={{ p: 2, borderRadius: 2, backgroundColor: palette.cream, border: `1px solid ${palette.line}`, animation: `${fadeIn} 120ms ease-out` }}>
+            <Typography sx={{ mb: 1.5, color: '#fff', fontSize: 30, fontFamily: FONT_DISPLAY, letterSpacing: '.03em' }}>
               Opções
             </Typography>
 
@@ -1166,8 +1242,8 @@ function CardapioInner() {
                 gap: 1.5,
                 p: 1.5,
                 borderRadius: 2.5,
-                bgcolor: '#F9F6EF',
-                border: '1px solid #EEE6D7',
+                bgcolor: palette.card2,
+                border: `1px solid ${palette.line}`,
                 cursor: 'pointer',
                 '&:active': { transform: 'scale(0.995)' },
               }}
@@ -1183,7 +1259,7 @@ function CardapioInner() {
                   {unit || SINGLE_UNIT}
                 </Typography>
               </Box>
-              <KeyboardArrowRightRoundedIcon sx={{ color: '#55636A' }} />
+              <KeyboardArrowRightRoundedIcon sx={{ color: palette.textMuted }} />
             </Paper>
           </Paper>
         )}
@@ -1199,7 +1275,7 @@ function CardapioInner() {
           left: 0,
           right: 0,
           height: 12,
-          background: 'linear-gradient(to top, rgba(255,255,255,.95), transparent)',
+          background: 'linear-gradient(to top, rgba(14,10,6,.95), transparent)',
           pointerEvents: 'none',
         },
       }}>
@@ -1216,30 +1292,26 @@ function CardapioInner() {
           }}
           showLabels
           sx={{
-            bgcolor: '#fff',
-            borderTop: '1px solid rgba(0,0,0,0.06)',
+            bgcolor: palette.navBg,
+            borderTop: `1px solid ${palette.line}`,
             height: NAV_H,
             pb: 'env(safe-area-inset-bottom)',
-            '& .MuiBottomNavigationAction-label': { fontSize: '0.652rem', transition: 'none' },
-            '& .Mui-selected .MuiBottomNavigationAction-label': { fontSize: '0.652rem' },
+            '& .MuiBottomNavigationAction-root': { color: 'rgba(240,224,192,.45)' },
+            '& .MuiBottomNavigationAction-root.Mui-selected': { color: palette.yellow },
+            '& .MuiBottomNavigationAction-label': {
+              fontFamily: FONT_BODY, fontSize: '0.66rem', fontWeight: 800,
+              letterSpacing: '.12em', textTransform: 'uppercase', transition: 'none',
+            },
+            '& .Mui-selected .MuiBottomNavigationAction-label': { fontSize: '0.66rem' },
+            '& .Mui-selected .MuiSvgIcon-root': { filter: 'drop-shadow(0 0 8px rgba(234,184,8,.55))' },
           }}
         >
           <BottomNavigationAction label="Cardápio" value="inicio" icon={<MenuBookIcon />} />
           <BottomNavigationAction label="Drinks" value="drinks" icon={<LocalBarIcon />} />
-          <BottomNavigationAction
-            label="Busca"
-            value="busca"
-            icon={<SearchIcon />}
-            sx={{
-              px: .5, borderRadius: 0, backgroundColor: 'transparent',
-              '& .MuiSvgIcon-root': { fontSize: 22, color: palette.ring },
-              '& .MuiBottomNavigationAction-label': { fontWeight: 700, color: palette.ring },
-              '&.Mui-selected': { boxShadow: `inset 0 -2px 0 ${palette.ring}` },
-            }}
-          />
+          <BottomNavigationAction label="Busca" value="busca" icon={<SearchIcon />} />
           <BottomNavigationAction label="Favoritos" value="fav" icon={<FavoriteBorderIcon />} />
           <BottomNavigationAction
-            label="Pedir Música"
+            label="Música"
             value="musica"
             icon={
               <Box sx={{
@@ -1251,22 +1323,19 @@ function CardapioInner() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 mt: -3,
-                boxShadow: '0 3px 16px rgba(230,86,79,.5)',
-                border: '3px solid #fff',
+                border: `3px solid ${palette.navBg}`,
                 animation: 'musicGlow 3s ease-in-out infinite',
                 '@keyframes musicGlow': {
-                  '0%,100%': { boxShadow: '0 2px 12px rgba(230,86,79,.4)' },
-                  '50%': { boxShadow: '0 2px 20px rgba(230,86,79,.6)' },
+                  '0%,100%': { boxShadow: '0 0 14px rgba(224,74,58,.45)' },
+                  '50%': { boxShadow: '0 0 24px rgba(224,74,58,.75)' },
                 },
               }}>
-                <Typography sx={{ fontSize: '1.2rem', lineHeight: 1 }}>🎵</Typography>
+                <MusicNoteRoundedIcon sx={{ color: '#fff', fontSize: 21 }} />
               </Box>
             }
             sx={{
               '& .MuiBottomNavigationAction-label': {
-                fontSize: '0.65rem !important',
-                fontWeight: '800 !important',
-                color: palette.bannerRed + ' !important',
+                color: '#fff !important',
                 mt: 0.5,
               },
             }}
@@ -1304,9 +1373,9 @@ function CardapioInner() {
               display: 'flex',
               alignItems: 'center',
               gap: 1,
-              bgcolor: '#fff',
-              border: '1px solid #eaeaea',
-              boxShadow: '0 18px 60px rgba(0,0,0,.08)',
+              bgcolor: palette.card2,
+              border: `1px solid ${palette.line}`,
+              boxShadow: '0 18px 60px rgba(0,0,0,.5)',
               transition: 'box-shadow .2s ease, transform .2s ease',
               zIndex: (t) => t.zIndex.tooltip + 11,
               '&:focus-within': {
@@ -1315,7 +1384,7 @@ function CardapioInner() {
             }}
             onKeyDown={(e) => { if (e.key === 'Escape') closeSearch(); }}
           >
-            <Box sx={{ ml: .5, width: 36, height: 36, borderRadius: '50%', background: '#F5F7F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ ml: .5, width: 36, height: 36, borderRadius: '50%', background: 'rgba(240,224,192,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <SearchIcon sx={{ fontSize: 22, color: palette.ring }} />
             </Box>
             <InputBase
@@ -1349,15 +1418,16 @@ function CardapioInner() {
               top: 'calc(14% + 72px)',
               transform: 'translateX(-50%)',
               width: { xs: '90%', sm: 560 },
-              bgcolor: '#fff',
+              bgcolor: palette.cream,
+              border: `1px solid ${palette.line}`,
               borderRadius: 2,
               p: 2,
-              boxShadow: '0 14px 40px rgba(0,0,0,.10)',
+              boxShadow: '0 14px 40px rgba(0,0,0,.5)',
               maxHeight: { xs: '60vh', sm: 480 },
               overflow: 'auto',
             }}
           >
-            <Typography sx={{ fontWeight: 700, color: '#7B7B7B', fontSize: 12, mb: 1 }}>RESULTADOS</Typography>
+            <Typography sx={{ fontWeight: 800, color: palette.textMuted, fontSize: 11, letterSpacing: '.2em', mb: 1, fontFamily: FONT_BODY }}>RESULTADOS</Typography>
 
             {!searchText && (
               <Typography sx={{ color: '#9AA0A6', fontSize: 14, textAlign: 'center', py: 3 }}>
@@ -1402,7 +1472,7 @@ function CardapioInner() {
                         <Box component="img" src={item.image} alt={item.title} sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 800, color: palette.textPrimary, fontSize: 15, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', color: '#fff', fontSize: 14, lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {item.title}
                         </Typography>
                         {(item.subtitle2 || itemLabel(item)) && (
@@ -1426,7 +1496,7 @@ function CardapioInner() {
 
       {/* Detalhe do item */}
       {detail && (
-        <Box sx={{ position: 'fixed', inset: 0, bgcolor: '#fff', zIndex: (t) => t.zIndex.tooltip + 20, display: 'flex', flexDirection: 'column', animation: `${fadeIn} 120ms ease-out` }}>
+        <Box sx={{ position: 'fixed', inset: 0, bgcolor: palette.page, zIndex: (t) => t.zIndex.tooltip + 20, display: 'flex', flexDirection: 'column', animation: `${fadeIn} 120ms ease-out` }}>
           <Box sx={{ position: 'relative', height: { xs: '42vh', sm: '50vh' }, overflow: 'hidden' }}>
             <Box component="img" src={detail.image} alt={detail.title} sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             <Box sx={{ position: 'absolute', left: 0, right: 0, top: { xs: 'calc(env(safe-area-inset-top) + 28px)', sm: 28 }, px: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1448,7 +1518,7 @@ function CardapioInner() {
             </Box>
           </Box>
           <Box sx={{ flex: 1, overflow: 'auto', px: 2, pt: 5, pb: 2, animation: `${appear} 180ms ease` }}>
-            <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 26, color: palette.textPrimary, mb: 1 }}>
+            <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', fontSize: 25, lineHeight: 1.1, color: '#fff', mb: 1 }}>
               {detail.title}
             </Typography>
             {itemLabel(detail) && (
@@ -1457,12 +1527,12 @@ function CardapioInner() {
               </Typography>
             )}
             {detail.subtitle2 && (
-              <Typography sx={{ color: palette.textMuted, lineHeight: 1.6, mb: 2 }}>
+              <Typography sx={{ color: palette.textMuted, fontFamily: FONT_BODY, fontSize: 16.5, fontWeight: 500, lineHeight: 1.55, mb: 2 }}>
                 {detail.subtitle2}
               </Typography>
             )}
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-              <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 22, color: palette.textPrimary }}>
+              <Typography sx={{ fontFamily: FONT_DISPLAY, fontSize: 30, color: palette.yellow, letterSpacing: '.03em', textShadow: '0 0 22px rgba(234,184,8,.4)' }}>
                 {fmtPrice(detail.price)}
               </Typography>
               {detail.oldPrice && (
@@ -1481,7 +1551,7 @@ function CardapioInner() {
 
             {(typeof detail.abv === 'number' || typeof detail.ibu === 'number') && (
               <>
-                <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 18, color: palette.textPrimary, mb: 1 }}>
+                <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', fontSize: 15.5, letterSpacing: '.04em', color: '#fff', mb: 1 }}>
                   Características
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
@@ -1495,7 +1565,7 @@ function CardapioInner() {
                         fontWeight: 800,
                         ...(isPropMarked(detail, 'abv')
                           ? { bgcolor: palette.ring, color: '#fff' }
-                          : { bgcolor: '#F2F5F4', color: palette.textMuted }),
+                          : { bgcolor: 'rgba(240,224,192,.08)', color: palette.textMuted, border: `1px solid ${palette.line}` }),
                       }}
                     />
                   )}
@@ -1509,7 +1579,7 @@ function CardapioInner() {
                         fontWeight: 800,
                         ...(isPropMarked(detail, 'ibu')
                           ? { bgcolor: palette.ring, color: '#fff' }
-                          : { bgcolor: '#F2F5F4', color: palette.textMuted }),
+                          : { bgcolor: 'rgba(240,224,192,.08)', color: palette.textMuted, border: `1px solid ${palette.line}` }),
                       }}
                     />
                   )}
@@ -1519,14 +1589,14 @@ function CardapioInner() {
 
             {!isDrinkItem(detail) && (
               <>
-                <Typography sx={{ fontFamily: "'Bitter', serif", fontWeight: 800, fontSize: 18, color: palette.textPrimary, mb: 1 }}>
+                <Typography sx={{ fontFamily: FONT_TITLE, fontWeight: 700, textTransform: 'uppercase', fontSize: 15.5, letterSpacing: '.04em', color: '#fff', mb: 1 }}>
                   Sugestão de acompanhamento
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 8 }}>
                   {/* Tema MUI global é dark: chips precisam de cor explícita no fundo branco */}
-                  <Chip label="Batata rústica" sx={{ bgcolor: '#F2F5F4', color: palette.textPrimary, fontWeight: 700 }} />
-                  <Chip label="Salada verde" sx={{ bgcolor: '#F2F5F4', color: palette.textPrimary, fontWeight: 700 }} />
-                  <Chip label="Molho da casa" sx={{ bgcolor: '#F2F5F4', color: palette.textPrimary, fontWeight: 700 }} />
+                  <Chip label="Batata rústica" sx={{ bgcolor: 'rgba(240,224,192,.08)', color: palette.textPrimary, fontWeight: 700, border: `1px solid ${palette.line}` }} />
+                  <Chip label="Salada verde" sx={{ bgcolor: 'rgba(240,224,192,.08)', color: palette.textPrimary, fontWeight: 700, border: `1px solid ${palette.line}` }} />
+                  <Chip label="Molho da casa" sx={{ bgcolor: 'rgba(240,224,192,.08)', color: palette.textPrimary, fontWeight: 700, border: `1px solid ${palette.line}` }} />
                 </Box>
               </>
             )}
