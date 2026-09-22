@@ -292,7 +292,7 @@ export function ReservaFdsModal({ open, onClose, copy }) {
             {copy.tag}
           </Box>
           <SportsBarRoundedIcon sx={{ fontSize: 30, color: C.yellow, mb: .5, animation: `${wobble} 1.8s ease-in-out infinite` }} />
-          <Typography id="reserva-fds-title" sx={{ fontFamily: FONT_DISPLAY, fontSize: 'clamp(26px, 7.5vw, 32px)', lineHeight: .95, color: '#fff' }}>
+          <Typography id="reserva-fds-title" sx={{ fontFamily: FONT_DISPLAY, fontSize: 'clamp(24px, 6.8vw, 30px)', lineHeight: .95, color: '#fff' }}>
             {copy.headline}
           </Typography>
           <Typography sx={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 600, color: C.muted, mt: .75, lineHeight: 1.3 }}>
@@ -369,12 +369,12 @@ export function ReservaFdsCard({ copy, onOpen }) {
 
 // Copy padrão (afinada com o XQUADS). Pode ser sobrescrita via props.
 export const RESERVA_FDS_COPY = {
-  tag: 'Chope por conta da casa',
-  headline: 'Chama a galera e ganha chope de graça',
-  sub: 'Reserve a mesa de quinta a domingo e a casa paga o chope da sua turma. Quanto maior a mesa, mais chope.',
+  tag: 'Chope cortesia',
+  headline: 'Reserve sua mesa e garanta chope cortesia para seus convidados',
+  sub: 'De quinta a domingo, sua mesa reservada ganha chope cortesia. Quanto maior a mesa, mais cortesia.',
   cta: 'Reservar e garantir os chopes',
   depois: 'Agora não, só olhando',
   rodape: 'Vale de quinta a domingo, reserva das 18h às 21h. Leva 1 minuto: só nome e WhatsApp.',
-  cardTitulo: 'Chama a galera e ganha chope de graça',
-  cardSub: 'Reserve pro fim de semana: a casa paga até 9 chopes, drink e petisco.',
+  cardTitulo: 'Reserve sua mesa e garanta chope cortesia',
+  cardSub: 'Pro fim de semana, para seus convidados: até 9 chopes, drink e petisco.',
 };
