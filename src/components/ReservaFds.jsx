@@ -79,6 +79,7 @@ function track(name, data) {
 }
 
 /* ── animações ── */
+const slideUp = keyframes`0%{opacity:0;transform:translateY(40px)}100%{opacity:1;transform:translateY(0)}`;
 const rise = keyframes`0%{opacity:0;transform:translateY(14px) scale(.98)}100%{opacity:1;transform:translateY(0) scale(1)}`;
 const sheen = keyframes`0%{transform:translateX(-140%) skewX(-18deg)}100%{transform:translateX(240%) skewX(-18deg)}`;
 const glow = keyframes`0%,100%{box-shadow:0 0 0 0 rgba(224,136,24,.0),0 10px 28px rgba(224,136,24,.35)}50%{box-shadow:0 0 0 6px rgba(224,136,24,.12),0 10px 34px rgba(224,136,24,.55)}`;
@@ -114,7 +115,7 @@ function Prize({ itens, big }) {
  * Corpo da experiência (usado dentro do modal). Passo 1 escolhe o grupo,
  * passo 2 o dia; o botão leva pro site de reservas já preenchido.
  */
-export function ReservaFdsBody({ copy, onGo, src = 'modal' }) {
+export function ReservaFdsBody({ copy, onGo, onDismiss, src = 'modal' }) {
   const [tier, setTier] = useState(1); // começa no 8 (degrau do meio)
   const [dayIdx, setDayIdx] = useState(0);
   const days = useMemo(() => nextPromoDays(4), []);
@@ -123,7 +124,7 @@ export function ReservaFdsBody({ copy, onGo, src = 'modal' }) {
   const href = reservaLink(t.people, day?.ymd, src);
 
   return (
-    <Box sx={{ px: 2.25, pb: 1.5, pt: 1.5, textAlign: 'center', color: C.ink }}>
+    <Box sx={{ px: 2.25, pt: 1.5, textAlign: 'center', color: C.ink }}>
       {/* Passo 1: grupo */}
       <Typography sx={{ fontFamily: FONT_BODY, fontSize: 11, fontWeight: 800, letterSpacing: '.22em', color: C.muted, mb: 1 }}>
         1 · QUANTOS VÃO COM VOCÊ?
@@ -140,7 +141,7 @@ export function ReservaFdsBody({ copy, onGo, src = 'modal' }) {
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setTier(i); }}
               sx={{
                 cursor: 'pointer', userSelect: 'none',
-                borderRadius: 1.5, px: 1, py: .8,
+                borderRadius: 1.5, px: 1, py: { xs: .6, sm: .8 },
                 border: `2px solid ${on ? C.orange : C.line}`,
                 bgcolor: on ? 'rgba(224,136,24,.16)' : C.card2,
                 transform: on ? 'translateY(-2px)' : 'none',
@@ -165,7 +166,7 @@ export function ReservaFdsBody({ copy, onGo, src = 'modal' }) {
         key={t.people}
         sx={{
           position: 'relative', overflow: 'hidden',
-          borderRadius: 2, px: 2, py: 1.1, mb: 1.5,
+          borderRadius: 2, px: 2, py: { xs: .9, sm: 1.1 }, mb: { xs: 1.25, sm: 1.5 },
           background: `linear-gradient(135deg, rgba(224,74,58,.22), rgba(224,136,24,.16))`,
           border: `1px solid rgba(234,184,8,.35)`,
           animation: `${rise} .35s both`,
@@ -234,27 +235,38 @@ export function ReservaFdsBody({ copy, onGo, src = 'modal' }) {
         })}
       </Box>
 
-      <Button
-        component="a"
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() => { track('ReservaFdsClick', { people: t.people, date: day?.ymd, src }); onGo?.(); }}
-        fullWidth
-        variant="contained"
-        endIcon={<ArrowForwardRoundedIcon />}
-        sx={{
-          bgcolor: C.orange, color: '#12100B',
-          '&:hover': { bgcolor: '#f39a2a', color: '#12100B' },
-          borderRadius: 999, fontFamily: FONT_DISPLAY, fontSize: 20, letterSpacing: '.04em', py: .95,
-          textTransform: 'none', animation: `${glow} 2.2s ease-in-out infinite`,
-        }}
-      >
-        {copy.cta}
-      </Button>
-      <Typography sx={{ fontFamily: FONT_BODY, fontSize: 12, fontWeight: 600, color: C.muted, mt: 1, lineHeight: 1.3 }}>
-        {copy.rodape}
-      </Typography>
+      {/* CTA fixo no pé da folha (sticky dentro da área rolável) */}
+      <Box sx={{
+        position: 'sticky', bottom: 0, mx: -2.25, px: 2.25, pt: 1, pb: 'max(12px, env(safe-area-inset-bottom))',
+        background: `linear-gradient(180deg, rgba(36,26,16,0) 0%, ${C.card} 28%)`,
+      }}>
+        <Button
+          component="a"
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => { track('ReservaFdsClick', { people: t.people, date: day?.ymd, src }); onGo?.(); }}
+          fullWidth
+          variant="contained"
+          endIcon={<ArrowForwardRoundedIcon />}
+          sx={{
+            bgcolor: C.orange, color: '#12100B',
+            '&:hover': { bgcolor: '#f39a2a', color: '#12100B' },
+            borderRadius: 999, fontFamily: FONT_DISPLAY, fontSize: { xs: 18, sm: 20 }, letterSpacing: '.04em', py: .95,
+            textTransform: 'none', animation: `${glow} 2.2s ease-in-out infinite`,
+          }}
+        >
+          {copy.cta}
+        </Button>
+        <Typography sx={{ fontFamily: FONT_BODY, fontSize: 12, fontWeight: 600, color: C.muted, mt: .75, lineHeight: 1.3 }}>
+          {copy.rodape}
+        </Typography>
+        {onDismiss && (
+          <Button onClick={onDismiss} sx={{ mt: .25, borderRadius: 999, textTransform: 'none', fontFamily: FONT_BODY, fontWeight: 700, fontSize: 13, color: C.muted, py: .25 }}>
+            {copy.depois}
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -262,24 +274,31 @@ export function ReservaFdsBody({ copy, onGo, src = 'modal' }) {
 /** Modal que abre ao carregar o cardápio. */
 export function ReservaFdsModal({ open, onClose, copy }) {
   return (
-    <Modal open={open} onClose={onClose} aria-labelledby="reserva-fds-title" sx={{ zIndex: 21000 }}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      aria-labelledby="reserva-fds-title"
+      sx={{ zIndex: 21000, display: 'flex', alignItems: { xs: 'flex-end', sm: 'center' }, justifyContent: 'center' }}
+    >
       <Box sx={{
-        position: 'absolute', left: '50%', top: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: { xs: '92%', sm: 430 },
-        maxHeight: '92vh', overflowY: 'auto',
+        width: { xs: '100%', sm: 430 },
+        maxWidth: '100%',
+        maxHeight: { xs: '92dvh', sm: '92vh' },
+        display: 'flex', flexDirection: 'column',
         bgcolor: C.card, color: C.ink,
-        borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.6)',
+        borderRadius: { xs: '20px 20px 0 0', sm: 3 },
+        boxShadow: '0 -20px 80px rgba(0,0,0,.6)',
         border: `1px solid ${C.line}`,
-        outline: 'none',
-        animation: `${rise} .35s both`,
+        outline: 'none', overflow: 'hidden',
+        animation: `${slideUp} .35s cubic-bezier(.2,.8,.2,1) both`,
       }}>
         {/* Cabeçalho */}
         <Box sx={{
-          position: 'relative', px: 3, pt: 2.25, pb: 1.5, textAlign: 'center',
+          position: 'relative', flexShrink: 0, px: 3, pt: { xs: 1.5, sm: 2.25 }, pb: 1.5, textAlign: 'center',
           background: `radial-gradient(120% 90% at 50% 0%, rgba(224,74,58,.35), transparent 60%), ${C.page}`,
           borderBottom: `1px solid ${C.line}`,
         }}>
+          <Box sx={{ display: { xs: 'block', sm: 'none' }, width: 40, height: 4, borderRadius: 2, bgcolor: 'rgba(240,224,192,.25)', mx: 'auto', mb: 1.25 }} />
           <IconButton onClick={onClose} size="small" aria-label="fechar" sx={{ position: 'absolute', top: 8, right: 8, color: 'rgba(240,224,192,.8)' }}>
             <CloseIcon />
           </IconButton>
@@ -291,21 +310,17 @@ export function ReservaFdsModal({ open, onClose, copy }) {
           }}>
             {copy.tag}
           </Box>
-          <SportsBarRoundedIcon sx={{ fontSize: 30, color: C.yellow, mb: .5, animation: `${wobble} 1.8s ease-in-out infinite` }} />
+          <SportsBarRoundedIcon sx={{ display: { xs: 'none', sm: 'inline-block' }, fontSize: 30, color: C.yellow, mb: .5, animation: `${wobble} 1.8s ease-in-out infinite` }} />
           <Typography id="reserva-fds-title" sx={{ fontFamily: FONT_DISPLAY, fontSize: 'clamp(24px, 6.8vw, 30px)', lineHeight: .95, color: '#fff' }}>
             {copy.headline}
           </Typography>
-          <Typography sx={{ fontFamily: FONT_BODY, fontSize: 14, fontWeight: 600, color: C.muted, mt: .75, lineHeight: 1.3 }}>
+          <Typography sx={{ fontFamily: FONT_BODY, fontSize: { xs: 13, sm: 14 }, fontWeight: 600, color: C.muted, mt: .75, lineHeight: 1.3 }}>
             {copy.sub}
           </Typography>
         </Box>
 
-        <ReservaFdsBody copy={copy} onGo={onClose} src="modal" />
-
-        <Box sx={{ px: 2.5, pb: 1.25, mt: -1.25, textAlign: 'center' }}>
-          <Button onClick={onClose} sx={{ borderRadius: 999, textTransform: 'none', fontFamily: FONT_BODY, fontWeight: 700, fontSize: 13, color: C.muted, py: .25 }}>
-            {copy.depois}
-          </Button>
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <ReservaFdsBody copy={copy} onGo={onClose} onDismiss={onClose} src="modal" />
         </Box>
       </Box>
     </Modal>
@@ -331,7 +346,7 @@ export function ReservaFdsCard({ copy, onOpen }) {
         background: `linear-gradient(120deg, ${C.card2} 0%, #3a2410 55%, rgba(224,74,58,.35) 100%)`,
         border: `1px solid rgba(234,184,8,.35)`,
         boxShadow: '0 10px 30px rgba(0,0,0,.45)',
-        display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr) auto', alignItems: 'center', gap: 1.5,
+        display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr) auto', alignItems: 'center', gap: { xs: 1.25, sm: 1.5 },
         animation: `${rise} .5s .2s both`,
         '&::after': pulse ? {
           content: '""', position: 'absolute', top: 0, bottom: 0, width: '30%',
@@ -341,7 +356,7 @@ export function ReservaFdsCard({ copy, onOpen }) {
       }}
     >
       <Box sx={{
-        width: 54, height: 54, borderRadius: 2, display: 'grid', placeItems: 'center',
+        width: { xs: 46, sm: 54 }, height: { xs: 46, sm: 54 }, borderRadius: 2, display: 'grid', placeItems: 'center', flexShrink: 0,
         bgcolor: 'rgba(224,136,24,.18)', border: `1px solid rgba(224,136,24,.5)`,
       }}>
         <SportsBarRoundedIcon sx={{ fontSize: 32, color: C.yellow, animation: `${cheer} 2s ease-in-out infinite` }} />
@@ -350,7 +365,7 @@ export function ReservaFdsCard({ copy, onOpen }) {
         <Typography sx={{ fontFamily: FONT_BODY, fontSize: 10, fontWeight: 900, letterSpacing: '.22em', color: C.orange, textTransform: 'uppercase' }}>
           {copy.tag}{first ? ` · ${first.today ? 'HOJE' : first.tomorrow ? 'AMANHÃ' : `${first.dow} ${first.day}`}` : ''}
         </Typography>
-        <Typography sx={{ fontFamily: FONT_DISPLAY, fontSize: 24, lineHeight: 1, color: '#fff', mt: .25 }}>
+        <Typography sx={{ fontFamily: FONT_DISPLAY, fontSize: { xs: 21, sm: 24 }, lineHeight: 1, color: '#fff', mt: .25 }}>
           {copy.cardTitulo}
         </Typography>
         <Typography sx={{ fontFamily: FONT_BODY, fontSize: 13.5, fontWeight: 600, color: C.muted, mt: .35, lineHeight: 1.3 }}>
