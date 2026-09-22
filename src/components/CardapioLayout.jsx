@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import AcquisitionMachine from "../components/AcquisitionMachine";
+import { ReservaFdsModal, ReservaFdsCard, RESERVA_FDS_COPY } from './ReservaFds';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import LocalBarIcon from '@mui/icons-material/LocalBar';
 import SearchIcon from '@mui/icons-material/Search';
@@ -554,11 +555,10 @@ function CardapioInner() {
   const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // --- Modal promocional: Roleta Na Praia Festival ---
-  const [rouletteOpen, setRouletteOpen] = useState(false);
-  const closeRoulette = () => {
-    setRouletteOpen(false);
-  };
+  // --- Modal promocional: reserva de fim de semana com chope de cortesia ---
+  // (substituiu a roleta do Na Praia Festival, encerrado em 09/2026)
+  const [reservaFdsOpen, setReservaFdsOpen] = useState(false);
+  const closeReservaFds = () => setReservaFdsOpen(false);
 
   // --- Avaliação de atendimento ---
   const [avalieOpen, setAvalieOpen] = useState(false);
@@ -688,9 +688,11 @@ function CardapioInner() {
   // Dados são locais (bundle): skeleton só o suficiente pra primeira pintura não piscar.
   useEffect(() => { const t = setTimeout(() => setLoading(false), 400); return () => clearTimeout(t); }, []);
 
-  // Convite da roleta (Na Praia Festival) — abre a CADA carregamento do cardápio.
+  // Convite de reserva do fim de semana: abre a CADA carregamento do cardápio
+  // (mesmo comportamento do convite anterior), exceto quando a URL abre a avaliação.
   useEffect(() => {
-    const t = setTimeout(() => setRouletteOpen(true), 1400);
+    if (typeof window !== 'undefined' && window.location.hash === '#avaliar') return;
+    const t = setTimeout(() => setReservaFdsOpen(true), 1400);
     return () => clearTimeout(t);
   }, []);
 
@@ -926,6 +928,9 @@ function CardapioInner() {
               ))}
             </Box>
           </Box>
+
+          {/* Reserva do fim de semana com chope de cortesia */}
+          <ReservaFdsCard copy={RESERVA_FDS_COPY} onOpen={() => setReservaFdsOpen(true)} />
 
           {/* Categorias — atalho pras seções */}
           <Box sx={{ display: 'flex', gap: 1, px: 2, mt: 2, overflowX: 'auto', position: 'relative', zIndex: 1, '&::-webkit-scrollbar': { display: 'none' }, scrollbarWidth: 'none' }}>
@@ -1805,95 +1810,8 @@ function CardapioInner() {
         </Button>
       )}
 
-      {/* ── Modal promocional — Roleta Na Praia Festival ── */}
-      <Modal open={rouletteOpen} onClose={closeRoulette} aria-labelledby="roleta-title" sx={{ zIndex: 21000 }}>
-        <Box sx={{
-          position: 'absolute', left: '50%', top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: { xs: '90%', sm: 420 },
-          bgcolor: '#fff', color: '#12100B',
-          borderRadius: 3, boxShadow: '0 30px 90px rgba(0,0,0,.32)',
-          overflow: 'hidden',
-        }}>
-          {/* Header festivo */}
-          <Box sx={{ position: 'relative', bgcolor: '#000', color: '#fff', px: 3, pt: 3, pb: 2.5, textAlign: 'center' }}>
-            <IconButton onClick={closeRoulette} size="small" aria-label="fechar" sx={{ position: 'absolute', top: 8, right: 8, color: 'rgba(255,255,255,.9)' }}>
-              <CloseIcon />
-            </IconButton>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Box
-                component="img"
-                src="https://napraiafestival.r2.com.vc/assets/logo-napraia-AkKHDZWz.png"
-                alt="Na Praia Festival"
-                sx={{ height: 92, width: 'auto', maxWidth: '80%', objectFit: 'contain' }}
-              />
-            </Box>
-            <Box sx={{ display: 'inline-block', mt: 1.25, px: 1.5, py: .4, borderRadius: 999, bgcolor: 'rgba(255,255,255,.18)', fontSize: 10.5, fontWeight: 900, letterSpacing: .6 }}>
-              PARCEIRO OFICIAL · NA PRAIA FESTIVAL 2026
-            </Box>
-          </Box>
-
-          {/* Corpo */}
-          <Box sx={{ px: 3, py: 2.5, textAlign: 'center' }}>
-            <Typography id="roleta-title" sx={{ fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400, fontSize: 21, color: palette.headerGreen, lineHeight: 1.15, mb: 1.25 }}>
-              Quer ganhar uma cortesia?
-            </Typography>
-            <Typography sx={{ fontSize: 15, color: '#12100B', lineHeight: 1.5, mb: 1 }}>
-              Cortesias pra <b>shows</b> no Na Praia Festival e prêmios da casa. Tente a sorte na roleta!
-            </Typography>
-            <Typography sx={{ fontSize: 12, color: '#6F6F6F', mb: 1.5 }}>
-              Sujeita a verificação de disponibilidade do dia escolhido.
-            </Typography>
-            <Typography sx={{ fontSize: 12.5, color: palette.headerGreen, fontWeight: 800, mb: 2.25 }}>
-              🏖️ Somos o único Porks parceiro oficial do Na Praia Festival 2026.
-            </Typography>
-
-            <Box sx={{
-              border: '2px dashed', borderColor: palette.headerGreen, borderRadius: 2,
-              bgcolor: 'rgba(0,0,0,.03)', px: 2, py: 1.5, mb: 2.25,
-            }}>
-              <Typography sx={{ fontSize: 11.5, color: '#6F6F6F', fontWeight: 700, letterSpacing: .4, mb: .25 }}>
-                USE O CUPOM
-              </Typography>
-              <Typography sx={{ fontFamily: "'Alfa Slab One', Georgia, serif", fontWeight: 400, fontSize: 20, color: palette.headerGreen, letterSpacing: 1 }}>
-                PORKSSOBRADINHO
-              </Typography>
-              <Typography
-                component="a"
-                href="https://napraiafestival.r2.com.vc/?cupom=porkssobradinho"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ display: 'inline-block', mt: .75, fontSize: 12.5, fontWeight: 800, color: palette.headerGreen, textDecoration: 'underline' }}
-              >
-                Usar cupom em napraiafestival.r2.com.vc →
-              </Typography>
-            </Box>
-
-            <Button
-              component="a"
-              href="https://roleta.sobradinhoporks.com.br"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={closeRoulette}
-              fullWidth
-              variant="contained"
-              sx={{
-                bgcolor: '#000', color: '#fff', '&:hover': { bgcolor: '#222', color: '#fff' },
-                borderRadius: 999, fontWeight: 900, fontSize: 16, py: 1.25,
-                textTransform: 'none', boxShadow: '0 8px 24px rgba(0,0,0,.4)',
-              }}
-            >
-              🎡 Girar a roleta
-            </Button>
-            <Button
-              onClick={closeRoulette}
-              sx={{ mt: 1, borderRadius: 999, textTransform: 'none', fontWeight: 700, color: '#8A8A8A' }}
-            >
-              Agora não
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+      {/* ── Modal promocional — reserva do fim de semana com chope de cortesia ── */}
+      <ReservaFdsModal open={reservaFdsOpen} onClose={closeReservaFds} copy={RESERVA_FDS_COPY} />
 
       {/* ── Modal de Avaliação de Atendimento ── */}
       <Modal open={avalieOpen} onClose={closeAvalie} aria-labelledby="avalie-title">
