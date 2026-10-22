@@ -108,7 +108,7 @@ app.post('/api/bandas', (req, res) => {
   if (erros.length) return res.status(400).json({ error: 'dados inválidos', campos: erros })
 
   const id = `${data}-${randomBytes(6).toString('hex')}`
-  const integrantes = Math.min(30, Math.max(1, parseInt(b.integrantes, 10) || 1))
+  const integrantes = pp ? 1 : Math.min(30, Math.max(1, parseInt(b.integrantes, 10) || 1)) // Plug & Play: inscrição individual
   const ficha = {
     id,
     tipo: pp ? 'pp' : 'agenda',
@@ -610,7 +610,7 @@ function resumo(f) {
   const ativos = f.arquivos.filter(a => !a.apagado_em)
   return {
     id: f.id, banda: f.banda, responsavel: f.responsavel, whatsapp: f.whatsapp,
-    data: f.data, data_texto: f.data_texto, integrantes: f.integrantes,
+    data: f.data, data_texto: f.data_texto, integrantes: f.integrantes, instrumentos: f.instrumentos || [],
     criado_em: f.criado_em, concluido: !!f.concluido_em,
     tipo: f.tipo === 'pp' ? 'pp' : 'agenda', quintas: f.quintas || [], quintas_aprovadas: f.quintas_aprovadas || [],
     status: f.status || 'nova',
@@ -867,7 +867,7 @@ h2 .n{margin-left:2px;padding:1px 9px;border-radius:12px;background:var(--fundo)
     <section class="card">
       <h2>${ic.gente}A banda</h2>
       <div class="dados">
-        <div class="dado">${ic.gente}<div><small>Formação</small><b>${f.integrantes} ${f.integrantes === 1 ? 'integrante' : 'integrantes'}</b>
+        <div class="dado">${ic.gente}<div><small>${f.tipo === 'pp' ? 'Toca' : 'Formação'}</small><b>${f.tipo === 'pp' ? 'Músico individual' : `${f.integrantes} ${f.integrantes === 1 ? 'integrante' : 'integrantes'}`}</b>
           ${f.instrumentos.length ? `<div class="chips">${f.instrumentos.map(i => `<span class="chip">${esc(i)}</span>`).join('')}</div>` : ''}</div></div>
         ${dado(ic.relogio, 'Tempo de banda', esc(f.tempo || 'Não informado'))}
         ${f.cache ? dado(ic.chope, 'Cachê médio que cobra', esc(f.cache)) : ''}

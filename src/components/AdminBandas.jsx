@@ -263,7 +263,7 @@ export default function AdminBandas({ pass }) {
                 aria-label={`Abrir ficha da banda ${b.banda}`}>
                 <span className="ab-c-banda">
                   <b>{b.banda}{b.tipo === 'pp' && <span className="ab-pp">Plug & Play</span>}</b>
-                  <small><Ico n="pessoas" className="ab-ico-sm" />{b.integrantes} {b.tipo === 'pp' ? (b.integrantes === 1 ? 'músico' : 'músicos') : (b.integrantes === 1 ? 'integrante' : 'integrantes')}{!b.concluido && <em className="ab-incompleto"> · envio incompleto</em>}</small>
+                  <small><Ico n="pessoas" className="ab-ico-sm" />{b.tipo === 'pp' ? (b.instrumentos || []).join(', ') || 'Músico' : `${b.integrantes} ${b.integrantes === 1 ? 'integrante' : 'integrantes'}`}{!b.concluido && <em className="ab-incompleto"> · envio incompleto</em>}</small>
                 </span>
                 {b.tipo === 'pp'
                   ? <span className="ab-c-data"><Ico n="calendario" className="ab-ico-sm" />Quintas {b.quintas.map(quintaCurta).join(', ')}</span>
@@ -620,7 +620,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                           )
                         })}
                       </ul>
-                      <p className="ab-dica" aria-live="polite">{salvo === 'quintas' ? <><Ico n="check" className="ab-ico-sm" />Quintas salvas</> : `${b.integrantes} ${b.integrantes === 1 ? 'músico' : 'músicos'} nesta inscrição. Cada um ganha R$ 50 de bônus no dia.`}</p>
+                      <p className="ab-dica" aria-live="polite">{salvo === 'quintas' ? <><Ico n="check" className="ab-ico-sm" />Quintas salvas</> : 'Inscrição individual. O músico ganha R$ 50 de bônus no dia.'}</p>
                     </section>
                   )}
 
@@ -655,7 +655,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                       <dt>Responsável</dt><dd>{b.responsavel}</dd>
                       <dt>WhatsApp</dt><dd>{fone(b.whatsapp)}</dd>
                       {b.tipo === 'pp' ? <>
-                        <dt>Formação</dt><dd>{b.integrantes} · {b.instrumentos.join(', ')}</dd>
+                        <dt>Toca</dt><dd>{b.instrumentos.join(', ')}</dd>
                         <dt>Bônus</dt><dd>R$ 50 por músico, só no dia</dd>
                       </> : <>
                         <dt>Show pedido</dt><dd>{diaShow(b.data)}, 20h{showPassou(b.data) && ' (já passou)'}</dd>

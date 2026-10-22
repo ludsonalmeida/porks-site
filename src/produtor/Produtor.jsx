@@ -285,8 +285,8 @@ function TextoComposer({ placeholder, onSend, maxLength = 80 }) {
   )
 }
 
-function FormacaoComposer({ onSend, inicial = 4 }) {
-  const [n, setN] = useState(inicial)
+function FormacaoComposer({ onSend, solo = false }) {
+  const [n, setN] = useState(solo ? 1 : 4)
   const [sel, setSel] = useState([])
   const [outro, setOutro] = useState(false)
   const [outroTxt, setOutroTxt] = useState('')
@@ -295,13 +295,15 @@ function FormacaoComposer({ onSend, inicial = 4 }) {
   const ok = lista.length > 0 && (!outro || outroTxt.trim().length > 1)
   return (
     <div className="pd-compose-box">
-      <div className="pd-lbl">Quantos integrantes?</div>
-      <div className="pd-stepper">
-        <button type="button" onClick={() => setN(x => Math.max(1, x - 1))} disabled={n <= 1} aria-label="Menos">−</button>
-        <span className="pd-stepper-n">{n}</span>
-        <button type="button" onClick={() => setN(x => Math.min(15, x + 1))} disabled={n >= 15} aria-label="Mais">+</button>
-      </div>
-      <div className="pd-lbl">Quem tem na banda? <i>marque todos</i></div>
+      {!solo && <>
+        <div className="pd-lbl">Quantos integrantes?</div>
+        <div className="pd-stepper">
+          <button type="button" onClick={() => setN(x => Math.max(1, x - 1))} disabled={n <= 1} aria-label="Menos">−</button>
+          <span className="pd-stepper-n">{n}</span>
+          <button type="button" onClick={() => setN(x => Math.min(15, x + 1))} disabled={n >= 15} aria-label="Mais">+</button>
+        </div>
+      </>}
+      <div className="pd-lbl">{solo ? <>O que você toca? <i>se canta e toca, marque os dois</i></> : <>Quem tem na banda? <i>marque todos</i></>}</div>
       <div className="pd-chips">
         {INSTRUMENTOS.map(i => (
           <button type="button" key={i} className={`pd-chip${sel.includes(i) ? ' on' : ''}`} aria-pressed={sel.includes(i)} onClick={() => toggle(i)}>{sel.includes(i) && <Ico n="check" className="pd-chip-ck" />}{i}</button>
@@ -311,7 +313,7 @@ function FormacaoComposer({ onSend, inicial = 4 }) {
       {outro && (
         <input className="pd-input pd-input-block" autoFocus value={outroTxt} onChange={e => setOutroTxt(e.target.value)} placeholder="Ex.: teclado, sax, percussão" maxLength={60} />
       )}
-      <button type="button" className="pd-cta" disabled={!ok} onClick={() => onSend({ integrantes: n, instrumentos: lista })}>Confirmar formação</button>
+      <button type="button" className="pd-cta" disabled={!ok} onClick={() => onSend({ integrantes: n, instrumentos: lista })}>{solo ? 'Confirmar' : 'Confirmar formação'}</button>
     </div>
   )
 }
@@ -764,7 +766,7 @@ export default function Produtor() {
       banda(pp() ? 'Quero tocar no Plug & Play 🎸' : 'Quero negociar um show na agenda 🤘')
       johnny(pp() ? [
         'Boa! O Plug & Play rola toda quinta, das 19h às 23h50: o músico chega, pluga e toca junto. São até 10 músicos por noite. 🎸',
-        'Qual é o seu nome? Se vierem mais de um, pode mandar o nome do grupo.',
+        'A inscrição é individual, músico por músico. Como você quer ser chamado no palco?',
       ] : [
         'Show! Vou te fazer umas perguntas rápidas pra conhecer o som de vocês e levar pra administração da casa.',
         'Bora começar: qual é o nome da banda?',
@@ -774,13 +776,13 @@ export default function Produtor() {
       F().banda = nome
       banda(nome)
       johnny(pp()
-        ? [`Prazer, ${nome}! 🔥`, 'Quantos músicos vêm e quais instrumentos vocês tocam?']
+        ? [`Prazer, ${nome}! 🔥`, 'Qual instrumento você toca?']
         : [`${nome}! Gostei. 🔥`, 'Me conta a formação: quantos são e quem toca o quê?'], 'formacao')
     },
     formacao: ({ integrantes, instrumentos }) => {
       F().integrantes = integrantes
       F().instrumentos = instrumentos
-      banda(`${integrantes} ${pp() ? (integrantes === 1 ? 'músico' : 'músicos') : (integrantes === 1 ? 'integrante' : 'integrantes')}: ${instrumentos.join(', ')}`)
+      banda(pp() ? instrumentos.join(', ') : `${integrantes} ${integrantes === 1 ? 'integrante' : 'integrantes'}: ${instrumentos.join(', ')}`)
       johnny([pp() ? 'E qual é a sua pegada? Marca os estilos que você toca.' : 'E qual é a pegada da banda? Marca os estilos que vocês tocam.'], 'estilo')
     },
     estilo: estilos => {
@@ -1013,8 +1015,8 @@ export default function Produtor() {
       {step && step !== 'fim' && (
         <footer className="pd-compose" key={step}>
           {step === 'tipo' && <TipoComposer onSend={handlers.tipo} />}
-          {step === 'banda' && <TextoComposer placeholder={F().tipo === 'pp' ? 'Seu nome ou do grupo' : 'Nome da banda'} onSend={handlers.banda} />}
-          {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} inicial={F().tipo === 'pp' ? 1 : 4} />}
+          {step === 'banda' && <TextoComposer placeholder={F().tipo === 'pp' ? 'Seu nome ou apelido' : 'Nome da banda'} onSend={handlers.banda} />}
+          {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} solo={F().tipo === 'pp'} />}
           {step === 'estilo' && <EstiloComposer onSend={handlers.estilo} />}
           {step === 'lugares' && <LugaresComposer onSend={handlers.lugares} />}
           {step === 'videos' && <UploadComposer tipo="video" onSend={handlers.videos} onRejeita={r => rejeita('video', r)} />}
@@ -1023,7 +1025,7 @@ export default function Produtor() {
           {step === 'cache' && <CacheComposer onSend={handlers.cache} />}
           {step === 'contato' && <ContatoComposer onSend={handlers.contato} />}
           {step === 'data' && <DataComposer onSend={handlers.data} />}
-          {step === 'quintas' && <QuintasComposer onSend={handlers.quintas} musicos={F().integrantes || 1} />}
+          {step === 'quintas' && <QuintasComposer onSend={handlers.quintas} musicos={1} />}
           {step === 'aceite' && <AceiteComposer onSim={aceitar} onNao={naoConcordo} />}
           {step === 'enviando' && <EnvioComposer envio={envio} onTentar={enviar} />}
         </footer>
