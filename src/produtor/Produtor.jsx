@@ -88,6 +88,8 @@ const ICONES = {
   foto: <><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>,
   play: <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />,
   check: <path d="m5 12 5 5 9-10" />,
+  palco: <><path d="M3 20h18" /><path d="M5 20V10l7-5 7 5v10" /><circle cx="12" cy="13" r="2.2" /><path d="M12 15.2V20" /></>,
+  plug: <><path d="M9 3v5M15 3v5" /><path d="M6 8h12v3a6 6 0 0 1-12 0z" /><path d="M12 17v4" /></>,
   tranca: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>,
   esq: <path d="m15 5-7 7 7 7" />,
   dir: <path d="m9 5 7 7-7 7" />,
@@ -428,6 +430,27 @@ function UploadComposer({ tipo, onSend, onRejeita }) {
   )
 }
 
+// 1ª escolha: show na agenda ou Plug & Play (cartões grandes, fáceis de tocar)
+const OPCOES_TIPO = [
+  { valor: TIPOS[0], icone: 'palco', titulo: 'Show na agenda', linha: 'Sua banda numa sexta ou sábado, a partir das 20h. Cachê a combinar.' },
+  { valor: TIPOS[1], icone: 'plug', titulo: 'Plug & Play', linha: 'Quintas, das 19h às 23h50. Chega, pluga e toca junto. Sem cachê.' },
+]
+function TipoComposer({ onSend }) {
+  return (
+    <div className="pd-compose-box">
+      <div className="pd-tipos">
+        {OPCOES_TIPO.map(o => (
+          <button type="button" key={o.valor} className="pd-tipo" onClick={() => onSend(o.valor)}>
+            <span className="pd-tipo-ico"><Ico n={o.icone} /></span>
+            <span className="pd-tipo-txt"><b>{o.titulo}</b><small>{o.linha}</small></span>
+            <Ico n="dir" className="pd-tipo-seta" />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ChipsComposer({ opcoes, onSend }) {
   return (
     <div className="pd-compose-box">
@@ -738,7 +761,7 @@ export default function Produtor() {
     tipo: t => {
       F().tipo = t === TIPOS[1] ? 'pp' : 'agenda'
       etapasRef.current = pp() ? ETAPAS_PP : ETAPAS
-      banda(t)
+      banda(pp() ? 'Quero tocar no Plug & Play 🎸' : 'Quero negociar um show na agenda 🤘')
       johnny(pp() ? [
         'Boa! O Plug & Play rola toda quinta, das 19h às 23h50: o músico chega, pluga e toca junto. São até 10 músicos por noite. 🎸',
         'Qual é o seu nome? Se vierem mais de um, pode mandar o nome do grupo.',
@@ -989,7 +1012,7 @@ export default function Produtor() {
 
       {step && step !== 'fim' && (
         <footer className="pd-compose" key={step}>
-          {step === 'tipo' && <ChipsComposer opcoes={TIPOS} onSend={handlers.tipo} />}
+          {step === 'tipo' && <TipoComposer onSend={handlers.tipo} />}
           {step === 'banda' && <TextoComposer placeholder={F().tipo === 'pp' ? 'Seu nome ou do grupo' : 'Nome da banda'} onSend={handlers.banda} />}
           {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} inicial={F().tipo === 'pp' ? 1 : 4} />}
           {step === 'estilo' && <EstiloComposer onSend={handlers.estilo} />}

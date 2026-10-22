@@ -331,3 +331,18 @@
 .pd-quinta.on .pd-quinta-m{color:var(--red)}
 .pd-quinta.lotada{cursor:not-allowed;opacity:.45;background:repeating-linear-gradient(135deg,rgba(0,0,0,.18) 0 6px,transparent 6px 12px)}
 .pd-quinta.lotada .pd-quinta-n{text-decoration:line-through;text-decoration-thickness:2px}
+
+/* 1ª escolha: show na agenda × Plug & Play */
+.pd-tipos{display:grid;grid-template-columns:1fr;gap:10px}
+.pd-tipo{display:flex;align-items:center;gap:14px;width:100%;min-height:84px;padding:14px 14px 14px 12px;border-radius:16px;cursor:pointer;text-align:left;
+  border:1.5px solid rgba(240,224,192,.22);background:rgba(0,0,0,.28);color:var(--aged);transition:transform .15s,background .15s,border-color .15s}
+.pd-tipo:hover{border-color:var(--pd-yel,#FFC21A);background:rgba(0,0,0,.4)}
+.pd-tipo:active{transform:scale(.98)}
+.pd-tipo-ico{display:grid;place-items:center;width:52px;height:52px;flex:none;border-radius:14px;background:var(--pd-amb,#EE7F12);color:#fff}
+.pd-tipo-ico svg{width:28px;height:28px}
+.pd-tipo + .pd-tipo .pd-tipo-ico{background:#7B3FA0}
+.pd-tipo-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.pd-tipo-txt b{font:400 1.55rem/1 'Bebas Neue',sans-serif;letter-spacing:.05em;color:#fff}
+.pd-tipo-txt small{font:500 .92rem/1.35 'Barlow',sans-serif;color:rgba(240,224,192,.82)}
+.pd-tipo-seta{width:22px;height:22px;flex:none;opacity:.6}
+@media (min-width:520px){.pd-tipos{grid-template-columns:1fr 1fr}.pd-tipo{flex-direction:column;align-items:flex-start;min-height:150px}.pd-tipo-seta{display:none}}
