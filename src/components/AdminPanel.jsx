@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
-import { getHeroCards, saveHeroCards, DEFAULT_CARDS } from '../utils/heroCards.js'
-import { getBreweries, saveBreweries, DEFAULT_BREWERIES } from '../utils/breweriesCards.js'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { fetchHeroCards, saveHeroCards, DEFAULT_CARDS } from '../utils/heroCards.js'
+import { fetchBreweries, saveBreweries, DEFAULT_BREWERIES } from '../utils/breweriesCards.js'
 import AdminRadio from './AdminRadio.jsx'
 import AdminBandas from './AdminBandas.jsx'
+import './admin.css'
 
 const PASS = import.meta.env.VITE_ADMIN_PASS || 'porks2026'
 const MAX_W = 900
@@ -14,7 +15,7 @@ function resizeToBase64(file) {
     img.onload = () => {
       const scale = Math.min(1, MAX_W / img.width)
       const canvas = document.createElement('canvas')
-      canvas.width  = Math.round(img.width  * scale)
+      canvas.width = Math.round(img.width * scale)
       canvas.height = Math.round(img.height * scale)
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
       URL.revokeObjectURL(url)
@@ -25,683 +26,502 @@ function resizeToBase64(file) {
   })
 }
 
-/* ── Google Fonts já carregadas pelo site (Bebas Neue, Barlow Condensed, Barlow) ── */
+/* ─ ícones de traço (mesma família do Johnny e do perfil da banda) ─ */
+const ICONES = {
+  inicio: <><path d="M3 11 12 4l9 7" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></>,
+  agenda: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /><path d="M8 14h3v3H8z" /></>,
+  bandas: <><path d="m14 10 6-6M18 2l4 4" /><path d="M10.5 9.5a4 4 0 0 0-5.6.4c-1.3 1.4-.9 3-2.4 4.6 2 2 5.6 5 7.5 3.1 1.5-1.5 1.4-2.8 3-4a4 4 0 0 0-.1-5.6z" /><circle cx="9" cy="14" r="1.2" /></>,
+  site: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18" /><circle cx="6" cy="6.5" r=".6" fill="currentColor" /><circle cx="8.5" cy="6.5" r=".6" fill="currentColor" /></>,
+  radio: <><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></>,
+  sair: <><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4" /><path d="M10 16l-4-4 4-4M6 12h10" /></>,
+  externo: <><path d="M14 4h6v6M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>,
+  olho: <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
+  olhoX: <><path d="M3 3l18 18" /><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.8M6.5 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.2-.9" /></>,
+  check: <path d="m5 12 5 5 9-10" />,
+  alerta: <><path d="M12 3 2 20h20z" /><path d="M12 10v4M12 17h.01" /></>,
+  foto: <><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>,
+  lixo: <><path d="M4 7h16M10 11v6M14 11v6" /><path d="M6 7l1 13h10l1-13M9 7V4h6v3" /></>,
+  mais: <path d="M12 5v14M5 12h14" />,
+  dir: <path d="m9 5 7 7-7 7" />,
+  link: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
+  microfone: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
+  copo: <><path d="M6 8h9v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z" /><path d="M15 11h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2" /><path d="M6 8a3 3 0 0 1 3-4 3 3 0 0 1 5 0 2.5 2.5 0 0 1 1 4" /></>,
+}
+function Ico({ n, className = 'adm-ico' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {ICONES[n]}
+    </svg>
+  )
+}
 
-export default function AdminPanel() {
-  const [authed, setAuthed] = useState(false)
-  const [input, setInput] = useState('')
-  const [err, setErr] = useState('')
-  const [cards, setCards] = useState(DEFAULT_CARDS)
-  const [saved, setSaved] = useState(false)
-  const [uploading, setUploading] = useState({})
-  const [tab, setTab] = useState(() => {
-    const h = window.location.hash.replace('#', '').split('?')[0]
-    return ['hero', 'cervejarias', 'radio', 'bandas'].includes(h) ? h : 'hero'
-  })
-  const [brews, setBrews] = useState(DEFAULT_BREWERIES)
-  const [brewSaved, setBrewSaved] = useState(false)
-  const [brewUploading, setBrewUploading] = useState({})
-  const fileRefs = useRef({})
-  const brewFileRefs = useRef({})
+const SECOES = [
+  { id: 'inicio', label: 'Início', icone: 'inicio' },
+  { id: 'agenda', label: 'Agenda', icone: 'agenda' },
+  { id: 'bandas', label: 'Bandas', icone: 'bandas' },
+  { id: 'site', label: 'Site', icone: 'site' },
+  { id: 'radio', label: 'Rádio', icone: 'radio' },
+]
+const ANTIGAS = { hero: 'site', cervejarias: 'site' } // links velhos do admin
+function secaoDoHash() {
+  const h = window.location.hash.replace('#', '').split('?')[0]
+  if (ANTIGAS[h]) return ANTIGAS[h]
+  return SECOES.some(s => s.id === h) ? h : 'inicio'
+}
 
-  useEffect(() => {
-    if (sessionStorage.getItem('porks_admin') === '1') setAuthed(true)
-  }, [])
+/* ─ Login ─ */
 
-  useEffect(() => {
-    if (authed) {
-      setCards(getHeroCards())
-      setBrews(getBreweries())
-    }
-  }, [authed])
-
-  function updateBrew(id, field, value) {
-    setBrews(bs => bs.map(b => b.id === id ? { ...b, [field]: value } : b))
-    setBrewSaved(false)
-  }
-  function addBrew() {
-    const newId = Date.now()
-    setBrews(bs => [...bs, { id: newId, name: '', logo: '' }])
-  }
-  function removeBrew(id) {
-    setBrews(bs => bs.filter(b => b.id !== id))
-  }
-  async function handleBrewUpload(id, file) {
-    if (!file) return
-    setBrewUploading(u => ({ ...u, [id]: true }))
-    try {
-      const b64 = await resizeToBase64(file)
-      updateBrew(id, 'logo', b64)
-    } catch (_) {}
-    setBrewUploading(u => ({ ...u, [id]: false }))
-  }
-
-  async function handleBrewSave(e) {
-    e.preventDefault()
-    await saveBreweries(brews.filter(b => b.name), PASS)
-    setBrewSaved(true)
-    setTimeout(() => setBrewSaved(false), 3500)
-  }
-
-  function login(e) {
-    e.preventDefault()
-    if (input === PASS) {
-      sessionStorage.setItem('porks_admin', '1')
-      setAuthed(true)
-    } else {
-      setErr('Senha incorreta')
-    }
-  }
-
-  function updateCard(id, field, value) {
-    setCards(cs => cs.map(c => c.id === id ? { ...c, [field]: value } : c))
-    setSaved(false)
-  }
-
-  async function handleUpload(id, file) {
-    if (!file) return
-    setUploading(u => ({ ...u, [id]: true }))
-    try {
-      const b64 = await resizeToBase64(file)
-      updateCard(id, 'img', b64)
-    } catch (_) {}
-    setUploading(u => ({ ...u, [id]: false }))
-  }
-
-  async function handleSave(e) {
-    e.preventDefault()
-    await saveHeroCards(cards, PASS)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3500)
-  }
-
-  if (!authed) return (
-    <div style={S.page}>
-      <div style={S.loginWrap}>
-        {/* Ticket shape */}
-        <div style={S.loginTicket}>
-          <div style={S.ticketHoleL} />
-          <div style={S.ticketHoleR} />
-
-          <div style={S.loginHead}>
-            <div style={S.loginStamp}>ACESSO RESTRITO</div>
-            <div style={S.loginLogo}>PORKS</div>
-            <div style={S.loginSub}>SOBRADINHO · PAINEL BACKSTAGE</div>
+function Login({ onEntrar }) {
+  const [senha, setSenha] = useState('')
+  const [ver, setVer] = useState(false)
+  const [erro, setErro] = useState('')
+  return (
+    <div className="adm-login">
+      <form className="adm-login-card" onSubmit={e => {
+        e.preventDefault()
+        if (senha === PASS) onEntrar()
+        else setErro('Senha incorreta. Confere e tenta de novo.')
+      }}>
+        <img src="/images/logo-porks.png" alt="Porks Sobradinho" className="adm-login-logo" />
+        <h1>Painel do Porks</h1>
+        <p>Agenda, bandas, site e rádio num lugar só.</p>
+        <label className="adm-campo">
+          <span>Senha</span>
+          <div className="adm-senha">
+            <input type={ver ? 'text' : 'password'} value={senha} autoFocus autoComplete="current-password"
+              onChange={e => { setSenha(e.target.value); setErro('') }} aria-invalid={!!erro} aria-describedby="adm-login-erro" />
+            <button type="button" onClick={() => setVer(v => !v)} aria-label={ver ? 'Esconder senha' : 'Mostrar senha'}><Ico n={ver ? 'olhoX' : 'olho'} /></button>
           </div>
-
-          <div style={S.loginDivider} />
-
-          <form onSubmit={login} style={{ padding: '0 4px' }}>
-            <label style={S.loginLabel} htmlFor="admin-pass">SENHA DE ACESSO</label>
-            <input
-              id="admin-pass"
-              type="password"
-              placeholder="••••••••"
-              value={input}
-              onChange={e => { setInput(e.target.value); setErr('') }}
-              style={S.passInput}
-              autoFocus
-            />
-            {err && <p style={S.err} role="alert">⚠ {err}</p>}
-            <button type="submit" style={S.loginBtn}>ENTRAR</button>
-          </form>
-
-          <div style={S.loginFooter}>
-            <span style={S.loginFooterText}>★ HERO CARDS MANAGER ★</span>
-          </div>
-        </div>
-      </div>
+        </label>
+        <p id="adm-login-erro" className="adm-erro" role="alert">{erro}</p>
+        <button type="submit" className="adm-btn adm-btn-grande">Entrar</button>
+      </form>
     </div>
   )
+}
+
+/* ─ Painel ─ */
+
+export default function AdminPanel() {
+  const [authed, setAuthed] = useState(() => {
+    try { return sessionStorage.getItem('porks_admin') === '1' } catch { return false }
+  })
+  const [secao, setSecao] = useState(secaoDoHash)
+  const [novas, setNovas] = useState(null)
+  const mainRef = useRef(null)
+
+  useEffect(() => {
+    document.title = 'Painel do Porks'
+    const onHash = () => setSecao(secaoDoHash())
+    window.addEventListener('hashchange', onHash)
+    window.addEventListener('popstate', onHash) // voltar do navegador entre seções
+    return () => { window.removeEventListener('hashchange', onHash); window.removeEventListener('popstate', onHash) }
+  }, [])
+
+  // contador de bandas novas no menu
+  useEffect(() => {
+    if (!authed) return
+    fetch('/api/admin/bandas?status=nova&por=5', { headers: { 'x-admin-pass': PASS } })
+      .then(r => (r.ok ? r.json() : null)).then(d => setNovas(d ? d.contagem.nova : null)).catch(() => {})
+  }, [authed, secao])
+
+  function ir(id) {
+    if (secao === id) return
+    window.history.pushState(null, '', `#${id}`)
+    setSecao(id)
+    mainRef.current?.focus({ preventScroll: true })
+    window.scrollTo({ top: 0 })
+  }
+
+  if (!authed) return <Login onEntrar={() => { try { sessionStorage.setItem('porks_admin', '1') } catch { /* sem storage */ } setAuthed(true) }} />
+
+  function sair() {
+    try { sessionStorage.removeItem('porks_admin') } catch { /* sem storage */ }
+    setAuthed(false)
+  }
 
   return (
-    <div style={S.page}>
-      {/* Topbar */}
-      <div style={S.topbar}>
-        <a href="/" target="_blank" rel="noopener noreferrer" style={S.back}>← Ver site</a>
-        <div style={S.topCenter}>
-          <span style={S.topBadge}>BACKSTAGE</span>
-          <span style={S.topTitle}>PORKS ADMIN</span>
+    <div className="adm">
+      <a href="#adm-conteudo" className="adm-pular">Pular pro conteúdo</a>
+      <aside className="adm-lateral">
+        <div className="adm-marca">
+          <img src="/images/logo-porks.png" alt="Porks Sobradinho" />
+          <span>Painel</span>
         </div>
-        <button
-          onClick={() => { sessionStorage.removeItem('porks_admin'); setAuthed(false) }}
-          style={S.logoutBtn}
-          aria-label="Sair do painel"
-        >
-          SAIR
-        </button>
-      </div>
+        <nav aria-label="Seções do painel">
+          {SECOES.map(s => (
+            <a key={s.id} href={`#${s.id}`} className={`adm-nav${secao === s.id ? ' on' : ''}`} aria-current={secao === s.id ? 'page' : undefined}
+              onClick={e => { e.preventDefault(); ir(s.id) }}>
+              <Ico n={s.icone} />{s.label}
+              {s.id === 'bandas' && novas > 0 && <span className="adm-badge" aria-label={`${novas} novas`}>{novas}</span>}
+            </a>
+          ))}
+        </nav>
+        <div className="adm-lateral-pe">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="adm-nav"><Ico n="externo" />Ver o site</a>
+          <button type="button" className="adm-nav" onClick={sair}><Ico n="sair" />Sair</button>
+        </div>
+      </aside>
 
-      {/* Tabs de navegação */}
-      <div style={S.tabBar}>
-        {[
-          { id: 'hero',       label: 'Hero Cards',   icon: '▣' },
-          { id: 'cervejarias', label: 'Cervejarias',  icon: '🍺' },
-          { id: 'radio',      label: 'Rádio',        icon: '♫' },
-          { id: 'bandas',     label: 'Bandas',       icon: '★' },
-        ].map(t => (
-          <button
-            key={t.id}
-            style={{ ...S.tabBtn, ...(tab === t.id ? S.tabBtnActive : {}) }}
-            onClick={() => { setTab(t.id); window.location.hash = t.id }}
-          >
-            <span style={S.tabIcon}>{t.icon}</span> {t.label}
-          </button>
+      <header className="adm-topo-cel">
+        <img src="/images/logo-porks.png" alt="Porks Sobradinho" />
+        <b>{SECOES.find(s => s.id === secao)?.label}</b>
+        <button type="button" className="adm-icone-btn" onClick={sair} aria-label="Sair do painel"><Ico n="sair" /></button>
+      </header>
+
+      <main id="adm-conteudo" className="adm-main" ref={mainRef} tabIndex={-1}>
+        {secao === 'inicio' && <Inicio ir={ir} />}
+        {secao === 'agenda' && <Agenda ir={ir} />}
+        {secao === 'bandas' && <AdminBandas pass={PASS} />}
+        {secao === 'site' && <Site />}
+        {secao === 'radio' && <div className="adm-pagina"><Cabecalho titulo="Rádio" sub="Pedidos de música da jukebox do Porks." /><div className="adm-radio"><AdminRadio pass={PASS} /></div></div>}
+      </main>
+
+      <nav className="adm-baixo" aria-label="Seções do painel">
+        {SECOES.map(s => (
+          <a key={s.id} href={`#${s.id}`} className={`adm-baixo-item${secao === s.id ? ' on' : ''}`} aria-current={secao === s.id ? 'page' : undefined}
+            onClick={e => { e.preventDefault(); ir(s.id) }}>
+            <span className="adm-baixo-ico"><Ico n={s.icone} />{s.id === 'bandas' && novas > 0 && <span className="adm-badge">{novas}</span>}</span>
+            {s.label}
+          </a>
         ))}
-      </div>
+      </nav>
+    </div>
+  )
+}
 
-      <div style={S.content}>
-        {tab === 'hero' && (
-          <>
-            {saved && (
-              <div style={S.banner} role="status" aria-live="polite">
-                <span style={S.bannerIcon}>✓</span>
-                Cards salvos! Recarregue o site para ver as mudanças.
-              </div>
-            )}
-            <p style={S.pageDesc}>
-              Edite os 3 cards que aparecem no hero do site em mobile.
-            </p>
-            <form onSubmit={handleSave}>
-          <div style={S.grid}>
-            {cards.map((card, i) => (
-              <div key={card.id} style={S.ticket}>
-                {/* Punch holes */}
-                <div style={S.holeL} />
-                <div style={S.holeR} />
+function Cabecalho({ titulo, sub, acoes }) {
+  return (
+    <div className="adm-cab">
+      <div><h1>{titulo}</h1>{sub && <p>{sub}</p>}</div>
+      {acoes && <div className="adm-cab-acoes">{acoes}</div>}
+    </div>
+  )
+}
 
-                {/* Número do card */}
-                <div style={S.ticketLabel}>CARD {i + 1} DE 3</div>
+/* ─ Início ─ */
 
-                {/* Preview da imagem */}
-                <div style={S.imgWrap}>
-                  {card.img
-                    ? <img
-                        src={card.img}
-                        alt={`Preview card ${i + 1}`}
-                        style={S.cardImg}
-                        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                      />
-                    : null
-                  }
-                  <div style={{ ...S.cardNoImg, display: card.img ? 'none' : 'flex' }}>
-                    <span style={S.noImgIcon}>⬡</span>
-                    <span style={S.noImgText}>SEM IMAGEM</span>
-                  </div>
-                </div>
+const hojeIso = (dias = 0) => new Date(Date.now() - 3 * 3600e3 + dias * 864e5).toISOString().slice(0, 10)
+const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const diaTxt = iso => { const d = new Date(`${iso}T12:00:00`); return `${DIAS[d.getDay()]}, ${d.getDate()} ${MESES[d.getMonth()]}` }
+function haQuanto(iso) {
+  const min = Math.round((Date.now() - Date.parse(iso)) / 60000)
+  if (min < 60) return min <= 1 ? 'agora' : `há ${min} min`
+  const h = Math.round(min / 60)
+  if (h < 24) return `há ${h} h`
+  const d = Math.round(h / 24)
+  return d === 1 ? 'ontem' : `há ${d} dias`
+}
+function saudacao() {
+  const h = Number(new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Sao_Paulo' }))
+  return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
+}
 
-                <div style={S.ticketDash} />
+function Inicio({ ir }) {
+  const [bandas, setBandas] = useState(null)
+  const [shows, setShows] = useState(null)
+  const [cards, setCards] = useState(null)
+  const [copiado, setCopiado] = useState(false)
 
-                {/* Campos */}
-                <div style={S.fields}>
-                  <label style={S.fieldLabel} htmlFor={`tag-${card.id}`}>TAG (TOPO)</label>
-                  <input
-                    id={`tag-${card.id}`}
-                    style={S.input}
-                    value={card.tag}
-                    onChange={e => updateCard(card.id, 'tag', e.target.value)}
-                    placeholder="★ shows ao vivo"
-                  />
+  useEffect(() => {
+    fetch('/api/admin/bandas?status=nova&por=5', { headers: { 'x-admin-pass': PASS } })
+      .then(r => (r.ok ? r.json() : null)).then(setBandas).catch(() => setBandas(null))
+    fetch(`/api/bandas/agenda?de=${hojeIso()}&ate=${hojeIso(13)}`)
+      .then(r => (r.ok ? r.json() : [])).then(setShows).catch(() => setShows([]))
+    fetchHeroCards().then(setCards)
+  }, [])
 
-                  <label style={S.fieldLabel} htmlFor={`title-${card.id}`}>TÍTULO</label>
-                  <input
-                    id={`title-${card.id}`}
-                    style={{ ...S.input, ...S.inputTitle }}
-                    value={card.title}
-                    onChange={e => updateCard(card.id, 'title', e.target.value)}
-                    placeholder="SEXTA-FEIRA"
-                  />
+  async function copiarJohnny() {
+    try { await navigator.clipboard.writeText(`${window.location.origin}/produtor`) } catch { return }
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2500)
+  }
 
-                  <label style={S.fieldLabel} htmlFor={`sub-${card.id}`}>SUBTÍTULO</label>
-                  <input
-                    id={`sub-${card.id}`}
-                    style={S.input}
-                    value={card.sub}
-                    onChange={e => updateCard(card.id, 'sub', e.target.value)}
-                    placeholder="Rock ao vivo · sem couvert"
-                  />
+  return (
+    <div className="adm-pagina">
+      <Cabecalho titulo={`${saudacao()}!`} sub="O que está rolando no Porks." />
 
-                  <label style={S.fieldLabel}>IMAGEM</label>
-                  {/* Input file oculto */}
-                  <input
-                    ref={el => fileRefs.current[card.id] = el}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={e => handleUpload(card.id, e.target.files[0])}
-                  />
-                  <button
-                    type="button"
-                    style={uploading[card.id] ? S.uploadBtnLoading : S.uploadBtn}
-                    onClick={() => fileRefs.current[card.id]?.click()}
-                    disabled={!!uploading[card.id]}
-                  >
-                    {uploading[card.id] ? 'PROCESSANDO...' : card.img ? '↑ TROCAR IMAGEM' : '↑ SUBIR IMAGEM'}
-                  </button>
-                  {card.img && (
-                    <button
-                      type="button"
-                      style={S.removeBtn}
-                      onClick={() => updateCard(card.id, 'img', '')}
-                    >
-                      ✕ remover
-                    </button>
-                  )}
-                  <label style={{ ...S.fieldLabel, marginTop: 10 }}>OU COLE UMA URL</label>
-                  <input
-                    id={`img-${card.id}`}
-                    style={S.input}
-                    value={(card.img && !card.img.startsWith('data:')) ? card.img : ''}
-                    onChange={e => updateCard(card.id, 'img', e.target.value)}
-                    placeholder="https://..."
-                    type="url"
-                  />
-
-                  <label style={S.checkLabel}>
-                    <input
-                      type="checkbox"
-                      checked={card.tape}
-                      onChange={e => updateCard(card.id, 'tape', e.target.checked)}
-                      style={S.checkbox}
-                    />
-                    FITA ADESIVA NO CARD
-                  </label>
-                </div>
-              </div>
-            ))}
+      <div className="adm-grade-inicio">
+        <section className="adm-card">
+          <div className="adm-card-cab">
+            <h2><Ico n="agenda" />Próximos shows</h2>
+            <button type="button" className="adm-link" onClick={() => ir('agenda')}>Ver agenda</button>
           </div>
+          {shows === null ? <Esqueleto linhas={3} /> : shows.length ? (
+            <ul className="adm-lista">
+              {shows.map(s => (
+                <li key={s.data + s.slug}>
+                  {s.avatar ? <img src={s.avatar} alt="" className="adm-mini-foto" /> : <span className="adm-mini-foto adm-mini-vazia"><Ico n="microfone" /></span>}
+                  <div><b>{s.banda}</b><small>{diaTxt(s.data)}, 20h{s.titulo ? ` · ${s.titulo}` : ''}</small></div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="adm-vazio-mini">
+              <p>Nenhum show marcado pros próximos 14 dias.</p>
+              <button type="button" className="adm-btn adm-btn-claro" onClick={() => ir('agenda')}>Organizar a agenda</button>
+            </div>
+          )}
+        </section>
 
-          <button type="submit" style={S.saveBtn}>
-            ★ SALVAR TODOS OS CARDS
-          </button>
-        </form>
-          </>
-        )}
-
-        {tab === 'cervejarias' && (
-          <>
-            {brewSaved && (
-              <div style={S.banner} role="status" aria-live="polite">
-                <span style={S.bannerIcon}>✓</span>
-                Cervejarias salvas! Recarregue o site para ver as mudanças.
-              </div>
-            )}
-            <p style={S.pageDesc}>
-              Gerencie as cervejarias parceiras que aparecem no carrossel.
-            </p>
-            <form onSubmit={handleBrewSave}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {brews.map((b) => (
-                  <div key={b.id} style={{ ...S.brewRow, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px dashed ${CREAM2}` }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <input
-                        style={S.input}
-                        placeholder="Nome da cervejaria"
-                        value={b.name || ''}
-                        onChange={e => updateBrew(b.id, 'name', e.target.value)}
-                      />
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <input
-                          ref={el => brewFileRefs.current[b.id] = el}
-                          type="file" accept="image/*" style={{ display: 'none' }}
-                          onChange={e => handleBrewUpload(b.id, e.target.files[0])}
-                        />
-                        <button
-                          type="button"
-                          style={{ ...S.uploadBtn, flex: '0 0 auto', padding: '8px 12px', fontSize: '.7rem', marginBottom: 0 }}
-                          onClick={() => brewFileRefs.current[b.id]?.click()}
-                          disabled={!!brewUploading[b.id]}
-                        >
-                          {brewUploading[b.id] ? '...' : '↑ Upload'}
-                        </button>
-                        <input
-                          style={{ ...S.input, flex: 1, marginBottom: 0 }}
-                          placeholder="ou URL do logo (https://...)"
-                          value={(b.logo && !b.logo.startsWith('data:')) ? b.logo : ''}
-                          onChange={e => updateBrew(b.id, 'logo', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    {b.logo && <img src={b.logo} alt={b.name} style={S.brewThumb} onError={e => e.target.style.display='none'} />}
-                    <button type="button" style={S.removeBtnSm} onClick={() => removeBrew(b.id)}>✕</button>
-                  </div>
+        <section className="adm-card">
+          <div className="adm-card-cab">
+            <h2><Ico n="bandas" />Bandas pra responder</h2>
+            <button type="button" className="adm-link" onClick={() => ir('bandas')}>Ver todas</button>
+          </div>
+          {bandas === null ? <Esqueleto linhas={3} /> : bandas.itens.length ? (
+            <>
+              <p className="adm-numero"><b>{bandas.contagem.nova}</b> {bandas.contagem.nova === 1 ? 'banda nova esperando resposta' : 'bandas novas esperando resposta'}</p>
+              <ul className="adm-lista">
+                {bandas.itens.map(b => (
+                  <li key={b.id}>
+                    <span className="adm-mini-foto adm-mini-vazia"><Ico n="microfone" /></span>
+                    <div><b>{b.banda}</b><small>Quer tocar {diaTxt(b.data).toLowerCase()} · {haQuanto(b.criado_em)}</small></div>
+                    <a className="adm-icone-btn" href={`#bandas?id=${encodeURIComponent(b.id)}`} aria-label={`Abrir ficha da banda ${b.banda}`}
+                      onClick={e => { e.preventDefault(); window.location.assign(`#bandas?id=${encodeURIComponent(b.id)}`) }}><Ico n="dir" /></a>
+                  </li>
                 ))}
-              </div>
-              <button type="button" style={{ ...S.saveBtn, background: '#3a2a10', marginTop: 16, marginBottom: 8 }} onClick={addBrew}>
-                + Adicionar cervejaria
-              </button>
-              <button type="submit" style={S.saveBtn}>★ SALVAR CERVEJARIAS</button>
-            </form>
-          </>
-        )}
+              </ul>
+            </>
+          ) : (
+            <div className="adm-vazio-mini"><Ico n="check" className="adm-ico adm-ok" /><p>Nenhuma banda esperando. Tudo respondido.</p></div>
+          )}
+          <div className="adm-card-pe">
+            <span>Link pras bandas se inscreverem:</span>
+            <button type="button" className="adm-btn adm-btn-claro" onClick={copiarJohnny}><Ico n={copiado ? 'check' : 'link'} />{copiado ? 'Link copiado' : 'Copiar link do Johnny'}</button>
+          </div>
+        </section>
 
-        {tab === 'radio' && (
-          <AdminRadio pass={PASS} />
-        )}
-
-        {tab === 'bandas' && (
-          <AdminBandas pass={PASS} />
-        )}
+        <section className="adm-card adm-card-largo">
+          <div className="adm-card-cab">
+            <h2><Ico n="site" />Cards da página inicial</h2>
+            <button type="button" className="adm-link" onClick={() => ir('site')}>Editar</button>
+          </div>
+          {cards === null ? <Esqueleto linhas={2} /> : (
+            <div className="adm-cards-mini">
+              {cards.map(c => <CardPreview key={c.id} card={c} pequeno />)}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )
 }
 
-/* ─── Paleta ─── */
-const CREAM   = '#f2e8d5'
-const CREAM2  = '#e8dcc6'
-const INKDK   = '#1a0f05'
-const INK     = '#2e1c08'
-const RED     = '#e74c3c'
-const REDDK   = '#c0392b'
-const AMB     = '#cc6a0a'
-const AMBLT   = '#e18a16'
-const MUTED   = '#7a5c35'
-const DIVIDER = 'rgba(46,28,8,.18)'
+function Esqueleto({ linhas = 3 }) {
+  return <div className="adm-esq" aria-busy="true" aria-label="Carregando">{Array.from({ length: linhas }, (_, i) => <span key={i} />)}</div>
+}
 
-const BEBAS = "'Bebas Neue', 'Barlow Condensed', sans-serif"
-const BARLOW_C = "'Barlow Condensed', 'Oswald', sans-serif"
-const BARLOW = "'Barlow', sans-serif"
+/* ─ Agenda (Google Agenda entra depois; por enquanto mostra os shows marcados nas bandas) ─ */
 
-const S = {
-  /* ── Layout ── */
-  page: {
-    minHeight: '100vh',
-    background: CREAM,
-    fontFamily: BARLOW,
-    color: INK,
-  },
+function Agenda({ ir }) {
+  const [shows, setShows] = useState(null)
+  useEffect(() => {
+    fetch(`/api/bandas/agenda?de=${hojeIso(-30)}&ate=${hojeIso(120)}`)
+      .then(r => (r.ok ? r.json() : [])).then(setShows).catch(() => setShows([]))
+  }, [])
+  const hoje = hojeIso()
+  const prox = (shows || []).filter(s => s.data >= hoje)
+  const foram = (shows || []).filter(s => s.data < hoje).reverse()
+  const linha = s => (
+    <li key={s.data + s.slug} className="adm-show">
+      <span className="adm-show-data"><b>{new Date(`${s.data}T12:00:00`).getDate()}</b>{MESES[new Date(`${s.data}T12:00:00`).getMonth()]}</span>
+      <div><b>{s.banda}</b><small>{diaTxt(s.data)}, 20h{s.titulo ? ` · ${s.titulo}` : ''}</small></div>
+      <a className="adm-icone-btn" href={s.link} target="_blank" rel="noopener noreferrer" aria-label={`Página da banda ${s.banda}`}><Ico n="externo" /></a>
+    </li>
+  )
+  return (
+    <div className="adm-pagina">
+      <Cabecalho titulo="Agenda" sub="Quem toca em cada noite do Porks." />
 
-  /* ── Login ── */
-  loginWrap: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  loginTicket: {
-    background: CREAM,
-    border: `2px solid ${INK}`,
-    borderRadius: 4,
-    width: '100%',
-    maxWidth: 360,
-    padding: '32px 32px 24px',
-    position: 'relative',
-    boxShadow: `4px 4px 0 ${INK}`,
-  },
-  ticketHoleL: {
-    position: 'absolute', left: -14, top: '50%', transform: 'translateY(-50%)',
-    width: 28, height: 28, borderRadius: '50%',
-    background: CREAM, border: `2px solid ${INK}`,
-    boxShadow: 'inset 0 1px 3px rgba(0,0,0,.15)',
-  },
-  ticketHoleR: {
-    position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)',
-    width: 28, height: 28, borderRadius: '50%',
-    background: CREAM, border: `2px solid ${INK}`,
-    boxShadow: 'inset 0 1px 3px rgba(0,0,0,.15)',
-  },
-  loginHead: { textAlign: 'center', marginBottom: 20 },
-  loginStamp: {
-    display: 'inline-block',
-    fontFamily: BARLOW_C,
-    fontSize: '.58rem', fontWeight: 800, letterSpacing: '.22em',
-    color: CREAM, background: RED,
-    padding: '3px 10px', marginBottom: 12,
-    textTransform: 'uppercase',
-  },
-  loginLogo: {
-    fontFamily: BEBAS,
-    fontSize: '4.5rem', lineHeight: 1,
-    color: INK, letterSpacing: '.06em',
-    textShadow: `2px 2px 0 ${CREAM2}`,
-  },
-  loginSub: {
-    fontFamily: BARLOW_C,
-    fontSize: '.58rem', fontWeight: 700, letterSpacing: '.22em',
-    color: MUTED, textTransform: 'uppercase', marginTop: 4,
-  },
-  loginDivider: {
-    borderTop: `2px dashed ${CREAM2}`,
-    margin: '0 -32px 20px',
-  },
-  loginLabel: {
-    display: 'block',
-    fontFamily: BARLOW_C,
-    fontSize: '.62rem', fontWeight: 800, letterSpacing: '.18em',
-    color: MUTED, textTransform: 'uppercase', marginBottom: 6,
-  },
-  passInput: {
-    width: '100%', boxSizing: 'border-box',
-    padding: '12px 14px',
-    background: CREAM2, border: `1.5px solid ${INK}`,
-    color: INK, borderRadius: 2,
-    fontFamily: BARLOW, fontSize: '1rem',
-    outline: 'none',
-    boxShadow: 'inset 0 1px 4px rgba(0,0,0,.1)',
-  },
-  err: {
-    fontFamily: BARLOW_C, fontSize: '.75rem', fontWeight: 700,
-    letterSpacing: '.08em', color: RED, marginTop: 8,
-  },
-  loginBtn: {
-    width: '100%', marginTop: 14,
-    padding: '13px', cursor: 'pointer',
-    background: RED, color: '#fff', border: `2px solid ${REDDK}`,
-    fontFamily: BEBAS, fontSize: '1.3rem', letterSpacing: '.12em',
-    boxShadow: `3px 3px 0 ${REDDK}`,
-    transition: 'transform .1s, box-shadow .1s',
-  },
-  loginFooter: {
-    textAlign: 'center', marginTop: 20,
-    borderTop: `1px dashed ${CREAM2}`, paddingTop: 12,
-  },
-  loginFooterText: {
-    fontFamily: BARLOW_C, fontSize: '.52rem', fontWeight: 700,
-    letterSpacing: '.24em', color: MUTED, textTransform: 'uppercase',
-  },
+      <section className="adm-card adm-aviso-google">
+        <Ico n="agenda" className="adm-ico adm-ico-grande" />
+        <div>
+          <h2>Ligar o Google Agenda do Porks</h2>
+          <p>Quando a agenda do Google estiver ligada, os shows entram aqui sozinhos e já alimentam os cards do site, o calendário do Johnny e a pesquisa de satisfação.</p>
+          <p className="adm-dica">Falta o endereço secreto da agenda (formato iCal). Por enquanto, a agenda abaixo vem dos shows marcados no perfil de cada banda.</p>
+        </div>
+      </section>
 
-  /* ── Topbar ── */
-  topbar: {
-    background: INK,
-    padding: '0 24px',
-    height: 52,
-    display: 'flex', alignItems: 'center', gap: 16,
-    borderBottom: `3px solid ${RED}`,
-  },
-  back: {
-    fontFamily: BARLOW_C, fontSize: '.72rem', fontWeight: 700,
-    letterSpacing: '.14em', textTransform: 'uppercase',
-    color: CREAM2, textDecoration: 'none',
-    opacity: .7,
-  },
-  topCenter: {
-    display: 'flex', alignItems: 'center', gap: 10, flex: 1, justifyContent: 'center',
-  },
-  topBadge: {
-    fontFamily: BARLOW_C, fontSize: '.55rem', fontWeight: 800,
-    letterSpacing: '.22em', background: RED, color: '#fff',
-    padding: '2px 8px', textTransform: 'uppercase',
-  },
-  topTitle: {
-    fontFamily: BEBAS, fontSize: '1.5rem', letterSpacing: '.1em',
-    color: CREAM, lineHeight: 1,
-  },
-  logoutBtn: {
-    fontFamily: BARLOW_C, fontSize: '.65rem', fontWeight: 800,
-    letterSpacing: '.16em', textTransform: 'uppercase',
-    background: 'none', border: `1px solid rgba(242,232,213,.25)`,
-    color: CREAM2, padding: '6px 12px', cursor: 'pointer',
-    opacity: .7, minHeight: 36,
-  },
+      {shows === null ? <Esqueleto linhas={4} /> : (
+        <div className="adm-colunas">
+          <section className="adm-card">
+            <h2 className="adm-h2">Próximos shows ({prox.length})</h2>
+            {prox.length ? <ul className="adm-shows">{prox.map(linha)}</ul> : (
+              <div className="adm-vazio-mini">
+                <p>Nenhum show marcado. Pra marcar agora: abre a banda em <b>Bandas</b> e adiciona a data em <b>Shows no Porks</b>.</p>
+                <button type="button" className="adm-btn adm-btn-claro" onClick={() => ir('bandas')}>Ir pra Bandas</button>
+              </div>
+            )}
+          </section>
+          <section className="adm-card">
+            <h2 className="adm-h2">Últimos 30 dias ({foram.length})</h2>
+            {foram.length ? <ul className="adm-shows adm-shows-foram">{foram.map(linha)}</ul> : <p className="adm-dica">Nenhum show registrado no último mês.</p>}
+          </section>
+        </div>
+      )}
+    </div>
+  )
+}
 
-  /* ── Tab nav ── */
-  tabBar: {
-    background: CREAM2, borderBottom: `2px solid ${INK}`,
-    display: 'flex', flexWrap: 'wrap', gap: 0,
-  },
-  tabBtn: {
-    fontFamily: BEBAS, fontSize: '1.1rem', letterSpacing: '.1em',
-    padding: '12px 22px', cursor: 'pointer', flex: '1 1 auto', justifyContent: 'center', whiteSpace: 'nowrap',
-    background: 'none', border: 'none', borderRight: `1px solid ${INK}`,
-    color: MUTED, display: 'flex', alignItems: 'center', gap: 8,
-    transition: 'background .15s, color .15s',
-    minHeight: 48,
-  },
-  tabBtnActive: {
-    background: INK, color: CREAM,
-  },
-  tabIcon: { fontSize: '1rem' },
+/* ─ Site: cards da página inicial + cervejarias ─ */
 
-  /* ── Content ── */
-  content: {
-    maxWidth: 1020, margin: '32px auto', padding: '0 20px 80px',
-  },
-  banner: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    background: '#2e7d32', color: '#fff',
-    fontFamily: BARLOW_C, fontSize: '.8rem', fontWeight: 700, letterSpacing: '.1em',
-    padding: '12px 20px', marginBottom: 28,
-    border: '2px solid #1b5e20',
-    boxShadow: '3px 3px 0 #1b5e20',
-  },
-  bannerIcon: { fontSize: '1.1rem', fontWeight: 900 },
-  pageDesc: {
-    fontFamily: BARLOW, fontSize: '.9rem', color: MUTED,
-    marginBottom: 28, lineHeight: 1.6, maxWidth: 620,
-  },
+function CardPreview({ card, pequeno }) {
+  return (
+    <div className={`adm-cprev${pequeno ? ' pequeno' : ''}${card.tape ? ' fita' : ''}`}>
+      {card.img ? <img src={card.img} alt="" /> : <div className="adm-cprev-vazio"><Ico n="foto" /><span>Sem imagem</span></div>}
+      <div className="adm-cprev-txt">
+        {card.tag && <span className="adm-cprev-tag">{card.tag}</span>}
+        <b>{card.title || 'Título'}</b>
+        {card.sub && <small>{card.sub}</small>}
+      </div>
+    </div>
+  )
+}
 
-  /* ── Grid ── */
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
-    gap: 28,
-  },
+function BarraSalvar({ sujo, salvando, salvo, onSalvar, onDesfazer, rotulo }) {
+  return (
+    <div className={`adm-salvar${sujo ? ' sujo' : ''}`}>
+      <span className="adm-salvar-txt" aria-live="polite">
+        {salvo ? <><Ico n="check" className="adm-ico adm-ok" />Salvo. Já está no site.</> : sujo ? 'Alterações sem salvar' : 'Tudo salvo'}
+      </span>
+      {sujo && <button type="button" className="adm-btn adm-btn-claro" onClick={onDesfazer}>Desfazer</button>}
+      <button type="button" className="adm-btn" disabled={!sujo || salvando} onClick={onSalvar}>{salvando ? 'Salvando…' : rotulo}</button>
+    </div>
+  )
+}
 
-  /* ── Ticket card ── */
-  ticket: {
-    background: CREAM,
-    border: `2px solid ${INK}`,
-    borderRadius: 2,
-    position: 'relative',
-    boxShadow: `4px 4px 0 ${CREAM2}, 5px 5px 0 ${INK}`,
-    overflow: 'visible',
-  },
-  holeL: {
-    position: 'absolute', left: -11, top: 180,
-    width: 22, height: 22, borderRadius: '50%',
-    background: CREAM, border: `2px solid ${INK}`,
-    zIndex: 2,
-  },
-  holeR: {
-    position: 'absolute', right: -11, top: 180,
-    width: 22, height: 22, borderRadius: '50%',
-    background: CREAM, border: `2px solid ${INK}`,
-    zIndex: 2,
-  },
-  ticketLabel: {
-    fontFamily: BARLOW_C, fontSize: '.58rem', fontWeight: 800,
-    letterSpacing: '.26em', textTransform: 'uppercase',
-    background: AMB, color: '#fff',
-    padding: '4px 12px',
-  },
-  imgWrap: {
-    position: 'relative', width: '100%', aspectRatio: '4/5', overflow: 'hidden',
-    background: CREAM2,
-  },
-  cardImg: {
-    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-  },
-  cardNoImg: {
-    height: '100%', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', gap: 8,
-    background: CREAM2,
-  },
-  noImgIcon: { fontSize: '1.8rem', color: CREAM2, filter: `drop-shadow(0 1px 0 ${MUTED})` },
-  noImgText: {
-    fontFamily: BARLOW_C, fontSize: '.58rem', fontWeight: 800,
-    letterSpacing: '.22em', color: MUTED, textTransform: 'uppercase',
-  },
-  ticketDash: {
-    borderTop: `2px dashed ${CREAM2}`,
-    margin: '0 -2px',
-  },
+function Site() {
+  const [aba, setAba] = useState('cards')
+  return (
+    <div className="adm-pagina">
+      <Cabecalho titulo="Site" sub="O que aparece em sobradinhoporks.com.br."
+        acoes={<a className="adm-btn adm-btn-claro" href="/" target="_blank" rel="noopener noreferrer"><Ico n="externo" />Ver o site</a>} />
+      <div className="adm-abas" role="tablist" aria-label="Partes do site">
+        <button type="button" role="tab" aria-selected={aba === 'cards'} className={`adm-aba${aba === 'cards' ? ' on' : ''}`} onClick={() => setAba('cards')}>Cards da página inicial</button>
+        <button type="button" role="tab" aria-selected={aba === 'cervejarias'} className={`adm-aba${aba === 'cervejarias' ? ' on' : ''}`} onClick={() => setAba('cervejarias')}>Cervejarias parceiras</button>
+      </div>
+      {aba === 'cards' ? <EditorCards /> : <EditorCervejarias />}
+    </div>
+  )
+}
 
-  /* ── Fields ── */
-  fields: { padding: '14px 16px 18px' },
-  fieldLabel: {
-    display: 'block',
-    fontFamily: BARLOW_C, fontSize: '.6rem', fontWeight: 800,
-    letterSpacing: '.2em', textTransform: 'uppercase',
-    color: MUTED, margin: '12px 0 4px',
-  },
-  input: {
-    width: '100%', boxSizing: 'border-box',
-    padding: '9px 10px',
-    background: CREAM2, border: `1.5px solid ${CREAM2}`,
-    borderBottom: `1.5px solid ${INK}`,
-    color: INK, fontFamily: BARLOW, fontSize: '.9rem',
-    outline: 'none', borderRadius: 0,
-    transition: 'border-color .15s',
-  },
-  inputTitle: {
-    fontFamily: BEBAS, fontSize: '1.2rem', letterSpacing: '.06em',
-  },
-  checkLabel: {
-    display: 'flex', alignItems: 'center', gap: 8,
-    fontFamily: BARLOW_C, fontSize: '.62rem', fontWeight: 800,
-    letterSpacing: '.16em', textTransform: 'uppercase',
-    color: MUTED, marginTop: 14, cursor: 'pointer',
-    minHeight: 44,
-  },
-  checkbox: { width: 18, height: 18, cursor: 'pointer', accentColor: RED },
+function useEditor(carregar, salvarFn) {
+  const [salvoServ, setSalvoServ] = useState(null)
+  const [itens, setItens] = useState(null)
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+  const [erro, setErro] = useState('')
+  useEffect(() => { carregar().then(x => { setSalvoServ(x); setItens(x) }) }, [carregar])
+  const sujo = !!itens && JSON.stringify(itens) !== JSON.stringify(salvoServ)
+  async function salvar(limpar = x => x) {
+    setSalvando(true); setErro('')
+    try {
+      const final = limpar(itens)
+      await salvarFn(final, PASS)
+      setSalvoServ(final); setItens(final); setSalvo(true)
+      setTimeout(() => setSalvo(false), 3000)
+    } catch { setErro('Não deu pra salvar. Confere a internet e tenta de novo.') }
+    setSalvando(false)
+  }
+  return { itens, setItens, sujo, salvando, salvo, erro, salvar, desfazer: () => setItens(salvoServ) }
+}
 
-  /* ── Upload button ── */
-  uploadBtn: {
-    width: '100%', padding: '10px', cursor: 'pointer', boxSizing: 'border-box',
-    background: INK, color: CREAM,
-    border: `2px solid ${INK}`,
-    fontFamily: BEBAS, fontSize: '1rem', letterSpacing: '.12em',
-    boxShadow: `2px 2px 0 ${AMB}`,
-    transition: 'transform .1s, box-shadow .1s',
-    marginBottom: 4,
-  },
-  uploadBtnLoading: {
-    width: '100%', padding: '10px', cursor: 'not-allowed', boxSizing: 'border-box',
-    background: MUTED, color: CREAM2,
-    border: `2px solid ${MUTED}`,
-    fontFamily: BEBAS, fontSize: '1rem', letterSpacing: '.12em',
-    marginBottom: 4,
-  },
-  removeBtn: {
-    background: 'none', border: 'none', cursor: 'pointer',
-    fontFamily: BARLOW_C, fontSize: '.65rem', fontWeight: 700,
-    letterSpacing: '.1em', textTransform: 'uppercase',
-    color: RED, padding: '2px 0', marginBottom: 4,
-  },
+function EditorCards() {
+  const carregar = useCallback(() => fetchHeroCards().then(c => (c?.length ? c : DEFAULT_CARDS)), [])
+  const ed = useEditor(carregar, saveHeroCards)
+  const [subindo, setSubindo] = useState({})
+  const muda = (id, campo, v) => ed.setItens(cs => cs.map(c => (c.id === id ? { ...c, [campo]: v } : c)))
+  async function subir(id, file) {
+    if (!file) return
+    setSubindo(u => ({ ...u, [id]: true }))
+    try { muda(id, 'img', await resizeToBase64(file)) } catch { /* imagem inválida */ }
+    setSubindo(u => ({ ...u, [id]: false }))
+  }
+  if (!ed.itens) return <Esqueleto linhas={4} />
+  return (
+    <>
+      <p className="adm-dica">São os 3 cards grandes do topo do site no celular. Use pra anunciar quem toca na sexta e no sábado.</p>
+      {ed.erro && <p className="adm-aviso" role="alert"><Ico n="alerta" />{ed.erro}</p>}
+      <div className="adm-cards-editor">
+        {ed.itens.map((c, i) => (
+          <section key={c.id} className="adm-card adm-card-editor">
+            <h2 className="adm-h2">Card {i + 1}</h2>
+            <CardPreview card={c} />
+            <div className="adm-img-acoes">
+              <label className="adm-btn adm-btn-claro">
+                <input type="file" accept="image/*" className="adm-sr" onChange={e => { subir(c.id, e.target.files[0]); e.target.value = '' }} />
+                <Ico n="foto" />{subindo[c.id] ? 'Processando…' : c.img ? 'Trocar imagem' : 'Subir imagem'}
+              </label>
+              {c.img && <button type="button" className="adm-icone-btn" onClick={() => muda(c.id, 'img', '')} aria-label="Remover imagem"><Ico n="lixo" /></button>}
+            </div>
+            <label className="adm-campo"><span>Etiqueta de cima</span>
+              <input value={c.tag} onChange={e => muda(c.id, 'tag', e.target.value)} placeholder="Ex.: nome da banda" />
+            </label>
+            <label className="adm-campo"><span>Título</span>
+              <input value={c.title} onChange={e => muda(c.id, 'title', e.target.value)} placeholder="Ex.: SEXTA-FEIRA" />
+            </label>
+            <label className="adm-campo"><span>Linha de baixo</span>
+              <input value={c.sub} onChange={e => muda(c.id, 'sub', e.target.value)} placeholder="Ex.: Rock nacional · sem couvert" />
+            </label>
+            <label className="adm-campo"><span>Ou cole o link de uma imagem</span>
+              <input type="url" inputMode="url" value={c.img && !c.img.startsWith('data:') ? c.img : ''} onChange={e => muda(c.id, 'img', e.target.value)} placeholder="https://…" />
+            </label>
+            <label className="adm-check">
+              <input type="checkbox" checked={!!c.tape} onChange={e => muda(c.id, 'tape', e.target.checked)} />
+              <span>Fita adesiva no card</span>
+            </label>
+          </section>
+        ))}
+      </div>
+      <BarraSalvar sujo={ed.sujo} salvando={ed.salvando} salvo={ed.salvo} onSalvar={() => ed.salvar()} onDesfazer={ed.desfazer} rotulo="Salvar cards" />
+    </>
+  )
+}
 
-  /* ── Save button ── */
-  saveBtn: {
-    display: 'block', width: '100%',
-    marginTop: 36, padding: '16px',
-    background: RED, color: '#fff',
-    border: `2px solid ${REDDK}`,
-    fontFamily: BEBAS, fontSize: '1.5rem', letterSpacing: '.14em',
-    cursor: 'pointer',
-    boxShadow: `4px 4px 0 ${REDDK}`,
-    transition: 'transform .1s, box-shadow .1s',
-  },
-  brewRow: {
-    display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-  },
-  brewThumb: {
-    height: 40, maxWidth: 60, objectFit: 'contain', borderRadius: 4,
-    background: '#fff', padding: 2,
-  },
-  removeBtnSm: {
-    background: 'none', border: `1px solid ${REDDK}`, color: RED,
-    width: 32, height: 32, borderRadius: 4, cursor: 'pointer',
-    fontFamily: BEBAS, fontSize: '1rem', flexShrink: 0,
-  },
+function EditorCervejarias() {
+  const carregar = useCallback(() => fetchBreweries().then(b => (b?.length ? b : DEFAULT_BREWERIES)), [])
+  const ed = useEditor(carregar, saveBreweries)
+  const [subindo, setSubindo] = useState({})
+  const muda = (id, campo, v) => ed.setItens(bs => bs.map(b => (b.id === id ? { ...b, [campo]: v } : b)))
+  async function subir(id, file) {
+    if (!file) return
+    setSubindo(u => ({ ...u, [id]: true }))
+    try { muda(id, 'logo', await resizeToBase64(file)) } catch { /* imagem inválida */ }
+    setSubindo(u => ({ ...u, [id]: false }))
+  }
+  if (!ed.itens) return <Esqueleto linhas={4} />
+  return (
+    <>
+      <p className="adm-dica">Aparecem no carrossel de cervejarias do site. Cervejaria sem nome não é salva.</p>
+      {ed.erro && <p className="adm-aviso" role="alert"><Ico n="alerta" />{ed.erro}</p>}
+      <ul className="adm-brews">
+        {ed.itens.map(b => (
+          <li key={b.id} className="adm-card adm-brew">
+            <div className="adm-brew-logo">{b.logo ? <img src={b.logo} alt="" /> : <Ico n="copo" />}</div>
+            <div className="adm-brew-campos">
+              <label className="adm-campo"><span>Nome</span>
+                <input value={b.name || ''} onChange={e => muda(b.id, 'name', e.target.value)} placeholder="Nome da cervejaria" />
+              </label>
+              <label className="adm-campo"><span>Link do logo</span>
+                <input type="url" inputMode="url" value={b.logo && !b.logo.startsWith('data:') ? b.logo : ''} onChange={e => muda(b.id, 'logo', e.target.value)} placeholder="https://… ou suba uma imagem" />
+              </label>
+            </div>
+            <div className="adm-brew-acoes">
+              <label className="adm-btn adm-btn-claro">
+                <input type="file" accept="image/*" className="adm-sr" onChange={e => { subir(b.id, e.target.files[0]); e.target.value = '' }} />
+                <Ico n="foto" />{subindo[b.id] ? '…' : 'Logo'}
+              </label>
+              <button type="button" className="adm-icone-btn adm-perigo" aria-label={`Remover ${b.name || 'cervejaria'}`}
+                onClick={() => { if (window.confirm(`Remover ${b.name || 'esta cervejaria'}?`)) ed.setItens(bs => bs.filter(x => x.id !== b.id)) }}><Ico n="lixo" /></button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="adm-btn adm-btn-claro adm-add" onClick={() => ed.setItens(bs => [...bs, { id: Date.now(), name: '', logo: '' }])}><Ico n="mais" />Adicionar cervejaria</button>
+      <BarraSalvar sujo={ed.sujo} salvando={ed.salvando} salvo={ed.salvo} onDesfazer={ed.desfazer} rotulo="Salvar cervejarias"
+        onSalvar={() => ed.salvar(bs => bs.filter(b => b.name && b.name.trim()))} />
+    </>
+  )
 }
