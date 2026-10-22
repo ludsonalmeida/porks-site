@@ -8,6 +8,7 @@ const App = lazy(() => import('./App.jsx'))
 const CardapioLayout = lazy(() => import('./components/CardapioLayout.jsx'))
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'))
 const Produtor = lazy(() => import('./produtor/Produtor.jsx'))
+const PaginaBanda = lazy(() => import('./bandas/PaginaBanda.jsx'))
 
 const cardapioTheme = createTheme({
   palette: {
@@ -51,6 +52,7 @@ createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/cardapio" element={<CardapioWrapper />} />
           <Route path="/produtor" element={<Produtor />} />
+          <Route path="/bandas/:slug" element={<PaginaBanda />} />
           <Route path="/admin"element={<Suspense fallback={null}><AdminPanel /></Suspense>} />
           <Route path="/*" element={<App />} />
         </Routes>

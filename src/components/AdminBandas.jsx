@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './admin-bandas.css'
+import { PerfilCabeca, PerfilAbas } from '../bandas/BandaPerfil.jsx'
 
 const STATUS = [
   { id: 'nova', label: 'Nova' },
@@ -27,6 +28,10 @@ const ICONES = {
   externo: <><path d="M14 4h6v6M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>,
   check: <path d="m5 12 5 5 9-10" />,
   alerta: <><path d="M12 3 2 20h20z" /><path d="M12 10v4M12 17h.01" /></>,
+  link: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
+  instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /></>,
+  youtube: <><rect x="2.5" y="5.5" width="19" height="13" rx="4" /><path d="m10 9.5 5 2.5-5 2.5z" /></>,
+  spotify: <><circle cx="12" cy="12" r="9.5" /><path d="M7 9.5c3.5-1 7.5-.6 10 1M7.5 12.5c3-.8 6-.4 8.5 1M8 15.5c2.5-.6 4.5-.3 6.5.8" /></>,
   guitarra: <><path d="m14 10 6-6M18 2l4 4" /><path d="M10.5 9.5a4 4 0 0 0-5.6.4c-1.3 1.4-.9 3-2.4 4.6 2 2 5.6 5 7.5 3.1 1.5-1.5 1.4-2.8 3-4a4 4 0 0 0-.1-5.6z" /><circle cx="9" cy="14" r="1.2" /></>,
 }
 function Ico({ n, className = 'ab-ico' }) {
@@ -278,7 +283,7 @@ export default function AdminBandas({ pass }) {
       )}
 
       {f.id && (
-        <Ficha key={f.id} id={f.id} api={api}
+        <Ficha key={f.id} id={f.id} api={api} pass={pass}
           onFechar={() => { if (empilhouRef.current) { empilhouRef.current = false; window.history.back() } else mudar({ id: '' }) }}
           onMudou={() => setVersao(v => v + 1)} />
       )}
@@ -303,61 +308,129 @@ function Esqueleto() {
   )
 }
 
-/* ─ Ficha (painel lateral no computador, tela cheia no celular) ─ */
+/* ─ Ficha = perfil da banda (painel largo no computador, tela cheia no celular) ─ */
 
-function Ficha({ id, api, onFechar, onMudou }) {
+const ESTILOS = ['Rock nacional', 'Rock internacional', 'Pop rock', 'Classic rock', 'Hard rock', 'Metal', 'Punk', 'Grunge', 'Indie', 'Blues', 'MPB', 'Reggae', 'Samba rock', 'Sertanejo', 'Pagode', 'Forró', 'Hip-hop', 'Covers', 'Autoral']
+const ABAS_FICHA = [
+  { id: 'perfil', label: 'Perfil' },
+  { id: 'midia', label: 'Fotos e vídeos' },
+  { id: 'gestao', label: 'Negociação' },
+  { id: 'previa', label: 'Como o público vê' },
+]
+const rascunhoDe = b => ({ banda: b.banda, ...b.perfil, estilos: [...b.perfil.estilos], shows: b.perfil.shows.map(s => ({ ...s })) })
+
+function Ficha({ id, api, pass, onFechar, onMudou }) {
   const [b, setB] = useState(null)
   const [erro, setErro] = useState('')
+  const [aba, setAba] = useState('perfil')
+  const [abaPrevia, setAbaPrevia] = useState('geral')
   const [nota, setNota] = useState('')
+  const [rasc, setRasc] = useState(null)
   const [salvando, setSalvando] = useState('')
   const [salvo, setSalvo] = useState('')
+  const [enviando, setEnviando] = useState(null) // { feito, total }
+  const [copiado, setCopiado] = useState(false)
   const fecharRef = useRef(null)
 
-  useEffect(() => {
-    let vivo = true
-    api(`/api/admin/bandas/${id}`)
-      .then(d => { if (vivo) { setB(d); setNota(d.nota) } })
-      .catch(e => { if (vivo) setErro(e.message === 'Erro 404' ? 'Essa ficha não existe mais.' : e.message) })
-    return () => { vivo = false }
-  }, [api, id])
+  const carregar = useCallback(() => api(`/api/admin/bandas/${id}`)
+    .then(d => { setB(d); setNota(d.nota); setRasc(r => r || rascunhoDe(d)) })
+    .catch(e => setErro(e.message === 'Erro 404' ? 'Essa ficha não existe mais.' : e.message)), [api, id])
+
+  useEffect(() => { carregar() }, [carregar])
+
+  const sujo = !!(b && rasc && JSON.stringify(rascunhoDe(b)) !== JSON.stringify(rasc))
+  // fechar com perfil sem salvar pede confirmação
+  const fechar = useCallback(() => {
+    if (sujo && !window.confirm('Tem alteração no perfil sem salvar. Sair mesmo assim?')) return
+    onFechar()
+  }, [sujo, onFechar])
 
   useEffect(() => {
     fecharRef.current?.focus()
-    const onKey = e => { if (e.key === 'Escape') onFechar() }
-    document.addEventListener('keydown', onKey)
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = overflow }
-  }, [onFechar])
+    return () => { document.body.style.overflow = overflow }
+  }, [])
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape' && !document.querySelector('.bp-lightbox')) fechar() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [fechar])
 
   async function salvar(patch, qual) {
     setSalvando(qual)
     setSalvo('')
+    setErro('')
     try {
       const r = await api(`/api/admin/bandas/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
       setB(x => ({ ...x, ...r }))
       setSalvo(qual)
       setTimeout(() => setSalvo(s => (s === qual ? '' : s)), 2500)
       onMudou()
+      return r
     } catch (e) {
       setErro(e.message)
+    } finally {
+      setSalvando('')
     }
-    setSalvando('')
   }
 
+  async function salvarPerfil() {
+    const { banda, ...perfil } = rasc
+    const r = await salvar({ banda, perfil }, 'perfil')
+    if (r) setRasc(rascunhoDe({ banda: r.banda, perfil: r.perfil }))
+  }
+
+  // capa e foto do perfil salvam na hora, em cima do perfil já salvo
+  async function escolherFoto(campo, nome) {
+    const r = await salvar({ perfil: { ...b.perfil, [campo]: b.perfil[campo] === nome ? '' : nome } }, campo)
+    if (r) setRasc(x => ({ ...x, [campo]: r.perfil[campo] }))
+  }
+
+  async function subirFotos(files) {
+    const lista = [...files].filter(f => f.type.startsWith('image/'))
+    if (!lista.length) return
+    setEnviando({ feito: 0, total: lista.length })
+    for (const [i, file] of lista.entries()) {
+      try {
+        const r = await fetch(`/api/admin/bandas/${id}/arquivos?tipo=foto&nome=${encodeURIComponent(file.name)}`, {
+          method: 'PUT', headers: { 'x-admin-pass': pass, 'Content-Type': file.type }, body: file,
+        })
+        if (!r.ok) setErro(`${file.name}: ${(await r.json().catch(() => ({}))).error || `erro ${r.status}`}`)
+      } catch { setErro(`${file.name}: falha de conexão`) }
+      setEnviando({ feito: i + 1, total: lista.length })
+    }
+    setEnviando(null)
+    await carregar()
+    onMudou()
+  }
+
+  async function copiarLink() {
+    const url = `${window.location.origin}/bandas/${b.slug}`
+    try { await navigator.clipboard.writeText(url) } catch { window.prompt('Copie o link da banda:', url); return }
+    setCopiado(true)
+    setTimeout(() => setCopiado(false), 2500)
+  }
+
+  const muda = (campo, v) => setRasc(r => ({ ...r, [campo]: v }))
   const videos = b?.arquivos.filter(a => a.tipo === 'video') || []
-  const videosNoAr = videos.filter(a => a.url).length
-  const fotos = b?.arquivos.filter(a => a.tipo === 'foto') || []
+  const fotos = b?.arquivos.filter(a => a.tipo === 'foto' && a.url) || []
 
   return (
-    <div className="ab-modal" onMouseDown={e => { if (e.target === e.currentTarget) onFechar() }}>
-      <aside className="ab-painel" role="dialog" aria-modal="true" aria-labelledby="ab-ficha-titulo">
+    <div className="ab-modal" onMouseDown={e => { if (e.target === e.currentTarget) fechar() }}>
+      <aside className="ab-painel ab-painel-largo" role="dialog" aria-modal="true" aria-labelledby="ab-ficha-titulo">
         <header className="ab-painel-cab">
-          <button ref={fecharRef} type="button" className="ab-fechar" onClick={onFechar} aria-label="Fechar ficha"><Ico n="fechar" /></button>
+          <button ref={fecharRef} type="button" className="ab-fechar" onClick={fechar} aria-label="Fechar ficha"><Ico n="fechar" /></button>
           <div className="ab-painel-tit">
             <h3 id="ab-ficha-titulo">{b?.banda || 'Ficha da banda'}</h3>
             {b && <span>Inscrita em {dataHora(b.criado_em)}</span>}
           </div>
+          {b && (
+            <div className="ab-cab-acoes">
+              <button type="button" className="ab-cab-btn" onClick={copiarLink}><Ico n={copiado ? 'check' : 'link'} className="ab-ico-sm" />{copiado ? 'Copiado' : 'Copiar link'}</button>
+              <a className="ab-cab-btn" href={`/bandas/${b.slug}`} target="_blank" rel="noopener noreferrer"><Ico n="externo" className="ab-ico-sm" /><span>Página pública</span></a>
+            </div>
+          )}
         </header>
 
         <div className="ab-painel-corpo">
@@ -366,89 +439,192 @@ function Ficha({ id, api, onFechar, onMudou }) {
 
           {b && (
             <>
-              <div className="ab-destaques">
-                <div><small>Show pedido</small><b>{diaShow(b.data)}</b><span>a partir das 20h{showPassou(b.data) && ' · já passou'}</span></div>
-                <div><small>Integrantes</small><b>{b.integrantes}</b><span>consumo R$ {b.integrantes * 50}</span></div>
+              <div className="bp-perfil ab-previa-cabeca"><PerfilCabeca b={b.publico} onIrAba={id => { setAba('previa'); setAbaPrevia(id) }} /></div>
+
+              <div className="ab-fabas" role="tablist" aria-label="Seções da ficha">
+                {ABAS_FICHA.map(a => (
+                  <button key={a.id} type="button" role="tab" aria-selected={aba === a.id} className={`ab-faba${aba === a.id ? ' on' : ''}`} onClick={() => setAba(a.id)}>
+                    {a.label}{a.id === 'perfil' && sujo && <span className="ab-faba-ponto" aria-label="sem salvar" />}
+                  </button>
+                ))}
               </div>
 
-              <a className="ab-btn ab-btn-zap" href={linkZap(b)} target="_blank" rel="noopener noreferrer">
-                <Ico n="zap" />Chamar {b.responsavel.split(' ')[0]} no WhatsApp
-              </a>
-
-              <section className="ab-sec" aria-labelledby="ab-st-tit">
-                <h4 id="ab-st-tit">Status</h4>
-                <div className="ab-st-opcoes" role="group" aria-label="Status da banda">
-                  {STATUS.map(s => (
-                    <button key={s.id} type="button" aria-pressed={b.status === s.id} disabled={!!salvando}
-                      className={`ab-st-op ab-st-${s.id}${b.status === s.id ? ' on' : ''}`} onClick={() => salvar({ status: s.id }, 'status')}>
-                      {b.status === s.id ? <Ico n="check" className="ab-ico-sm" /> : <span className="ab-status-dot" aria-hidden="true" />}{s.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="ab-dica" aria-live="polite">
-                  {salvo === 'status' ? <><Ico n="check" className="ab-ico-sm" />Status salvo</> : b.status_em ? `Atualizado em ${dataHora(b.status_em)}` : 'Toda inscrição começa como Nova.'}
-                </p>
-                <label className="ab-nota">
-                  <span>Observação da equipe</span>
-                  <textarea rows={3} value={nota} maxLength={2000} onChange={e => setNota(e.target.value)} placeholder="Ex.: cachê combinado, repertório, quem negociou…" />
-                </label>
-                <div className="ab-nota-acoes">
-                  <button type="button" className="ab-btn" disabled={nota === b.nota || !!salvando} onClick={() => salvar({ nota }, 'nota')}>
-                    {salvando === 'nota' ? 'Salvando…' : 'Salvar observação'}
-                  </button>
-                  {salvo === 'nota' && <span className="ab-dica" role="status"><Ico n="check" className="ab-ico-sm" />Salva</span>}
-                </div>
-              </section>
-
-              <section className="ab-sec">
-                <h4>Ficha</h4>
-                <dl className="ab-dl">
-                  <dt>Responsável</dt><dd>{b.responsavel}</dd>
-                  <dt>WhatsApp</dt><dd>{fone(b.whatsapp)}</dd>
-                  <dt>Formação</dt><dd>{b.instrumentos.join(', ') || '—'}</dd>
-                  <dt>Já tocou em</dt><dd>{b.lugares || '—'}</dd>
-                  <dt>Tempo de banda</dt><dd>{b.tempo || '—'}</dd>
-                  <dt>Termos aceitos</dt><dd>{b.aceite ? dataHora(b.aceite) : '—'}</dd>
-                  {b.engine_lead_id && <><dt>Engine Porks</dt><dd>Lead #{b.engine_lead_id} (tag Banda)</dd></>}
-                </dl>
-                {!b.concluido && <p className="ab-aviso"><Ico n="alerta" className="ab-ico-sm" />A banda saiu antes de terminar o envio. Pode faltar vídeo ou foto.</p>}
-              </section>
-
-              <section className="ab-sec">
-                <h4><Ico n="video" className="ab-ico-sm" />Vídeos ({videosNoAr})</h4>
-                {videos.length ? (
-                  <div className="ab-midias">
-                    {videos.map(a => a.url ? (
-                      <figure key={a.url} className="ab-midia">
-                        <video src={a.url} controls preload="metadata" playsInline />
-                        <figcaption><span>{a.original} · {tamanho(a.bytes)}</span><a href={a.url} download={a.original} aria-label={`Baixar ${a.original}`}><Ico n="baixar" className="ab-ico-sm" /></a></figcaption>
-                      </figure>
-                    ) : (
-                      <div key={a.original + a.em} className="ab-apagado">{a.original}: apagado depois de 60 dias</div>
-                    ))}
+              {aba === 'perfil' && rasc && (
+                <form className="ab-form" onSubmit={e => { e.preventDefault(); salvarPerfil() }}>
+                  <p className="ab-dica">Tudo que você preencher aqui aparece na página pública da banda. Contato, status e observação nunca aparecem.</p>
+                  <div className="ab-campos2">
+                    <label className="ab-campo"><span>Nome da banda</span>
+                      <input value={rasc.banda} maxLength={120} onChange={e => muda('banda', e.target.value)} required />
+                    </label>
+                    <label className="ab-campo"><span>De onde é</span>
+                      <input value={rasc.cidade} maxLength={80} onChange={e => muda('cidade', e.target.value)} placeholder="Ex.: Sobradinho, DF" />
+                    </label>
                   </div>
-                ) : <p className="ab-dica">A banda não mandou vídeo.</p>}
-              </section>
 
-              <section className="ab-sec">
-                <h4><Ico n="foto" className="ab-ico-sm" />Fotos ({fotos.length})</h4>
-                {fotos.length ? (
-                  <div className="ab-fotos">
-                    {fotos.map(a => (
-                      <figure key={a.url} className="ab-foto">
-                        <a href={a.url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${a.original}`}>
-                          <img src={a.url} alt={`Foto da banda ${b.banda}`} loading="lazy" />
-                        </a>
-                        <a className="ab-foto-baixar" href={a.url} download={a.original} aria-label={`Baixar ${a.original}`}><Ico n="baixar" className="ab-ico-sm" /></a>
-                      </figure>
-                    ))}
+                  <fieldset className="ab-campo">
+                    <legend>Estilo musical <small>(até 8)</small></legend>
+                    <div className="ab-estilos">
+                      {[...new Set([...ESTILOS, ...rasc.estilos])].map(e => {
+                        const on = rasc.estilos.includes(e)
+                        return (
+                          <button key={e} type="button" aria-pressed={on} className={`ab-chip${on ? ' on' : ''}`} disabled={!on && rasc.estilos.length >= 8}
+                            onClick={() => muda('estilos', on ? rasc.estilos.filter(x => x !== e) : [...rasc.estilos, e])}>
+                            {on && <Ico n="check" className="ab-ico-sm" />}{e}
+                          </button>
+                        )
+                      })}
+                      <input className="ab-estilo-novo" placeholder="Outro estilo + Enter" maxLength={30}
+                        onKeyDown={e => {
+                          const v = e.currentTarget.value.trim()
+                          if (e.key === 'Enter') { e.preventDefault(); if (v && rasc.estilos.length < 8 && !rasc.estilos.includes(v)) muda('estilos', [...rasc.estilos, v]); e.currentTarget.value = '' }
+                        }} />
+                    </div>
+                  </fieldset>
+
+                  <label className="ab-campo"><span>Sobre a banda</span>
+                    <textarea rows={5} value={rasc.sobre} maxLength={1500} onChange={e => muda('sobre', e.target.value)}
+                      placeholder="Conta a história da banda: como começou, o que toca, o que faz o show ser bom…" />
+                    <small className="ab-contador">{rasc.sobre.length}/1500</small>
+                  </label>
+
+                  <div className="ab-campos3">
+                    <label className="ab-campo"><span><Ico n="instagram" className="ab-ico-sm" />Instagram</span>
+                      <input value={rasc.instagram} onChange={e => muda('instagram', e.target.value)} placeholder="@nomedabanda" autoCapitalize="none" />
+                    </label>
+                    <label className="ab-campo"><span><Ico n="youtube" className="ab-ico-sm" />YouTube</span>
+                      <input value={rasc.youtube} onChange={e => muda('youtube', e.target.value)} placeholder="youtube.com/@banda" inputMode="url" autoCapitalize="none" />
+                    </label>
+                    <label className="ab-campo"><span><Ico n="spotify" className="ab-ico-sm" />Spotify</span>
+                      <input value={rasc.spotify} onChange={e => muda('spotify', e.target.value)} placeholder="open.spotify.com/artist/…" inputMode="url" autoCapitalize="none" />
+                    </label>
                   </div>
-                ) : <p className="ab-dica">A banda não mandou foto.</p>}
-              </section>
 
-              <a className="ab-link-ext" href={b.material} target="_blank" rel="noopener noreferrer">
-                Abrir página do material (mesmo link do lead no engine)<Ico n="externo" className="ab-ico-sm" />
-              </a>
+                  <fieldset className="ab-campo">
+                    <legend>Shows no Porks</legend>
+                    {rasc.shows.length === 0 && <p className="ab-dica">Nenhum show ainda. Quando a banda tocar (ou tiver data marcada), adiciona aqui.</p>}
+                    <ul className="ab-shows">
+                      {rasc.shows.map((s, i) => (
+                        <li key={i}>
+                          <input type="date" aria-label="Data do show" value={s.data} onChange={e => muda('shows', rasc.shows.map((x, j) => (j === i ? { ...x, data: e.target.value } : x)))} />
+                          <input aria-label="Nome do evento" placeholder="Nome do evento (opcional)" maxLength={80} value={s.titulo}
+                            onChange={e => muda('shows', rasc.shows.map((x, j) => (j === i ? { ...x, titulo: e.target.value } : x)))} />
+                          <button type="button" className="ab-icone-btn" aria-label="Remover show" onClick={() => muda('shows', rasc.shows.filter((_, j) => j !== i))}><Ico n="fechar" className="ab-ico-sm" /></button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button type="button" className="ab-btn ab-btn-claro" onClick={() => muda('shows', [...rasc.shows, { data: b.data, titulo: '' }])}>+ Adicionar show</button>
+                  </fieldset>
+
+                  <div className="ab-salvar-barra">
+                    <span className="ab-dica" aria-live="polite">
+                      {salvo === 'perfil' ? <><Ico n="check" className="ab-ico-sm" />Perfil salvo e publicado</> : sujo ? 'Alterações sem salvar' : 'Tudo salvo'}
+                    </span>
+                    {sujo && <button type="button" className="ab-btn ab-btn-claro" onClick={() => setRasc(rascunhoDe(b))}>Desfazer</button>}
+                    <button type="submit" className="ab-btn" disabled={!sujo || !!salvando}>{salvando === 'perfil' ? 'Salvando…' : 'Salvar perfil'}</button>
+                  </div>
+                </form>
+              )}
+
+              {aba === 'midia' && (
+                <div className="ab-form">
+                  <section className="ab-sec">
+                    <h4><Ico n="foto" className="ab-ico-sm" />Fotos ({fotos.length})</h4>
+                    <p className="ab-dica">Escolha a <b>capa</b> (foto larga do topo) e a <b>foto do perfil</b> (a redonda). Sem escolha, entra a primeira foto.</p>
+                    <div className="ab-fotos-perfil">
+                      {fotos.map(a => {
+                        const capa = b.perfil.capa === a.nome
+                        const avatar = b.perfil.avatar === a.nome
+                        return (
+                          <figure key={a.nome} className={`ab-fp${capa || avatar ? ' marcada' : ''}`}>
+                            <img src={a.url} alt="" loading="lazy" />
+                            <div className="ab-fp-marcas">{capa && <span>Capa</span>}{avatar && <span>Perfil</span>}</div>
+                            <figcaption>
+                              <button type="button" aria-pressed={capa} disabled={!!salvando} onClick={() => escolherFoto('capa', a.nome)}>{capa ? <><Ico n="check" className="ab-ico-sm" />Capa</> : 'Usar de capa'}</button>
+                              <button type="button" aria-pressed={avatar} disabled={!!salvando} onClick={() => escolherFoto('avatar', a.nome)}>{avatar ? <><Ico n="check" className="ab-ico-sm" />Perfil</> : 'Usar no perfil'}</button>
+                            </figcaption>
+                          </figure>
+                        )
+                      })}
+                      <label className={`ab-fp-add${enviando ? ' ocupado' : ''}`}>
+                        <input type="file" accept="image/*" multiple disabled={!!enviando} onChange={e => { subirFotos(e.target.files); e.target.value = '' }} />
+                        <Ico n="foto" />
+                        <b>{enviando ? `Enviando ${enviando.feito}/${enviando.total}…` : 'Adicionar fotos'}</b>
+                        <small>JPG ou PNG, até 15 MB</small>
+                      </label>
+                    </div>
+                  </section>
+
+                  <section className="ab-sec">
+                    <h4><Ico n="video" className="ab-ico-sm" />Vídeos ({videos.filter(a => a.url).length})</h4>
+                    {videos.length ? (
+                      <div className="ab-midias">
+                        {videos.map(a => a.url ? (
+                          <figure key={a.url} className="ab-midia">
+                            <video src={a.url} controls preload="metadata" playsInline />
+                            <figcaption><span>{a.original} · {tamanho(a.bytes)}</span><a href={a.url} download={a.original} aria-label={`Baixar ${a.original}`}><Ico n="baixar" className="ab-ico-sm" /></a></figcaption>
+                          </figure>
+                        ) : (
+                          <div key={a.original + a.em} className="ab-apagado">{a.original}: apagado depois de 60 dias</div>
+                        ))}
+                      </div>
+                    ) : <p className="ab-dica">A banda não mandou vídeo.</p>}
+                    <p className="ab-dica">Vídeo de banda <b>Aprovada</b> fica guardado. Das outras, some depois de 60 dias.</p>
+                  </section>
+                </div>
+              )}
+
+              {aba === 'gestao' && (
+                <div className="ab-form">
+                  <a className="ab-btn ab-btn-zap" href={linkZap(b)} target="_blank" rel="noopener noreferrer">
+                    <Ico n="zap" />Chamar {b.responsavel.split(' ')[0]} no WhatsApp
+                  </a>
+
+                  <section className="ab-sec" aria-labelledby="ab-st-tit">
+                    <h4 id="ab-st-tit">Status <small>(só a equipe vê)</small></h4>
+                    <div className="ab-st-opcoes" role="group" aria-label="Status da banda">
+                      {STATUS.map(s => (
+                        <button key={s.id} type="button" aria-pressed={b.status === s.id} disabled={!!salvando}
+                          className={`ab-st-op ab-st-${s.id}${b.status === s.id ? ' on' : ''}`} onClick={() => salvar({ status: s.id }, 'status')}>
+                          {b.status === s.id ? <Ico n="check" className="ab-ico-sm" /> : <span className="ab-status-dot" aria-hidden="true" />}{s.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="ab-dica" aria-live="polite">
+                      {salvo === 'status' ? <><Ico n="check" className="ab-ico-sm" />Status salvo</> : b.status_em ? `Atualizado em ${dataHora(b.status_em)}` : 'Toda inscrição começa como Nova.'}
+                    </p>
+                    <label className="ab-nota">
+                      <span>Observação da equipe</span>
+                      <textarea rows={3} value={nota} maxLength={2000} onChange={e => setNota(e.target.value)} placeholder="Ex.: cachê combinado, repertório, quem negociou…" />
+                    </label>
+                    <div className="ab-nota-acoes">
+                      <button type="button" className="ab-btn" disabled={nota === b.nota || !!salvando} onClick={() => salvar({ nota }, 'nota')}>
+                        {salvando === 'nota' ? 'Salvando…' : 'Salvar observação'}
+                      </button>
+                      {salvo === 'nota' && <span className="ab-dica" role="status"><Ico n="check" className="ab-ico-sm" />Salva</span>}
+                    </div>
+                  </section>
+
+                  <section className="ab-sec">
+                    <h4>Inscrição pelo Johnny</h4>
+                    <dl className="ab-dl">
+                      <dt>Responsável</dt><dd>{b.responsavel}</dd>
+                      <dt>WhatsApp</dt><dd>{fone(b.whatsapp)}</dd>
+                      <dt>Show pedido</dt><dd>{diaShow(b.data)}, 20h{showPassou(b.data) && ' (já passou)'}</dd>
+                      <dt>Consumo</dt><dd>R$ {b.integrantes * 50} ({b.integrantes} × R$ 50)</dd>
+                      <dt>Termos aceitos</dt><dd>{b.aceite ? dataHora(b.aceite) : '—'}</dd>
+                      {b.engine_lead_id && <><dt>Engine Porks</dt><dd>Lead #{b.engine_lead_id} (tag Banda)</dd></>}
+                    </dl>
+                    {!b.concluido && <p className="ab-aviso"><Ico n="alerta" className="ab-ico-sm" />A banda saiu antes de terminar o envio. Pode faltar vídeo ou foto.</p>}
+                  </section>
+                </div>
+              )}
+
+              {aba === 'previa' && (
+                <div className="bp-perfil ab-previa">
+                  {sujo && <p className="ab-aviso"><Ico n="alerta" className="ab-ico-sm" />O perfil tem alteração sem salvar. A prévia mostra o que já está publicado.</p>}
+                  <PerfilAbas b={b.publico} aba={abaPrevia} onAba={setAbaPrevia} />
+                </div>
+              )}
             </>
           )}
         </div>

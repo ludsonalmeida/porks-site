@@ -136,6 +136,18 @@ app.put('/api/bandas/:id/arquivos', (req, res) => {
   const f = lerFicha(req.params.id)
   if (!f || !chaveIgual(req.headers['x-upload-key'], f.chave_upload)) return res.status(404).json({ error: 'inscrição não encontrada' })
   if (f.concluido_em) return res.status(409).json({ error: 'inscrição já concluída' })
+  receberArquivo(req, res, f)
+})
+// admin sobe foto extra pro perfil (capa, foto de show…), sem o limite de 10 da banda
+app.put('/api/admin/bandas/:id/arquivos', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  const f = lerFicha(req.params.id)
+  if (!f) return res.status(404).json({ error: 'não encontrada' })
+  if (req.query.tipo !== 'foto') return res.status(400).json({ error: 'só foto' })
+  receberArquivo(req, res, f, 40)
+})
+
+function receberArquivo(req, res, f, maxQtd) {
   const tipo = req.query.tipo
   const lim = LIMITES[tipo]
   if (!lim) return res.status(400).json({ error: 'tipo inválido' })
@@ -148,8 +160,9 @@ app.put('/api/bandas/:id/arquivos', (req, res) => {
     return res.status(413).json({ error: tipo === 'video' ? 'O vídeo é muito grande: tem mais de 100 MB, tem que ser menos.' : 'A foto passou de 15 MB.' })
   }
   const r = reservados.get(f.id) || { video: 0, foto: 0 }
-  if (f.arquivos.filter(a => a.tipo === tipo).length + r[tipo] >= lim.max) {
-    return res.status(409).json({ error: `limite de ${lim.max} ${tipo === 'video' ? 'vídeos' : 'fotos'}` })
+  const max = maxQtd || lim.max
+  if (f.arquivos.filter(a => a.tipo === tipo).length + r[tipo] >= max) {
+    return res.status(409).json({ error: `limite de ${max} ${tipo === 'video' ? 'vídeos' : 'fotos'}` })
   }
   r[tipo]++
   reservados.set(f.id, r)
@@ -182,10 +195,10 @@ app.put('/api/bandas/:id/arquivos', (req, res) => {
     const atual = lerFicha(f.id)
     atual.arquivos.push({ nome, original: nomeOriginal, tipo, bytes, em: new Date().toISOString() })
     salvarFicha(atual)
-    res.json({ ok: true, nome })
+    res.json({ ok: true, nome, url: `/bandas-midia/${f.id}/${nome}` })
   })
   req.pipe(out)
-})
+}
 
 app.post('/api/bandas/:id/concluir', async (req, res) => {
   const f = lerFicha(req.params.id)
@@ -265,7 +278,7 @@ function manutencaoBandas() {
     if (!f) continue
     const parado = agora - Date.parse(f.criado_em) > 30 * 60e3
     if (!f.engine?.lead_id && (f.concluido_em || parado) && (f.engine?.tentativas || 0) < 30) enviarEngine(id).catch(() => {})
-    const velhos = f.arquivos.filter(a => a.tipo === 'video' && !a.apagado_em && agora - Date.parse(a.em) > VIDEO_DIAS * 864e5)
+    const velhos = f.status === 'aprovada' ? [] : f.arquivos.filter(a => a.tipo === 'video' && !a.apagado_em && agora - Date.parse(a.em) > VIDEO_DIAS * 864e5)
     if (velhos.length) {
       for (const a of velhos) {
         rmSync(join(BANDAS_DIR, id, a.nome), { force: true })
@@ -278,6 +291,106 @@ function manutencaoBandas() {
 }
 setInterval(manutencaoBandas, 10 * 60e3)
 setTimeout(manutencaoBandas, 60e3)
+
+// ── Perfil público da banda ──
+const slugify = s => normaliza(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'banda'
+// slug fixo por banda, gravado na ficha na primeira vez que alguém pede
+function garantirSlug(f, todas) {
+  if (f.slug) return f.slug
+  const usados = new Set((todas || todasFichas()).filter(x => x.id !== f.id && x.slug).map(x => x.slug))
+  const base = slugify(f.banda)
+  let slug = base
+  for (let n = 2; usados.has(slug); n++) slug = `${base}-${n}`
+  f.slug = slug
+  salvarFicha(f)
+  return slug
+}
+const midiaUrl = (f, a) => `/bandas-midia/${f.id}/${a.nome}`
+const PERFIL_VAZIO = { sobre: '', cidade: '', estilos: [], instagram: '', youtube: '', spotify: '', capa: '', avatar: '', shows: [] }
+function perfilDe(f) {
+  return { ...PERFIL_VAZIO, ...(f.perfil || {}) }
+}
+function limparPerfil(p, f) {
+  const nomes = new Set(f.arquivos.filter(a => a.tipo === 'foto' && !a.apagado_em).map(a => a.nome))
+  const rede = v => texto(v, 200).replace(/^@/, '')
+  return {
+    sobre: String(p.sobre ?? '').trim().slice(0, 1500),
+    cidade: texto(p.cidade, 80),
+    estilos: (Array.isArray(p.estilos) ? p.estilos : []).map(e => texto(e, 30)).filter(Boolean).slice(0, 8),
+    instagram: rede(p.instagram),
+    youtube: texto(p.youtube, 200),
+    spotify: texto(p.spotify, 200),
+    capa: nomes.has(p.capa) ? p.capa : '',
+    avatar: nomes.has(p.avatar) ? p.avatar : '',
+    shows: (Array.isArray(p.shows) ? p.shows : [])
+      .filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x?.data))
+      .map(x => ({ data: x.data, titulo: texto(x.titulo, 80) }))
+      .sort((a, b) => b.data.localeCompare(a.data))
+      .slice(0, 100),
+  }
+}
+// só o que pode ir pro público: nada de responsável, WhatsApp, status ou observação
+function publicoDe(f) {
+  const perfil = perfilDe(f)
+  const fotos = f.arquivos.filter(a => a.tipo === 'foto' && !a.apagado_em)
+  const capa = fotos.find(a => a.nome === perfil.capa) || fotos[0]
+  const avatar = fotos.find(a => a.nome === perfil.avatar) || capa
+  return {
+    slug: f.slug,
+    banda: f.banda,
+    integrantes: f.integrantes,
+    instrumentos: f.instrumentos,
+    lugares: f.lugares && !/^ainda não/i.test(f.lugares) ? f.lugares.split(',').map(x => x.trim()).filter(Boolean) : [],
+    tempo: f.tempo,
+    desde: f.criado_em,
+    sobre: perfil.sobre, cidade: perfil.cidade, estilos: perfil.estilos,
+    instagram: perfil.instagram, youtube: perfil.youtube, spotify: perfil.spotify,
+    shows: perfil.shows,
+    capa: capa ? midiaUrl(f, capa) : null,
+    avatar: avatar ? midiaUrl(f, avatar) : null,
+    fotos: fotos.map(a => ({ url: midiaUrl(f, a), nome: a.nome })),
+    videos: f.arquivos.filter(a => a.tipo === 'video' && !a.apagado_em).map(a => ({ url: midiaUrl(f, a), nome: a.nome })),
+    avaliacoes: { media: 0, total: 0, itens: [] }, // mecanismo de avaliação entra depois
+  }
+}
+function fichaPorSlug(slug) {
+  const todas = todasFichas()
+  for (const f of todas) garantirSlug(f, todas)
+  return todas.find(f => f.slug === slug) || null
+}
+
+app.get('/api/bandas/publico/:slug', (req, res) => {
+  const f = fichaPorSlug(String(req.params.slug))
+  if (!f) return res.status(404).json({ error: 'banda não encontrada' })
+  res.json(publicoDe(f))
+})
+app.get('/bandas-midia/:id/:arquivo', (req, res) => {
+  const f = lerFicha(req.params.id)
+  const a = f?.arquivos.find(x => x.nome === req.params.arquivo && !x.apagado_em)
+  if (!a) return res.status(404).send('Não encontrado')
+  res.set('Cache-Control', 'public, max-age=86400')
+  res.sendFile(join(BANDAS_DIR, f.id, a.nome))
+})
+// HTML da página da banda com título e preview (WhatsApp/Instagram leem isso antes do React)
+app.get('/bandas/:slug', (req, res, next) => {
+  const f = fichaPorSlug(String(req.params.slug))
+  let html
+  try { html = readFileSync(join(__dirname, 'dist', 'index.html'), 'utf8') } catch { return next() }
+  if (!f) return res.status(404).send(html)
+  const p = publicoDe(f)
+  const titulo = `${p.banda} · banda no Porks Sobradinho`
+  const desc = (p.sobre || `${p.integrantes} integrantes${p.estilos.length ? ` · ${p.estilos.join(', ')}` : ''}. Veja fotos, vídeos e avaliações da banda.`).slice(0, 200)
+  const img = p.capa ? `${SITE_URL}${p.capa}` : `${SITE_URL}/images/logo-porks.png`
+  const meta = `<title>${esc(titulo)}</title>
+    <meta name="description" content="${esc(desc)}" />
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content="${esc(titulo)}" />
+    <meta property="og:description" content="${esc(desc)}" />
+    <meta property="og:image" content="${esc(img)}" />
+    <meta property="og:url" content="${SITE_URL}/bandas/${p.slug}" />
+    <meta name="twitter:card" content="summary_large_image" />`
+  res.send(html.replace(/<title>[\s\S]*?<\/title>/, '').replace(/<meta name="description"[^>]*>/, '').replace('</head>', `${meta}\n</head>`))
+})
 
 // ── Admin: aba Bandas ──
 const STATUS_BANDA = ['nova', 'conversa', 'aprovada', 'recusada']
@@ -339,9 +452,13 @@ app.get('/api/admin/bandas/:id', (req, res) => {
     nota: f.nota || '', status_em: f.status_em || null,
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
+    slug: garantirSlug(f),
+    perfil: perfilDe(f),
+    publico: (garantirSlug(f), publicoDe(f)),
     arquivos: f.arquivos.map(a => ({
       tipo: a.tipo, original: a.original, bytes: a.bytes, em: a.em, apagado_em: a.apagado_em || null,
-      url: a.apagado_em ? null : `/produtor/material/${f.id}/${a.nome}?k=${k}`,
+      nome: a.nome,
+      url: a.apagado_em ? null : midiaUrl(f, a),
     })),
   })
 })
@@ -350,14 +467,16 @@ app.patch('/api/admin/bandas/:id', (req, res) => {
   if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
   const f = lerFicha(req.params.id)
   if (!f) return res.status(404).json({ error: 'não encontrada' })
-  const { status, nota } = req.body || {}
+  const { status, nota, perfil, banda } = req.body || {}
+  if (perfil !== undefined) f.perfil = limparPerfil(perfil || {}, f)
+  if (banda !== undefined && texto(banda, 120)) f.banda = texto(banda, 120)
   if (status !== undefined) {
     if (!STATUS_BANDA.includes(status)) return res.status(400).json({ error: 'status inválido' })
     if (status !== (f.status || 'nova')) { f.status = status; f.status_em = new Date().toISOString() }
   }
   if (nota !== undefined) f.nota = String(nota).slice(0, 2000)
   salvarFicha(f)
-  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '' })
+  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '', perfil: perfilDe(f), banda: f.banda, publico: publicoDe(f) })
 })
 
 // página do material pra equipe (link vai no lead do engine)
