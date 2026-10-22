@@ -82,6 +82,8 @@ function Ico({ n, className }) {
 
 
 function Avatar({ small }) {
+  // foto do Johnny em /images/johnny.jpg; se não existir, fica o ícone de fone
+  const [foto, setFoto] = useState(true)
   return (
     <div className={`pd-avatar${small ? ' pd-avatar-sm' : ''}`} aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,6 +91,7 @@ function Avatar({ small }) {
         <rect x="2" y="14" width="4.5" height="7" rx="1.5" fill="currentColor" />
         <rect x="17.5" y="14" width="4.5" height="7" rx="1.5" fill="currentColor" />
       </svg>
+      {foto && <img src="/images/johnny.jpg" alt="" className="pd-avatar-img" onError={() => setFoto(false)} />}
     </div>
   )
 }
