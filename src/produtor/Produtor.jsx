@@ -19,7 +19,13 @@ const TEMPOS = ['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos']
 const CACHES = ['Até R$ 500', 'R$ 500 a 800', 'R$ 800 a 1.000', 'R$ 1.000 a 1.500', 'Acima de R$ 1.500']
 const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
 
-const ETAPAS = ['banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'tempo', 'cache', 'contato', 'data', 'aceite', 'fim']
+// Plug & Play: quintas, das 19h às 23h50, até 10 músicos aprovados por noite, R$ 50 de bônus no dia
+const PP_MAX_MUSICOS = 10
+const PP_BONUS = 50
+const PP_QUINTAS = 12
+const TIPOS = ['Negociar uma data na agenda do Porks', 'Plug & Play das quintas']
+const ETAPAS_PP = ['tipo', 'banda', 'formacao', 'estilo', 'videos', 'contato', 'quintas', 'aceite', 'fim']
+const ETAPAS = ['tipo', 'banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'tempo', 'cache', 'contato', 'data', 'aceite', 'fim']
 const wait = ms => new Promise(r => setTimeout(r, ms))
 const tamanho = bytes => bytes < MB
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -43,6 +49,17 @@ function isoDate(d) {
   const p = n => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
+
+function proximasQuintas(n = PP_QUINTAS) {
+  const out = []
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 1)
+  while (d.getDay() !== 4) d.setDate(d.getDate() + 1)
+  for (let i = 0; i < n; i++) { out.push(new Date(d)); d.setDate(d.getDate() + 7) }
+  return out
+}
+const quintaCurta = iso => { const d = new Date(`${iso}T12:00:00`); return `${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}` }
 
 function dataExtenso(d) {
   const dia = d.getDay() === 5 ? 'sexta' : 'sábado'
@@ -171,24 +188,81 @@ function Termos({ musicos }) {
   )
 }
 
+function TermosPP() {
+  return (
+    <div className="pd-termos">
+      <div className="pd-termo">
+        <div className="pd-termo-ico"><Ico n="relogio" /></div>
+        <div>
+          <div className="pd-termo-tit">Quintas, das 19h às 23h50</div>
+          <p>Músico chega, pluga e toca junto. São até <b>{PP_MAX_MUSICOS} músicos aprovados por noite</b>.</p>
+        </div>
+      </div>
+      <div className="pd-termo">
+        <div className="pd-termo-ico"><Ico n="chope" /></div>
+        <div>
+          <div className="pd-termo-tit">R$ {PP_BONUS} de bônus no cartão pra consumo</div>
+          <p>O Plug & Play não tem cachê. Cada músico aprovado ganha <b>R$ {PP_BONUS} no cartão pra consumir no dia</b>. Vale só naquela noite e não acumula.</p>
+        </div>
+      </div>
+      <div className="pd-termo pd-termo-forte">
+        <div className="pd-termo-ico"><Ico n="som" /></div>
+        <div>
+          <div className="pd-termo-tit">Leve o seu instrumento</div>
+          <p>Mesmo que já tenha um instrumento ligado no palco, cada músico traz o seu. Dá pra combinar na hora com o outro músico se ele te empresta, mas o seu precisa estar com você.</p>
+        </div>
+      </div>
+      <div className="pd-termo pd-termo-alerta">
+        <div className="pd-termo-ico"><Ico n="decibel" /></div>
+        <div>
+          <div className="pd-termo-tit">Decibéis medidos a cada 30 minutos</div>
+          <p>Se passar do permitido, o volume <b>obrigatoriamente baixa</b> até voltar pro limite do IBRAM naquele horário. É regra da casa.</p>
+        </div>
+      </div>
+      <div className="pd-termo">
+        <div className="pd-termo-ico"><Ico n="menor" /></div>
+        <div>
+          <div className="pd-termo-tit">Músicos menores de idade</div>
+          <p>Só acompanhados de responsável legal. Menor não consome bebida alcoólica, e a gente jamais vende.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Ficha({ ficha }) {
+  const pp = ficha.tipo === 'pp'
   return (
     <div className="pd-ficha">
       <div className="pd-ficha-head">
-        <span>FICHA DA BANDA</span>
+        <span>{pp ? 'PLUG & PLAY' : 'FICHA DA BANDA'}</span>
         <b>{ficha.banda}</b>
       </div>
       <dl>
-        <dt>Integrantes</dt><dd>{ficha.integrantes} · {ficha.instrumentos.join(', ')}</dd>
+        <dt>{pp ? 'Músicos' : 'Integrantes'}</dt><dd>{ficha.integrantes} · {ficha.instrumentos.join(', ')}</dd>
         {ficha.estilos?.length > 0 && <><dt>Estilo</dt><dd>{ficha.estilos.join(', ')}</dd></>}
+        {pp ? (
+          <>
+            <dt>Vídeos</dt><dd>{ficha.videos?.length || 0}</dd>
+            <dt>Contato</dt><dd>{ficha.responsavel} · {ficha.whatsapp}</dd>
+            <dt>Quintas</dt><dd>{ficha.quintas.map(quintaCurta).join(', ')} · 19h às 23h50</dd>
+          </>
+        ) : <FichaAgenda ficha={ficha} />}
+      </dl>
+    </div>
+  )
+}
+
+function FichaAgenda({ ficha }) {
+  return (
+    <>
         <dt>Já tocou em</dt><dd>{ficha.lugares}</dd>
         <dt>Formação</dt><dd>{ficha.tempo}</dd>
         {ficha.cache && <><dt>Cachê médio</dt><dd>{ficha.cache}</dd></>}
         <dt>Material</dt><dd>{ficha.videos.length} {ficha.videos.length === 1 ? 'vídeo' : 'vídeos'} · {ficha.fotos.length} {ficha.fotos.length === 1 ? 'foto' : 'fotos'}</dd>
         <dt>Negociação</dt><dd>{ficha.responsavel} · {ficha.whatsapp}</dd>
         <dt>Data</dt><dd>{ficha.dataTexto[0].toUpperCase() + ficha.dataTexto.slice(1)}, a partir das 20h</dd>
-      </dl>
-    </div>
+    </>
   )
 }
 
@@ -209,8 +283,8 @@ function TextoComposer({ placeholder, onSend, maxLength = 80 }) {
   )
 }
 
-function FormacaoComposer({ onSend }) {
-  const [n, setN] = useState(4)
+function FormacaoComposer({ onSend, inicial = 4 }) {
+  const [n, setN] = useState(inicial)
   const [sel, setSel] = useState([])
   const [outro, setOutro] = useState(false)
   const [outroTxt, setOutroTxt] = useState('')
@@ -515,6 +589,41 @@ function DataComposer({ onSend }) {
   )
 }
 
+function QuintasComposer({ onSend, musicos }) {
+  const [quintas] = useState(() => proximasQuintas())
+  const [sel, setSel] = useState([])
+  const [vagas, setVagas] = useState({}) // data -> músicos já aprovados
+  useEffect(() => {
+    fetch(`/api/bandas/quintas?de=${isoDate(quintas[0])}&ate=${isoDate(quintas[quintas.length - 1])}`)
+      .then(r => (r.ok ? r.json() : [])).then(l => setVagas(Object.fromEntries(l.map(x => [x.data, x.aprovados])))).catch(() => {})
+  }, [quintas])
+  const toggle = iso => setSel(s => (s.includes(iso) ? s.filter(x => x !== iso) : [...s, iso].sort()))
+  return (
+    <div className="pd-compose-box">
+      <div className="pd-quintas" role="group" aria-label="Quintas-feiras do Plug & Play">
+        {quintas.map(d => {
+          const iso = isoDate(d)
+          const usados = vagas[iso] || 0
+          const lotada = usados + musicos > PP_MAX_MUSICOS
+          const on = sel.includes(iso)
+          return (
+            <button type="button" key={iso} aria-pressed={on} disabled={lotada && !on}
+              className={`pd-quinta${on ? ' on' : ''}${lotada ? ' lotada' : ''}`} onClick={() => toggle(iso)}
+              aria-label={`Quinta, ${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}${lotada ? ', lotada' : ''}`}>
+              <span className="pd-quinta-n">{d.getDate()}</span>
+              <span className="pd-quinta-m">{d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span>
+              <span className="pd-quinta-st">{on ? <Ico n="check" className="pd-day-ck" /> : lotada ? 'Lotada' : `${Math.max(0, PP_MAX_MUSICOS - usados)} vagas`}</span>
+            </button>
+          )
+        })}
+      </div>
+      <button type="button" className="pd-cta" disabled={!sel.length} onClick={() => onSend(sel)}>
+        {sel.length ? `Quero ${sel.length === 1 ? 'essa quinta' : `essas ${sel.length} quintas`}` : 'Marque uma ou mais quintas'}
+      </button>
+    </div>
+  )
+}
+
 function AceiteComposer({ onSim, onNao }) {
   return (
     <div className="pd-compose-box">
@@ -576,6 +685,7 @@ export default function Produtor() {
   const [etapa, setEtapa] = useState(0)
   const [envio, setEnvio] = useState({ pct: 0, texto: '' })
   const fichaRef = useRef({})
+  const etapasRef = useRef(ETAPAS)
   const started = useRef(false)
   const idRef = useRef(0)
 
@@ -602,7 +712,7 @@ export default function Produtor() {
     }
     if (next) {
       setStep(next)
-      setEtapa(e => Math.max(e, ETAPAS.indexOf(next)))
+      setEtapa(e => Math.max(e, etapasRef.current.indexOf(next)))
     }
   }
 
@@ -615,30 +725,51 @@ export default function Produtor() {
     if (started.current) return
     started.current = true
     setTimeout(() => johnny([
-      'Fala, banda! 🤘 Aqui é o Johnny, produtor musical do Porks Sobradinho.',
-      'Vou te fazer umas perguntas rápidas pra conhecer o som de vocês e levar pra administração da casa.',
-      'Bora começar: qual é o nome da banda?',
-    ], 'banda'), 250)
+      'Fala, músico! 🤘 Aqui é o Johnny, produtor musical do Porks Sobradinho.',
+      'Me conta: você veio negociar uma data na agenda do Porks com a sua banda, ou quer participar do Projeto Plug & Play das quintas?',
+    ], 'tipo'), 250)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ficha só é lida em handlers, nunca no render
   const F = () => fichaRef.current
 
+  const pp = () => F().tipo === 'pp'
   const handlers = {
+    tipo: t => {
+      F().tipo = t === TIPOS[1] ? 'pp' : 'agenda'
+      etapasRef.current = pp() ? ETAPAS_PP : ETAPAS
+      banda(t)
+      johnny(pp() ? [
+        'Boa! O Plug & Play rola toda quinta, das 19h às 23h50: o músico chega, pluga e toca junto. São até 10 músicos por noite. 🎸',
+        'Qual é o seu nome? Se vierem mais de um, pode mandar o nome do grupo.',
+      ] : [
+        'Show! Vou te fazer umas perguntas rápidas pra conhecer o som de vocês e levar pra administração da casa.',
+        'Bora começar: qual é o nome da banda?',
+      ], 'banda')
+    },
     banda: nome => {
       F().banda = nome
       banda(nome)
-      johnny([`${nome}! Gostei. 🔥`, 'Me conta a formação: quantos são e quem toca o quê?'], 'formacao')
+      johnny(pp()
+        ? [`Prazer, ${nome}! 🔥`, 'Quantos músicos vêm e quais instrumentos vocês tocam?']
+        : [`${nome}! Gostei. 🔥`, 'Me conta a formação: quantos são e quem toca o quê?'], 'formacao')
     },
     formacao: ({ integrantes, instrumentos }) => {
       F().integrantes = integrantes
       F().instrumentos = instrumentos
-      banda(`${integrantes} ${integrantes === 1 ? 'integrante' : 'integrantes'}: ${instrumentos.join(', ')}`)
-      johnny(['E qual é a pegada da banda? Marca os estilos que vocês tocam.'], 'estilo')
+      banda(`${integrantes} ${pp() ? (integrantes === 1 ? 'músico' : 'músicos') : (integrantes === 1 ? 'integrante' : 'integrantes')}: ${instrumentos.join(', ')}`)
+      johnny([pp() ? 'E qual é a sua pegada? Marca os estilos que você toca.' : 'E qual é a pegada da banda? Marca os estilos que vocês tocam.'], 'estilo')
     },
     estilo: estilos => {
       F().estilos = estilos
       banda(estilos.join(', '))
+      if (pp()) {
+        johnny([
+          'Tem algum vídeo tocando? Ajuda a gente a te conhecer. Se não tiver agora, pode pular.',
+          `Até ${MAX_VIDEOS} vídeos, cada um com menos de ${MAX_VIDEO_MB} MB.`,
+        ], 'videos')
+        return
+      }
       johnny(['Quais lugares a banda já tocou? Pode marcar as casas abaixo e escrever outras.'], 'lugares')
     },
     lugares: txt => {
@@ -653,6 +784,13 @@ export default function Produtor() {
     videos: files => {
       F().videos = files.map(x => x.file)
       banda(files.length ? { tipo: 'video', files } : 'Não tenho vídeo agora')
+      if (pp()) {
+        johnny([
+          files.length ? 'Recebi! Vou assistir com carinho. 🎧' : 'Tranquilo, segue o jogo.',
+          'Agora seu nome completo e seu WhatsApp, pra gente te chamar.',
+        ], 'contato')
+        return
+      }
       johnny([
         files.length ? 'Recebi! Vou assistir com carinho. 🎧' : 'Tranquilo. Sem vídeo fica mais difícil de avaliar, mas segue o jogo.',
         'Tem fotos da banda pra gente trabalhar nos flyers?',
@@ -683,7 +821,21 @@ export default function Produtor() {
       F().responsavel = nome
       F().whatsapp = whatsapp
       banda(`${nome} · ${whatsapp}`)
+      if (pp()) {
+        johnny([`Valeu, ${nome.split(' ')[0]}!`, 'Quais quintas você quer tocar? Pode marcar mais de uma.'], 'quintas')
+        return
+      }
       johnny([`Valeu, ${nome.split(' ')[0]}!`, 'Qual data te interessa? Aqui no Porks a música ao vivo rola sextas e sábados, a partir das 20h.'], 'data')
+    },
+    quintas: lista => {
+      F().quintas = lista
+      F().data = lista[0]
+      banda(`${lista.length === 1 ? 'Quinta' : 'Quintas'} ${lista.map(quintaCurta).join(', ')}, das 19h às 23h50`)
+      johnny([
+        'Anotado! Agora deixa eu te explicar como funciona o Plug & Play. 👇',
+        { tipo: 'termos-pp' },
+        'Está de acordo com estes termos?',
+      ], 'aceite')
     },
     data: d => {
       F().data = isoDate(d)
@@ -728,7 +880,7 @@ export default function Produtor() {
         f.inscricao = await api('/api/bandas', {
           banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, estilos: f.estilos, lugares: f.lugares,
           tempo: f.tempo, cache: f.cache, responsavel: f.responsavel, whatsapp: f.whatsapp,
-          data: f.data, dataTexto: f.dataTexto, aceite: f.aceite,
+          data: f.data, dataTexto: f.dataTexto, aceite: f.aceite, tipo: f.tipo, quintas: f.quintas,
         })
         f.enviados = new Set()
       }
@@ -756,7 +908,11 @@ export default function Produtor() {
       ], null, { manterResposta: true })
       return
     }
-    await johnny([
+    await johnny(pp() ? [
+      'Fechado! A gente vai entrar em contato pra te incluir nas quintas que você marcou. Beleza pura?',
+      'Em até 72h a gente retorna! 🤘',
+      { tipo: 'ficha', ficha: { ...F() } },
+    ] : [
       'Perfeito! A administração recebeu a sua solicitação e vai entrar em contato com uma resposta pra negociar o cachê. Beleza pura?',
       'Em até 72h a gente retorna! 🤘',
       { tipo: 'ficha', ficha: { ...F() } },
@@ -775,6 +931,7 @@ export default function Produtor() {
     const c = m.content
     if (typeof c === 'string') return c
     if (c.tipo === 'termos') return <Termos musicos={c.musicos} />
+    if (c.tipo === 'termos-pp') return <TermosPP />
     if (c.tipo === 'ficha') return <Ficha ficha={c.ficha} />
     if (c.tipo === 'video' || c.tipo === 'foto') {
       return (
@@ -805,8 +962,8 @@ export default function Produtor() {
           <div className="pd-head-sub"><span className="pd-dot" />Produtor musical · Porks Sobradinho</div>
         </div>
         <img src="/images/logo-porks.png" alt="Porks" className="pd-head-logo" />
-        <div className="pd-prog" role="progressbar" aria-label="Progresso da conversa" aria-valuemin={0} aria-valuemax={ETAPAS.length - 1} aria-valuenow={etapa}>
-          <span style={{ transform: `scaleX(${etapa / (ETAPAS.length - 1)})` }} />
+        <div className="pd-prog" role="progressbar" aria-label="Progresso da conversa" aria-valuemin={0} aria-valuemax={etapasRef.current.length - 1} aria-valuenow={etapa}>
+          <span style={{ transform: `scaleX(${etapa / (etapasRef.current.length - 1)})` }} />
         </div>
       </header>
 
@@ -832,8 +989,9 @@ export default function Produtor() {
 
       {step && step !== 'fim' && (
         <footer className="pd-compose" key={step}>
-          {step === 'banda' && <TextoComposer placeholder="Nome da banda" onSend={handlers.banda} />}
-          {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} />}
+          {step === 'tipo' && <ChipsComposer opcoes={TIPOS} onSend={handlers.tipo} />}
+          {step === 'banda' && <TextoComposer placeholder={F().tipo === 'pp' ? 'Seu nome ou do grupo' : 'Nome da banda'} onSend={handlers.banda} />}
+          {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} inicial={F().tipo === 'pp' ? 1 : 4} />}
           {step === 'estilo' && <EstiloComposer onSend={handlers.estilo} />}
           {step === 'lugares' && <LugaresComposer onSend={handlers.lugares} />}
           {step === 'videos' && <UploadComposer tipo="video" onSend={handlers.videos} onRejeita={r => rejeita('video', r)} />}
@@ -842,6 +1000,7 @@ export default function Produtor() {
           {step === 'cache' && <CacheComposer onSend={handlers.cache} />}
           {step === 'contato' && <ContatoComposer onSend={handlers.contato} />}
           {step === 'data' && <DataComposer onSend={handlers.data} />}
+          {step === 'quintas' && <QuintasComposer onSend={handlers.quintas} musicos={F().integrantes || 1} />}
           {step === 'aceite' && <AceiteComposer onSim={aceitar} onNao={naoConcordo} />}
           {step === 'enviando' && <EnvioComposer envio={envio} onTentar={enviar} />}
         </footer>

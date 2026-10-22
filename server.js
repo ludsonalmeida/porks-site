@@ -93,13 +93,17 @@ app.post('/api/bandas', (req, res) => {
     return res.status(429).json({ error: 'Muitas inscrições seguidas. Tenta de novo daqui a pouco.' })
   }
   const whatsapp = String(b.whatsapp || '').replace(/\D/g, '')
-  const data = String(b.data || '')
+  const pp = b.tipo === 'pp'
+  const diaDaSemana = iso => new Date(`${iso}T12:00:00-03:00`).getUTCDay()
+  const quintas = pp ? [...new Set((Array.isArray(b.quintas) ? b.quintas : []).map(String))]
+    .filter(q => /^\d{4}-\d{2}-\d{2}$/.test(q) && diaDaSemana(q) === 4).sort().slice(0, 20) : []
+  const data = pp ? (quintas[0] || '') : String(b.data || '')
   const dia = new Date(`${data}T12:00:00-03:00`)
   const erros = []
   if (!texto(b.banda, 120)) erros.push('banda')
   if (texto(b.responsavel, 120).split(' ').length < 2) erros.push('responsavel')
   if (!/^\d{2}9\d{8}$/.test(whatsapp)) erros.push('whatsapp')
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(dia) || ![5, 6].includes(dia.getUTCDay())) erros.push('data')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(dia) || !(pp ? [4] : [5, 6]).includes(dia.getUTCDay())) erros.push('data')
   if (!b.aceite) erros.push('aceite')
   if (erros.length) return res.status(400).json({ error: 'dados inválidos', campos: erros })
 
@@ -107,6 +111,8 @@ app.post('/api/bandas', (req, res) => {
   const integrantes = Math.min(30, Math.max(1, parseInt(b.integrantes, 10) || 1))
   const ficha = {
     id,
+    tipo: pp ? 'pp' : 'agenda',
+    ...(pp ? { quintas, quintas_aprovadas: [] } : {}),
     criado_em: new Date().toISOString(),
     banda: texto(b.banda, 120),
     integrantes,
@@ -115,7 +121,7 @@ app.post('/api/bandas', (req, res) => {
     perfil: { estilos: [...new Set((Array.isArray(b.estilos) ? b.estilos : []).map(e => texto(e, 30)).filter(Boolean))].slice(0, 8) },
     lugares: texto(b.lugares, 600),
     tempo: texto(b.tempo, 40),
-    cache: texto(b.cache, 40), // privado: só admin, material interno e engine
+    cache: pp ? '' : texto(b.cache, 40), // privado: só admin, material interno e engine
     responsavel: texto(b.responsavel, 120),
     whatsapp,
     data,
@@ -216,7 +222,7 @@ app.post('/api/bandas/:id/concluir', async (req, res) => {
 })
 
 // ── Engine Porks ──
-let tagBandaId = null
+const tagsEngine = {} // nome da tag -> id no engine
 async function engine(path, body) {
   const r = await fetch(`${ENGINE_URL}${path}`, {
     method: 'POST',
@@ -233,17 +239,20 @@ async function enviarEngine(id) {
   if (!f || f.engine?.lead_id) return
   if (!ENGINE_TOKEN) { console.warn('[bandas] ENGINE_TOKEN ausente, lead não enviado', id); return }
   try {
-    if (!tagBandaId) tagBandaId = (await engine('/api/tags', { name: 'Banda', color: '#EE7F12' })).id
+    const pp = f.tipo === 'pp'
+    const tagNome = pp ? 'Plug & Play' : 'Banda'
+    if (!tagsEngine[tagNome]) tagsEngine[tagNome] = (await engine('/api/tags', { name: tagNome, color: pp ? '#7B3FA0' : '#EE7F12' })).id
     const conta = t => f.arquivos.filter(a => a.tipo === t).length
     const lead = await engine('/api/leads', {
       name: f.responsavel,
       phone: `55${f.whatsapp}`,
       product: 'porks_sobradinho',
       unit: 'sobradinho',
-      source: 'produtor-musical',
-      tag_ids: [tagBandaId],
+      source: pp ? 'plug-and-play' : 'produtor-musical',
+      tag_ids: [tagsEngine[tagNome]],
       metadata: {
-        tipo: 'banda',
+        tipo: pp ? 'plug-and-play' : 'banda',
+        ...(pp ? { quintas: (f.quintas || []).join(', ') } : {}),
         banda: f.banda,
         integrantes: f.integrantes,
         instrumentos: f.instrumentos.join(', '),
@@ -364,7 +373,7 @@ function publicoDe(f) {
 function fichaPorSlug(slug) {
   const todas = todasFichas()
   for (const f of todas) garantirSlug(f, todas)
-  return todas.find(f => f.slug === slug) || null
+  return todas.find(f => f.slug === slug && f.tipo !== 'pp') || null
 }
 
 // ── Google Agenda do Porks (fonte oficial de quem toca em cada noite) ──
@@ -438,7 +447,7 @@ setTimeout(() => { sincronizarAgenda().catch(() => {}) }, 5e3)
 const chaveNome = n => normaliza(n).replace(/[^a-z0-9]+/g, '')
 function fichaDoNome(nome, todas) {
   const k = chaveNome(nome)
-  return k ? todas.find(f => chaveNome(f.banda) === k) || null : null
+  return k ? todas.find(f => f.tipo !== 'pp' && chaveNome(f.banda) === k) || null : null
 }
 function showsGoogleDa(f) {
   const k = chaveNome(f.banda)
@@ -479,6 +488,26 @@ function agendaEntre(de, ate) {
   out.sort((a, b) => a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || '') || a.banda.localeCompare(b.banda))
   return out
 }
+
+// Plug & Play: músicos já aprovados em cada quinta (pro Johnny mostrar vagas/lotada)
+const PP_MAX_MUSICOS = 10
+function musicosAprovadosNaQuinta(todas) {
+  const conta = {}
+  for (const f of todas) {
+    if (f.tipo !== 'pp') continue
+    for (const q of f.quintas_aprovadas || []) conta[q] = (conta[q] || 0) + (f.integrantes || 1)
+  }
+  return conta
+}
+app.get('/api/bandas/quintas', (req, res) => {
+  const dia = /^\d{4}-\d{2}-\d{2}$/
+  const de = String(req.query.de || ''), ate = String(req.query.ate || '')
+  if (!dia.test(de) || !dia.test(ate)) return res.status(400).json({ error: 'use ?de=&ate=' })
+  const conta = musicosAprovadosNaQuinta(todasFichas())
+  const out = Object.entries(conta).filter(([d]) => d >= de && d <= ate)
+    .map(([data, aprovados]) => ({ data, aprovados, lotada: aprovados >= PP_MAX_MUSICOS }))
+  res.set('Cache-Control', 'no-store').json(out)
+})
 
 // datas já com banda (pro calendário do Johnny): só a data, sem nome nem cachê
 app.get('/api/bandas/ocupadas', (req, res) => {
@@ -583,6 +612,7 @@ function resumo(f) {
     id: f.id, banda: f.banda, responsavel: f.responsavel, whatsapp: f.whatsapp,
     data: f.data, data_texto: f.data_texto, integrantes: f.integrantes,
     criado_em: f.criado_em, concluido: !!f.concluido_em,
+    tipo: f.tipo === 'pp' ? 'pp' : 'agenda', quintas: f.quintas || [], quintas_aprovadas: f.quintas_aprovadas || [],
     status: f.status || 'nova',
     videos: ativos.filter(a => a.tipo === 'video').length,
     fotos: ativos.filter(a => a.tipo === 'foto').length,
@@ -595,6 +625,7 @@ app.get('/api/admin/bandas', (req, res) => {
   const q = normaliza(req.query.q).trim()
   const qDig = q.replace(/\D/g, '')
   const status = STATUS_BANDA.includes(req.query.status) ? req.query.status : null
+  const tipo = ['agenda', 'pp'].includes(req.query.tipo) ? req.query.tipo : null
   const ordem = req.query.ordem === 'show' ? 'show' : 'recentes'
   const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
 
@@ -602,7 +633,9 @@ app.get('/api/admin/bandas', (req, res) => {
   if (q) {
     lista = lista.filter(b => normaliza(`${b.banda} ${b.responsavel}`).includes(q) || (qDig.length >= 4 && b.whatsapp.includes(qDig)))
   }
-  const contagem = { todas: lista.length }
+  const tipos = { agenda: lista.filter(b => b.tipo === 'agenda').length, pp: lista.filter(b => b.tipo === 'pp').length }
+  if (tipo) lista = lista.filter(b => b.tipo === tipo)
+  const contagem = { todas: lista.length, tipos }
   for (const s of STATUS_BANDA) contagem[s] = lista.filter(b => b.status === s).length
   if (status) lista = lista.filter(b => b.status === status)
   if (ordem === 'show') {
@@ -630,6 +663,10 @@ app.get('/api/admin/bandas/:id', (req, res) => {
     material: `/produtor/material/${f.id}?k=${k}`,
     slug: garantirSlug(f),
     perfil: perfilDe(f),
+    vagas_quintas: f.tipo === 'pp' ? (() => {
+      const conta = musicosAprovadosNaQuinta(todasFichas().filter(x => x.id !== f.id))
+      return Object.fromEntries((f.quintas || []).map(q => [q, conta[q] || 0]))
+    })() : null,
     publico: (garantirSlug(f), publicoDe(f)),
     arquivos: f.arquivos.map(a => ({
       tipo: a.tipo, original: a.original, bytes: a.bytes, em: a.em, apagado_em: a.apagado_em || null,
@@ -643,7 +680,16 @@ app.patch('/api/admin/bandas/:id', (req, res) => {
   if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
   const f = lerFicha(req.params.id)
   if (!f) return res.status(404).json({ error: 'não encontrada' })
-  const { status, nota, perfil, banda } = req.body || {}
+  const { status, nota, perfil, banda, quintas_aprovadas } = req.body || {}
+  if (quintas_aprovadas !== undefined && f.tipo === 'pp') {
+    const pedidas = new Set(f.quintas || [])
+    const novas = [...new Set((Array.isArray(quintas_aprovadas) ? quintas_aprovadas : []).map(String))].filter(q => pedidas.has(q)).sort()
+    // trava de 10 músicos por quinta (sem contar esta inscrição)
+    const conta = musicosAprovadosNaQuinta(todasFichas().filter(x => x.id !== f.id))
+    const estoura = novas.filter(q => (conta[q] || 0) + (f.integrantes || 1) > PP_MAX_MUSICOS && !(f.quintas_aprovadas || []).includes(q))
+    if (estoura.length) return res.status(409).json({ error: `Não cabe: com essa inscrição, a quinta ${estoura.map(q => q.split('-').reverse().slice(0, 2).join('/')).join(', ')} passaria de ${PP_MAX_MUSICOS} músicos aprovados.` })
+    f.quintas_aprovadas = novas
+  }
   if (perfil !== undefined) f.perfil = limparPerfil(perfil || {}, f)
   if (banda !== undefined && texto(banda, 120)) f.banda = texto(banda, 120)
   if (status !== undefined) {
@@ -652,7 +698,7 @@ app.patch('/api/admin/bandas/:id', (req, res) => {
   }
   if (nota !== undefined) f.nota = String(nota).slice(0, 2000)
   salvarFicha(f)
-  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '', perfil: perfilDe(f), banda: f.banda, publico: publicoDe(f) })
+  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '', perfil: perfilDe(f), banda: f.banda, publico: publicoDe(f), quintas_aprovadas: f.quintas_aprovadas || [] })
 })
 
 // página do material pra equipe (link vai no lead do engine)
@@ -801,7 +847,7 @@ h2 .n{margin-left:2px;padding:1px 9px;border-radius:12px;background:var(--fundo)
     <div class="acoes">
       <a class="btn btn-zap" href="${zap}" target="_blank" rel="noopener noreferrer">${ic.zap}Chamar ${esc(f.responsavel.split(' ')[0])} no WhatsApp</a>
       <a class="btn" href="/admin#bandas?id=${encodeURIComponent(f.id)}" target="_blank" rel="noopener noreferrer">${ic.admin}Abrir no admin</a>
-      <a class="btn" href="/bandas/${esc(slug)}" target="_blank" rel="noopener noreferrer">${ic.ext}Página pública</a>
+      ${f.tipo === 'pp' ? '' : `<a class="btn" href="/bandas/${esc(slug)}" target="_blank" rel="noopener noreferrer">${ic.ext}Página pública</a>`}
     </div>
   </section>
 
@@ -810,8 +856,10 @@ h2 .n{margin-left:2px;padding:1px 9px;border-radius:12px;background:var(--fundo)
       <h2>${ic.cal}Negociação</h2>
       <div class="dados">
         ${dado(ic.gente, 'Responsável', esc(f.responsavel), `<span class="extra">${fone}</span>`)}
-        ${dado(ic.cal, 'Data pedida', `${diaTxt}, 20h`, passou ? '<span class="extra tag-passou">Essa data já passou</span>' : '')}
-        ${dado(ic.chope, 'Consumo da banda', `R$ ${f.integrantes * 50}`, `<span class="extra">${f.integrantes} músicos × R$ 50 no Clube do Chope</span>`)}
+        ${f.tipo === 'pp'
+    ? dado(ic.cal, 'Plug & Play · quintas pedidas', esc((f.quintas || []).map(q => q.split('-').reverse().slice(0, 2).join('/')).join(', ')), '<span class="extra">das 19h às 23h50 · R$ 50 de bônus no dia, sem cachê</span>')
+    : dado(ic.cal, 'Data pedida', `${diaTxt}, 20h`, passou ? '<span class="extra tag-passou">Essa data já passou</span>' : '')}
+        ${f.tipo === 'pp' ? '' : dado(ic.chope, 'Consumo da banda', `R$ ${f.integrantes * 50}`, `<span class="extra">${f.integrantes} músicos × R$ 50 no Clube do Chope</span>`)}
         ${dado(ic.check, 'Termos da casa', f.aceite ? 'Aceitos' : 'Não aceitos', f.aceite ? `<span class="extra">em ${esc(brt(f.aceite))}</span>` : '')}
       </div>
     </section>

@@ -318,3 +318,16 @@
 .pd-input-cache{display:flex;align-items:center;gap:8px}
 .pd-input-cache b{font:400 1.4rem 'Bebas Neue',sans-serif;color:var(--pd-yel, #FFC21A)}
 .pd-input-cache .pd-input{flex:1;min-width:0}
+
+/* Plug & Play: quintas */
+.pd-quintas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:min(40dvh,320px);overflow-y:auto;overscroll-behavior:contain}
+.pd-quinta{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:76px;padding:8px 4px;border-radius:12px;cursor:pointer;
+  border:1.5px solid rgba(240,224,192,.2);background:rgba(0,0,0,.3);color:var(--aged);transition:transform .15s,background .15s}
+.pd-quinta:active{transform:scale(.97)}
+.pd-quinta-n{font:400 1.9rem/1 'Bebas Neue',sans-serif}
+.pd-quinta-m{font:800 .72rem 'Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--ambl)}
+.pd-quinta-st{display:grid;place-items:center;min-height:20px;font:700 .7rem 'Barlow',sans-serif;opacity:.8}
+.pd-quinta.on{background:var(--yel);border-color:var(--yel);color:var(--ink)}
+.pd-quinta.on .pd-quinta-m{color:var(--red)}
+.pd-quinta.lotada{cursor:not-allowed;opacity:.45;background:repeating-linear-gradient(135deg,rgba(0,0,0,.18) 0 6px,transparent 6px 12px)}
+.pd-quinta.lotada .pd-quinta-n{text-decoration:line-through;text-decoration-thickness:2px}

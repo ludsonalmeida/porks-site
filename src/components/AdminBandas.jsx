@@ -61,9 +61,13 @@ const dataHora = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', 
 const fone = n => n.replace(/(\d{2})(\d)(\d{4})(\d{4})/, '($1) $2 $3-$4')
 const tamanho = b => (b < 1048576 ? `${Math.round(b / 1024)} KB` : `${(b / 1048576).toFixed(1).replace('.', ',')} MB`)
 const showPassou = iso => iso < new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+const quintaCurta = iso => iso.split('-').reverse().slice(0, 2).join('/')
+const TIPOS_INSC = [{ id: '', label: 'Todas' }, { id: 'agenda', label: 'Agenda (sex e sáb)' }, { id: 'pp', label: 'Plug & Play (quintas)' }]
 function linkZap(b) {
   const nome = b.responsavel.split(' ')[0]
-  const txt = `Fala, ${nome}! Aqui é do Porks Sobradinho, sobre a inscrição da banda ${b.banda} pro dia ${diaShow(b.data).toLowerCase()}.`
+  const txt = b.tipo === 'pp'
+    ? `Fala, ${nome}! Aqui é do Porks Sobradinho, sobre sua inscrição no Plug & Play das quintas (${b.quintas.map(quintaCurta).join(', ')}).`
+    : `Fala, ${nome}! Aqui é do Porks Sobradinho, sobre a inscrição da banda ${b.banda} pro dia ${diaShow(b.data).toLowerCase()}.`
   return `https://wa.me/55${b.whatsapp}?text=${encodeURIComponent(txt)}`
 }
 
@@ -89,6 +93,7 @@ function lerHash() {
     q: p.get('q') || '',
     status: ST[p.get('s')] ? p.get('s') : '',
     ordem: p.get('o') === 'show' ? 'show' : 'recentes',
+    tipo: ['agenda', 'pp'].includes(p.get('t')) ? p.get('t') : '',
     id: p.get('id') || '',
   }
 }
@@ -98,6 +103,7 @@ function hashDe(f) {
   if (f.q) p.set('q', f.q)
   if (f.status) p.set('s', f.status)
   if (f.ordem !== 'recentes') p.set('o', f.ordem)
+  if (f.tipo) p.set('t', f.tipo)
   if (f.id) p.set('id', f.id)
   const s = p.toString()
   return `#bandas${s ? `?${s}` : ''}`
@@ -106,7 +112,7 @@ function hashDe(f) {
 function useApi(pass) {
   return useCallback(async (path, opts = {}) => {
     const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-pass': pass, ...opts.headers } })
-    if (!r.ok) throw new Error(r.status === 401 ? 'Senha do painel não confere com a do servidor.' : `Erro ${r.status}`)
+    if (!r.ok) throw new Error(r.status === 401 ? 'Senha do painel não confere com a do servidor.' : (await r.json().catch(() => ({}))).error || `Erro ${r.status}`)
     return r.json()
   }, [pass])
 }
@@ -155,6 +161,7 @@ export default function AdminBandas({ pass }) {
   const params = new URLSearchParams({ pagina: f.pagina, por: POR_PAGINA, ordem: f.ordem })
   if (f.q) params.set('q', f.q)
   if (f.status) params.set('status', f.status)
+  if (f.tipo) params.set('tipo', f.tipo)
   const chave = `${params}#${versao}`
   const erro = falha?.chave === chave ? falha.msg : ''
   const carregando = !erro && dados?.chave !== chave
@@ -204,6 +211,15 @@ export default function AdminBandas({ pass }) {
         </label>
       </div>
 
+      <div className="ab-tipos" role="group" aria-label="Tipo de inscrição">
+        {TIPOS_INSC.map(t => (
+          <button key={t.id || 'todas'} type="button" aria-pressed={f.tipo === t.id} className={`ab-tipo${f.tipo === t.id ? ' on' : ''}`}
+            onClick={() => mudar({ tipo: t.id, pagina: 1 })}>
+            {t.label}{t.id && c?.tipos && <span className="ab-chip-n">{c.tipos[t.id]}</span>}
+          </button>
+        ))}
+      </div>
+
       <div className="ab-filtros" role="group" aria-label="Filtrar por status">
         {[{ id: '', label: 'Todas' }, ...STATUS].map(s => {
           const on = f.status === s.id
@@ -246,10 +262,12 @@ export default function AdminBandas({ pass }) {
               <button key={b.id} type="button" className="ab-linha" onClick={() => { empilhouRef.current = true; mudar({ id: b.id }, { empilhar: true }) }}
                 aria-label={`Abrir ficha da banda ${b.banda}`}>
                 <span className="ab-c-banda">
-                  <b>{b.banda}</b>
-                  <small><Ico n="pessoas" className="ab-ico-sm" />{b.integrantes} {b.integrantes === 1 ? 'integrante' : 'integrantes'}{!b.concluido && <em className="ab-incompleto"> · envio incompleto</em>}</small>
+                  <b>{b.banda}{b.tipo === 'pp' && <span className="ab-pp">Plug & Play</span>}</b>
+                  <small><Ico n="pessoas" className="ab-ico-sm" />{b.integrantes} {b.tipo === 'pp' ? (b.integrantes === 1 ? 'músico' : 'músicos') : (b.integrantes === 1 ? 'integrante' : 'integrantes')}{!b.concluido && <em className="ab-incompleto"> · envio incompleto</em>}</small>
                 </span>
-                <span className={`ab-c-data${showPassou(b.data) ? ' passou' : ''}`}><Ico n="calendario" className="ab-ico-sm" />{diaShow(b.data)}</span>
+                {b.tipo === 'pp'
+                  ? <span className="ab-c-data"><Ico n="calendario" className="ab-ico-sm" />Quintas {b.quintas.map(quintaCurta).join(', ')}</span>
+                  : <span className={`ab-c-data${showPassou(b.data) ? ' passou' : ''}`}><Ico n="calendario" className="ab-ico-sm" />{diaShow(b.data)}</span>}
                 <span className="ab-c-resp">{b.responsavel}<small>{fone(b.whatsapp)}</small></span>
                 <span className="ab-c-mat">
                   <span title="Vídeos"><Ico n="video" className="ab-ico-sm" />{b.videos}</span>
@@ -322,7 +340,7 @@ const rascunhoDe = b => ({ banda: b.banda, ...b.perfil, estilos: [...b.perfil.es
 function Ficha({ id, api, pass, onFechar, onMudou }) {
   const [b, setB] = useState(null)
   const [erro, setErro] = useState('')
-  const [aba, setAba] = useState('perfil')
+  const [aba, setAba] = useState(null) // definida quando a ficha chega (Plug & Play abre na negociação)
   const [abaPrevia, setAbaPrevia] = useState('geral')
   const [nota, setNota] = useState('')
   const [rasc, setRasc] = useState(null)
@@ -333,7 +351,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
   const fecharRef = useRef(null)
 
   const carregar = useCallback(() => api(`/api/admin/bandas/${id}`)
-    .then(d => { setB(d); setNota(d.nota); setRasc(r => r || rascunhoDe(d)) })
+    .then(d => { setB(d); setNota(d.nota); setRasc(r => r || rascunhoDe(d)); setAba(a => a || (d.tipo === 'pp' ? 'gestao' : 'perfil')) })
     .catch(e => setErro(e.message === 'Erro 404' ? 'Essa ficha não existe mais.' : e.message)), [api, id])
 
   useEffect(() => { carregar() }, [carregar])
@@ -425,7 +443,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
             <h3 id="ab-ficha-titulo">{b?.banda || 'Ficha da banda'}</h3>
             {b && <span>Inscrita em {dataHora(b.criado_em)}</span>}
           </div>
-          {b && (
+          {b && b.tipo !== 'pp' && (
             <div className="ab-cab-acoes">
               <button type="button" className="ab-cab-btn" onClick={copiarLink}><Ico n={copiado ? 'check' : 'link'} className="ab-ico-sm" />{copiado ? 'Copiado' : 'Copiar link'}</button>
               <a className="ab-cab-btn" href={`/bandas/${b.slug}`} target="_blank" rel="noopener noreferrer"><Ico n="externo" className="ab-ico-sm" /><span>Página pública</span></a>
@@ -439,17 +457,19 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
 
           {b && (
             <>
-              <div className="bp-perfil ab-previa-cabeca"><PerfilCabeca b={b.publico} onIrAba={id => { setAba('previa'); setAbaPrevia(id) }} /></div>
+              {b.tipo === 'pp'
+                ? <div className="ab-pp-topo"><span className="ab-pp">Plug & Play</span><span>Inscrição de músico pras quintas, das 19h às 23h50. Sem cachê, R$ 50 de bônus no dia.</span></div>
+                : <div className="bp-perfil ab-previa-cabeca"><PerfilCabeca b={b.publico} onIrAba={id => { setAba('previa'); setAbaPrevia(id) }} /></div>}
 
               <div className="ab-fabas" role="tablist" aria-label="Seções da ficha">
-                {ABAS_FICHA.map(a => (
+                {ABAS_FICHA.filter(a => b.tipo !== 'pp' || a.id === 'gestao' || a.id === 'midia').map(a => (
                   <button key={a.id} type="button" role="tab" aria-selected={aba === a.id} className={`ab-faba${aba === a.id ? ' on' : ''}`} onClick={() => setAba(a.id)}>
                     {a.label}{a.id === 'perfil' && sujo && <span className="ab-faba-ponto" aria-label="sem salvar" />}
                   </button>
                 ))}
               </div>
 
-              {aba === 'perfil' && rasc && (
+              {aba === 'perfil' && rasc && b.tipo !== 'pp' && (
                 <form className="ab-form" onSubmit={e => { e.preventDefault(); salvarPerfil() }}>
                   <p className="ab-dica">Tudo que você preencher aqui aparece na página pública da banda. Contato, status e observação nunca aparecem.</p>
                   <div className="ab-campos2">
@@ -579,6 +599,31 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                     <Ico n="zap" />Chamar {b.responsavel.split(' ')[0]} no WhatsApp
                   </a>
 
+                  {b.tipo === 'pp' && (
+                    <section className="ab-sec" aria-labelledby="ab-q-tit">
+                      <h4 id="ab-q-tit">Quintas pedidas <small>(marque as aprovadas · até 10 músicos por noite)</small></h4>
+                      <ul className="ab-quintas">
+                        {b.quintas.map(q => {
+                          const aprovada = b.quintas_aprovadas.includes(q)
+                          const outros = b.vagas_quintas?.[q] || 0
+                          const total = outros + (aprovada ? b.integrantes : 0)
+                          const lotada = !aprovada && outros + b.integrantes > 10
+                          return (
+                            <li key={q}>
+                              <label className={`ab-quinta${aprovada ? ' on' : ''}${lotada ? ' lotada' : ''}`}>
+                                <input type="checkbox" checked={aprovada} disabled={lotada || !!salvando}
+                                  onChange={() => salvar({ quintas_aprovadas: aprovada ? b.quintas_aprovadas.filter(x => x !== q) : [...b.quintas_aprovadas, q] }, 'quintas')} />
+                                <b>Quinta, {quintaCurta(q)}{showPassou(q) && ' (já passou)'}</b>
+                                <span>{lotada ? 'Lotada' : `${total}/10 músicos aprovados`}</span>
+                              </label>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                      <p className="ab-dica" aria-live="polite">{salvo === 'quintas' ? <><Ico n="check" className="ab-ico-sm" />Quintas salvas</> : `${b.integrantes} ${b.integrantes === 1 ? 'músico' : 'músicos'} nesta inscrição. Cada um ganha R$ 50 de bônus no dia.`}</p>
+                    </section>
+                  )}
+
                   <section className="ab-sec" aria-labelledby="ab-st-tit">
                     <h4 id="ab-st-tit">Status <small>(só a equipe vê)</small></h4>
                     <div className="ab-st-opcoes" role="group" aria-label="Status da banda">
@@ -609,9 +654,14 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                     <dl className="ab-dl">
                       <dt>Responsável</dt><dd>{b.responsavel}</dd>
                       <dt>WhatsApp</dt><dd>{fone(b.whatsapp)}</dd>
-                      <dt>Show pedido</dt><dd>{diaShow(b.data)}, 20h{showPassou(b.data) && ' (já passou)'}</dd>
-                      <dt>Cachê médio</dt><dd>{b.cache || 'Não informou'}</dd>
-                      <dt>Consumo</dt><dd>R$ {b.integrantes * 50} ({b.integrantes} × R$ 50)</dd>
+                      {b.tipo === 'pp' ? <>
+                        <dt>Formação</dt><dd>{b.integrantes} · {b.instrumentos.join(', ')}</dd>
+                        <dt>Bônus</dt><dd>R$ 50 por músico, só no dia</dd>
+                      </> : <>
+                        <dt>Show pedido</dt><dd>{diaShow(b.data)}, 20h{showPassou(b.data) && ' (já passou)'}</dd>
+                        <dt>Cachê médio</dt><dd>{b.cache || 'Não informou'}</dd>
+                        <dt>Consumo</dt><dd>R$ {b.integrantes * 50} ({b.integrantes} × R$ 50)</dd>
+                      </>}
                       <dt>Termos aceitos</dt><dd>{b.aceite ? dataHora(b.aceite) : '—'}</dd>
                       {b.engine_lead_id && <><dt>Engine Porks</dt><dd>Lead #{b.engine_lead_id} (tag Banda)</dd></>}
                     </dl>
