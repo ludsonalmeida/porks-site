@@ -14,9 +14,9 @@ const CONSUMO_POR_MUSICO = 50
 const INSTRUMENTOS = ['Bateria', 'Guitarra', 'Vocal', 'Baixo']
 const CASAS = ['UK', 'London', 'Casas de Rock', 'Mané Mercado', 'Vikings', 'Galpão X']
 const TEMPOS = ['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos']
-const DIAS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
 const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
 
+const ETAPAS = ['banda', 'formacao', 'lugares', 'videos', 'fotos', 'tempo', 'contato', 'data', 'aceite', 'fim']
 const wait = ms => new Promise(r => setTimeout(r, ms))
 const tamanho = bytes => bytes < MB
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -56,6 +56,31 @@ function maskPhone(v) {
 
 /* ─ Peças visuais ─ */
 
+/* ícones de traço único (estilo Lucide), no lugar de emoji */
+const ICONES = {
+  relogio: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+  chope: <><path d="M6 8h9v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z" /><path d="M15 11h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2" /><path d="M6 8a3 3 0 0 1 3-4 3 3 0 0 1 5 0 2.5 2.5 0 0 1 1 4" /></>,
+  som: <><rect x="5" y="3" width="14" height="18" rx="2" /><circle cx="12" cy="14" r="3.5" /><circle cx="12" cy="7" r="1.2" /></>,
+  bateria: <><ellipse cx="12" cy="9" rx="8" ry="3" /><path d="M4 9v7c0 1.7 3.6 3 8 3s8-1.3 8-3V9" /><path d="m7 2 4 5M17 2l-4 5" /></>,
+  decibel: <path d="M3 12h3l3-7 4 14 3-7h5" />,
+  menor: <><circle cx="12" cy="7" r="3" /><path d="M6 21v-2a6 6 0 0 1 12 0v2" /><path d="M4 4l16 16" /></>,
+  video: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3z" /></>,
+  foto: <><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>,
+  play: <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />,
+  check: <path d="m5 12 5 5 9-10" />,
+  esq: <path d="m15 5-7 7 7 7" />,
+  dir: <path d="m9 5 7 7-7 7" />,
+}
+
+function Ico({ n, className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {ICONES[n]}
+    </svg>
+  )
+}
+
+
 function Avatar({ small }) {
   return (
     <div className={`pd-avatar${small ? ' pd-avatar-sm' : ''}`} aria-hidden="true">
@@ -84,14 +109,14 @@ function Termos({ musicos }) {
   return (
     <div className="pd-termos">
       <div className="pd-termo">
-        <div className="pd-termo-ico">🕗</div>
+        <div className="pd-termo-ico"><Ico n="relogio" /></div>
         <div>
           <div className="pd-termo-tit">Música ao vivo das 20h às 23h50</div>
           <p>É o horário legal habilitado pelo órgão fiscalizador. Tem um <b>intervalo de uns 20 minutos no meio, antes das 22h</b>, pra vocês relaxarem a musculatura e consumirem.</p>
         </div>
       </div>
       <div className="pd-termo">
-        <div className="pd-termo-ico">🍺</div>
+        <div className="pd-termo-ico"><Ico n="chope" /></div>
         <div>
           <div className="pd-termo-tit">R$ 50 de consumo por músico</div>
           <p>Um cartão único pra banda gastar no <b>Clube do Chope</b>.</p>
@@ -102,7 +127,7 @@ function Termos({ musicos }) {
         </div>
       </div>
       <div className="pd-termo">
-        <div className="pd-termo-ico">🔊</div>
+        <div className="pd-termo-ico"><Ico n="som" /></div>
         <div>
           <div className="pd-termo-tit">Equipamento</div>
           <ul className="pd-equip">
@@ -114,14 +139,14 @@ function Termos({ musicos }) {
         </div>
       </div>
       <div className="pd-termo pd-termo-forte">
-        <div className="pd-termo-ico">🥁</div>
+        <div className="pd-termo-ico"><Ico n="bateria" /></div>
         <div>
           <div className="pd-termo-tit">Recomendamos FORTEMENTE bateria elétrica</div>
           <p>Os vizinhos agradecem e o IBRAM também.</p>
         </div>
       </div>
       <div className="pd-termo pd-termo-alerta">
-        <div className="pd-termo-ico">📏</div>
+        <div className="pd-termo-ico"><Ico n="decibel" /></div>
         <div>
           <div className="pd-termo-tit">Decibéis medidos a cada 30 minutos</div>
           <p>A gente mede em pontos estratégicos. Se passar do permitido, a banda <b>obrigatoriamente reduz o volume</b> até voltar pro limite do IBRAM naquele horário. É regra, é premissa, e tem funcionado: estamos de boa!</p>
@@ -129,7 +154,7 @@ function Termos({ musicos }) {
         </div>
       </div>
       <div className="pd-termo">
-        <div className="pd-termo-ico">🔞</div>
+        <div className="pd-termo-ico"><Ico n="menor" /></div>
         <div>
           <div className="pd-termo-tit">Músicos menores de idade</div>
           <p>Só acompanhados de responsável legal. Menor não consome bebida alcoólica, e a gente jamais vende.</p>
@@ -194,9 +219,9 @@ function FormacaoComposer({ onSend }) {
       <div className="pd-lbl">Quem tem na banda? <i>marque todos</i></div>
       <div className="pd-chips">
         {INSTRUMENTOS.map(i => (
-          <button type="button" key={i} className={`pd-chip${sel.includes(i) ? ' on' : ''}`} onClick={() => toggle(i)}>{i}</button>
+          <button type="button" key={i} className={`pd-chip${sel.includes(i) ? ' on' : ''}`} aria-pressed={sel.includes(i)} onClick={() => toggle(i)}>{sel.includes(i) && <Ico n="check" className="pd-chip-ck" />}{i}</button>
         ))}
-        <button type="button" className={`pd-chip${outro ? ' on' : ''}`} onClick={() => setOutro(o => !o)}>+ Outro</button>
+        <button type="button" className={`pd-chip${outro ? ' on' : ''}`} aria-pressed={outro} onClick={() => setOutro(o => !o)}>{outro ? <Ico n="check" className="pd-chip-ck" /> : '+ '}Outro</button>
       </div>
       {outro && (
         <input className="pd-input pd-input-block" autoFocus value={outroTxt} onChange={e => setOutroTxt(e.target.value)} placeholder="Ex.: teclado, sax, percussão" maxLength={60} />
@@ -215,7 +240,7 @@ function LugaresComposer({ onSend }) {
     <div className="pd-compose-box">
       <div className="pd-chips">
         {CASAS.map(c => (
-          <button type="button" key={c} className={`pd-chip${sel.includes(c) ? ' on' : ''}`} onClick={() => toggle(c)}>{c}</button>
+          <button type="button" key={c} className={`pd-chip${sel.includes(c) ? ' on' : ''}`} aria-pressed={sel.includes(c)} onClick={() => toggle(c)}>{sel.includes(c) && <Ico n="check" className="pd-chip-ck" />}{c}</button>
         ))}
       </div>
       <input className="pd-input pd-input-block" value={txt} onChange={e => setTxt(e.target.value)} placeholder="Outras casas, separadas por vírgula" maxLength={240} />
@@ -263,7 +288,7 @@ function UploadComposer({ tipo, onSend, onRejeita }) {
           {files.map(f => (
             <div className="pd-thumb" key={f.id}>
               {video
-                ? <video src={`${f.url}#t=0.5`} muted playsInline preload="metadata" />
+                ? <><video src={`${f.url}#t=0.5`} muted playsInline preload="metadata" /><Ico n="play" className="pd-thumb-play" /></>
                 : <img src={f.url} alt="" />}
               <span className="pd-thumb-mb">{tamanho(f.file.size)}</span>
               <button type="button" className="pd-thumb-x" onClick={() => remove(f.id)} aria-label="Remover">×</button>
@@ -281,7 +306,7 @@ function UploadComposer({ tipo, onSend, onRejeita }) {
       />
       {files.length < max && (
         <button type="button" className="pd-drop" onClick={() => inputRef.current?.click()}>
-          <span className="pd-drop-ico">{video ? '🎬' : '📸'}</span>
+          <Ico n={video ? 'video' : 'foto'} className="pd-drop-ico" />
           <span>
             <b>{files.length ? `Adicionar mais ${video ? 'vídeos' : 'fotos'}` : `Escolher ${video ? 'vídeos' : 'fotos'}`}</b>
             <small>{files.length}/{max} · até {maxMb} MB cada</small>
@@ -337,27 +362,80 @@ function ContatoComposer({ onSend }) {
   )
 }
 
+const MESES_NOME = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const MESES_A_FRENTE = 6
+
+// sextas e sábados dos próximos meses, agrupados por mês e por fim de semana
+function montarMeses() {
+  const limite = new Date()
+  limite.setHours(0, 0, 0, 0)
+  limite.setMonth(limite.getMonth() + MESES_A_FRENTE, 0)
+  const out = []
+  for (const d of proximasSextasESabados(MESES_A_FRENTE * 5)) {
+    if (d > limite) break
+    const chave = `${d.getFullYear()}-${d.getMonth()}`
+    let m = out[out.length - 1]
+    if (!m || m.chave !== chave) {
+      m = { chave, mes: d.getMonth(), ano: d.getFullYear(), semanas: [] }
+      out.push(m)
+    }
+    const ult = m.semanas[m.semanas.length - 1]
+    if (d.getDay() === 6 && ult?.sex && !ult.sab && d.getDate() === ult.sex.getDate() + 1) ult.sab = d
+    else m.semanas.push(d.getDay() === 5 ? { sex: d } : { sab: d })
+  }
+  return out
+}
+
+function DiaCard({ d, sel, onSel }) {
+  if (!d) return <div className="pd-day pd-day-vazio" aria-hidden="true" />
+  const on = sel === isoDate(d)
+  return (
+    <button type="button" role="option" aria-selected={on} className={`pd-day${on ? ' on' : ''}`} onClick={() => onSel(isoDate(d))}
+      aria-label={`${dataExtenso(d)}, a partir das 20h`}>
+      <span className="pd-day-dow">{d.getDay() === 5 ? 'SEXTA' : 'SÁBADO'}</span>
+      <span className="pd-day-n">{d.getDate()}</span>
+      <span className="pd-day-h">{on ? <Ico n="check" className="pd-day-ck" /> : '20h'}</span>
+    </button>
+  )
+}
+
 function DataComposer({ onSend }) {
-  const [datas] = useState(proximasSextasESabados)
+  const [meses] = useState(montarMeses)
+  const [mi, setMi] = useState(0)
   const [sel, setSel] = useState(null)
+  const selData = sel ? meses.flatMap(x => x.semanas.flatMap(w => [w.sex, w.sab])).find(d => d && isoDate(d) === sel) : null
+  const m = meses[mi]
+  const anoAtual = new Date().getFullYear()
+
   return (
     <div className="pd-compose-box">
-      <div className="pd-cal" role="listbox" aria-label="Sextas e sábados disponíveis">
-        {datas.map(d => {
-          const iso = isoDate(d)
+      <div className="pd-mes-nav">
+        <button type="button" className="pd-mes-seta" onClick={() => setMi(i => i - 1)} disabled={mi === 0} aria-label="Mês anterior"><Ico n="esq" /></button>
+        <div className="pd-mes-titulo" aria-live="polite">
+          {MESES_NOME[m.mes]}{m.ano !== anoAtual && <small> {m.ano}</small>}
+        </div>
+        <button type="button" className="pd-mes-seta" onClick={() => setMi(i => i + 1)} disabled={mi === meses.length - 1} aria-label="Próximo mês"><Ico n="dir" /></button>
+      </div>
+      <div className="pd-mes-tabs" role="tablist" aria-label="Meses">
+        {meses.map((x, i) => {
+          const temSel = !!selData && selData.getMonth() === x.mes && selData.getFullYear() === x.ano
           return (
-            <button type="button" key={iso} role="option" aria-selected={sel === iso} className={`pd-day${sel === iso ? ' on' : ''}`} onClick={() => setSel(iso)}>
-              <span className="pd-day-dow">{DIAS[d.getDay()]}</span>
-              <span className="pd-day-n">{d.getDate()}</span>
-              <span className="pd-day-m">{MESES[d.getMonth()]}</span>
-              <span className="pd-day-h">20h</span>
+            <button type="button" role="tab" aria-selected={i === mi} key={x.chave} className={`pd-mes-tab${i === mi ? ' on' : ''}${temSel ? ' tem' : ''}`} onClick={() => setMi(i)}>
+              {MESES[x.mes]}
             </button>
           )
         })}
       </div>
-      <div className="pd-cal-note">Só sextas e sábados, sempre a partir das 20h</div>
-      <button type="button" className="pd-cta" disabled={!sel} onClick={() => onSend(datas.find(d => isoDate(d) === sel))}>
-        {sel ? `Quero ${dataExtenso(datas.find(d => isoDate(d) === sel))}` : 'Escolha uma data'}
+      <div className="pd-cal-grid" role="listbox" aria-label={`Sextas e sábados de ${MESES_NOME[m.mes]}`} key={m.chave}>
+        {m.semanas.map(w => (
+          <div className="pd-semana" key={isoDate(w.sex || w.sab)}>
+            <DiaCard d={w.sex} sel={sel} onSel={setSel} />
+            <DiaCard d={w.sab} sel={sel} onSel={setSel} />
+          </div>
+        ))}
+      </div>
+      <button type="button" className="pd-cta" disabled={!selData} onClick={() => onSend(selData)}>
+        {selData ? `Quero ${dataExtenso(selData)}` : 'Escolha uma sexta ou sábado'}
       </button>
     </div>
   )
@@ -378,6 +456,7 @@ export default function Produtor() {
   const [msgs, setMsgs] = useState([])
   const [typing, setTyping] = useState(false)
   const [step, setStep] = useState(null)
+  const [etapa, setEtapa] = useState(0)
   const fichaRef = useRef({})
   const started = useRef(false)
   const idRef = useRef(0)
@@ -403,7 +482,10 @@ export default function Produtor() {
       push('j', line)
       await wait(180)
     }
-    if (next) setStep(next)
+    if (next) {
+      setStep(next)
+      setEtapa(e => Math.max(e, ETAPAS.indexOf(next)))
+    }
   }
 
   function banda(content) {
@@ -549,6 +631,9 @@ export default function Produtor() {
           <div className="pd-head-sub"><span className="pd-dot" />Produtor musical · Porks Sobradinho</div>
         </div>
         <img src="/images/logo-porks.png" alt="Porks" className="pd-head-logo" />
+        <div className="pd-prog" role="progressbar" aria-label="Progresso da conversa" aria-valuemin={0} aria-valuemax={ETAPAS.length - 1} aria-valuenow={etapa}>
+          <span style={{ transform: `scaleX(${etapa / (ETAPAS.length - 1)})` }} />
+        </div>
       </header>
 
       <main className="pd-feed">
