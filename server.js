@@ -362,6 +362,26 @@ function fichaPorSlug(slug) {
   return todas.find(f => f.slug === slug) || null
 }
 
+// agenda: qual banda tocou (ou vai tocar) em cada noite, a partir dos "Shows no Porks" do perfil.
+// ?data=AAAA-MM-DD (uma noite) ou ?de=&ate= (intervalo). Público: só nome, slug e foto.
+app.get('/api/bandas/agenda', (req, res) => {
+  const dia = /^\d{4}-\d{2}-\d{2}$/
+  const de = String(req.query.data || req.query.de || '')
+  const ate = String(req.query.data || req.query.ate || de)
+  if (!dia.test(de) || !dia.test(ate)) return res.status(400).json({ error: 'use ?data=AAAA-MM-DD ou ?de=&ate=' })
+  const todas = todasFichas()
+  const out = []
+  for (const f of todas) {
+    for (const s of perfilDe(f).shows) {
+      if (s.data < de || s.data > ate) continue
+      const p = publicoDe({ ...f, slug: garantirSlug(f, todas) })
+      out.push({ data: s.data, titulo: s.titulo, slug: p.slug, banda: p.banda, avatar: p.avatar ? `${SITE_URL}${p.avatar}` : null, link: `${SITE_URL}/bandas/${p.slug}` })
+    }
+  }
+  out.sort((a, b) => a.data.localeCompare(b.data) || a.banda.localeCompare(b.banda))
+  res.set('Cache-Control', 'public, max-age=300').json(out)
+})
+
 app.get('/api/bandas/publico/:slug', (req, res) => {
   const f = fichaPorSlug(String(req.params.slug))
   if (!f) return res.status(404).json({ error: 'banda não encontrada' })
