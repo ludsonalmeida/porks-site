@@ -494,28 +494,186 @@ app.get('/produtor/material/:id', (req, res) => {
   const k = encodeURIComponent(req.query.k)
   const url = a => `/produtor/material/${f.id}/${a.nome}?k=${k}`
   const videos = f.arquivos.filter(a => a.tipo === 'video')
-  const fotos = f.arquivos.filter(a => a.tipo === 'foto')
-  const linha = (r, v) => `<tr><th>${r}</th><td>${esc(v)}</td></tr>`
+  const fotos = f.arquivos.filter(a => a.tipo === 'foto' && !a.apagado_em)
+  const perfil = perfilDe(f)
+  const capa = fotos.find(a => a.nome === perfil.capa) || fotos[0]
+  const avatar = fotos.find(a => a.nome === perfil.avatar) || capa
+  const slug = garantirSlug(f)
+  const status = { nova: 'Nova', conversa: 'Em conversa', aprovada: 'Aprovada', recusada: 'Recusada' }[f.status || 'nova']
+  const brt = iso => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const dia = new Date(`${f.data}T12:00:00-03:00`)
+  const diaTxt = `${['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][dia.getUTCDay()]}, ${dia.getUTCDate()} de ${['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'][dia.getUTCMonth()]}`
+  const passou = f.data < new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+  const fone = f.whatsapp.replace(/(\d{2})(\d)(\d{4})(\d{4})/, '($1) $2 $3-$4')
+  const zap = `https://wa.me/55${f.whatsapp}?text=${encodeURIComponent(`Fala, ${f.responsavel.split(' ')[0]}! Aqui é do Porks Sobradinho, sobre a inscrição da banda ${f.banda}.`)}`
+  const mb = b => (b < 1048576 ? `${Math.round(b / 1024)} KB` : `${(b / 1048576).toFixed(1).replace('.', ',')} MB`)
+  const lugares = f.lugares && !/^ainda não/i.test(f.lugares) ? f.lugares.split(',').map(x => x.trim()).filter(Boolean) : []
+  const ini = f.banda.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase()
+  const I = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
+  const ic = {
+    zap: I('<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"/>'),
+    admin: I('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/>'),
+    ext: I('<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'),
+    cal: I('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+    gente: I('<circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><path d="M16 5a3 3 0 0 1 0 6M21 20v-1a5 5 0 0 0-3-4.6"/>'),
+    chope: I('<path d="M6 8h9v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M15 11h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2"/><path d="M6 8a3 3 0 0 1 3-4 3 3 0 0 1 5 0 2.5 2.5 0 0 1 1 4"/>'),
+    relogio: I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    palco: I('<path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-5h6v5"/>'),
+    check: I('<path d="m5 12 5 5 9-10"/>'),
+    video: I('<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/>'),
+    foto: I('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>'),
+    baixar: I('<path d="M12 4v11M7 10l5 5 5-5"/><path d="M5 20h14"/>'),
+    cadeado: I('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
+    nota: I('<path d="M4 5h16v11H9l-5 4z"/>'),
+  }
+  const dado = (icone, rotulo, valor, extra = '') => `<div class="dado">${icone}<div><small>${rotulo}</small><b>${valor}</b>${extra}</div></div>`
+
   res.set('X-Robots-Tag', 'noindex').send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>${esc(f.banda)} · material da banda</title>
-<style>body{margin:0;font:16px/1.5 system-ui,sans-serif;background:#F3E2BF;color:#2C1C0D}main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
-h1{margin:0 0 4px;font-size:1.8rem}h2{margin:28px 0 10px}table{width:100%;border-collapse:collapse;background:#FFFBF2;border-radius:12px;overflow:hidden}
-th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid #EAD7B0}th{width:38%;font-weight:600;color:#7A5426}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}video,img{width:100%;border-radius:10px;background:#000;display:block}
-a{color:#B4500A}.vazio{color:#7A5426}.cap{font-size:.85rem;color:#7A5426;margin-top:4px;word-break:break-all}</style></head><body><main>
-<h1>${esc(f.banda)}</h1><div class="vazio">Inscrição pelo Johnny em ${esc(new Date(f.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }))}</div>
-<h2>Ficha</h2><table>
-${linha('Responsável', f.responsavel)}${linha('WhatsApp', f.whatsapp.replace(/(\d{2})(\d)(\d{4})(\d{4})/, '($1) $2 $3-$4'))}
-${linha('Data pedida', f.data_texto ? `${f.data_texto}, a partir das 20h` : f.data)}${linha('Integrantes', f.integrantes)}
-${linha('Instrumentos', f.instrumentos.join(', '))}${linha('Já tocou em', f.lugares)}${linha('Tempo de formação', f.tempo)}
-${linha('Consumo da banda', `R$ ${f.integrantes * 50}`)}${linha('Termos aceitos em', f.aceite ? new Date(f.aceite).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '')}
-</table>
-<h2>Vídeos (${videos.length})</h2>${videos.length ? `<div class="grid">${videos.map(a => a.apagado_em
-    ? `<div class="vazio">${esc(a.original)}: apagado depois de ${VIDEO_DIAS} dias</div>`
-    : `<div><video src="${url(a)}" controls preload="metadata" playsinline></video><div class="cap"><a href="${url(a)}" download="${esc(a.original)}">${esc(a.original)}</a></div></div>`).join('')}</div>` : '<p class="vazio">A banda não mandou vídeo.</p>'}
-<h2>Fotos (${fotos.length})</h2>${fotos.length ? `<div class="grid">${fotos.map(a => `<div><a href="${url(a)}" target="_blank"><img src="${url(a)}" alt="" loading="lazy"></a><div class="cap"><a href="${url(a)}" download="${esc(a.original)}">baixar ${esc(a.original)}</a></div></div>`).join('')}</div>` : '<p class="vazio">A banda não mandou foto.</p>'}
-</main></body></html>`)
+<title>${esc(f.banda)} · material da banda · Porks</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--fundo:#F3E6CC;--card:#FFFBF2;--tinta:#2C1C0D;--mudo:#6F5230;--linha:rgba(44,28,13,.12);--amb:#D9700F;--yel:#FFC21A;--red:#C92A20;--escuro:#22160A;
+  --nova:#b85c00;--conversa:#1f5f8b;--aprovada:#2e7d32;--recusada:#a8322a;--sombra:0 1px 2px rgba(44,28,13,.08),0 6px 18px rgba(44,28,13,.08)}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 'Barlow',system-ui,sans-serif;background:var(--fundo);color:var(--tinta)}
+a{color:inherit}
+:focus-visible{outline:2.5px solid var(--amb);outline-offset:2px}
+svg{width:20px;height:20px;flex:none}
+.topo{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;height:60px;padding:0 16px;background:var(--escuro);border-bottom:3px solid var(--red);color:#FFFBF2}
+.topo img{height:38px}
+.selo{display:inline-flex;align-items:center;gap:6px;margin-left:auto;padding:5px 12px;border-radius:16px;background:rgba(255,194,26,.14);color:var(--yel);font:700 .78rem 'Barlow',sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.selo svg{width:15px;height:15px}
+main{max-width:920px;margin:0 auto;padding:0 0 56px}
+.cabeca{background:var(--card);box-shadow:var(--sombra)}
+.capa{position:relative;height:clamp(170px,30vw,280px);background:var(--escuro);overflow:hidden}
+.capa img{width:100%;height:100%;object-fit:cover;display:block}
+.capa::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.45))}
+.capa-vazia{height:100%;display:grid;place-items:center;background:radial-gradient(circle at 25% 30%,rgba(255,194,26,.35),transparent 55%),radial-gradient(circle at 80% 70%,rgba(201,42,32,.45),transparent 55%),var(--escuro)}
+.capa-vazia span{font:400 clamp(2.4rem,9vw,5rem)/1 'Bebas Neue',sans-serif;letter-spacing:.06em;color:rgba(255,251,242,.16);text-align:center;padding:0 20px}
+.id{display:flex;align-items:flex-start;gap:16px;padding:0 20px;margin-top:-48px;position:relative}
+.avatar{flex:none;width:108px;height:108px;border-radius:50%;overflow:hidden;border:4px solid var(--card);background:var(--amb);box-shadow:0 4px 12px rgba(0,0,0,.2);display:grid;place-items:center}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar span{font:400 2.5rem 'Bebas Neue',sans-serif;color:#fff}
+.id-txt{min-width:0;padding-top:56px}
+h1{margin:0;font:400 clamp(2rem,6vw,2.8rem)/1 'Bebas Neue',sans-serif;letter-spacing:.04em;overflow-wrap:anywhere}
+.sub{margin:6px 0 0;color:var(--mudo);font-size:.95rem}
+.status{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:3px 12px;border-radius:14px;font-weight:700;font-size:.85rem;background:color-mix(in srgb,var(--c) 13%,transparent);color:var(--c)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.st-nova{--c:var(--nova)}.st-conversa{--c:var(--conversa)}.st-aprovada{--c:var(--aprovada)}.st-recusada{--c:var(--recusada)}
+.acoes{display:flex;flex-wrap:wrap;gap:10px;padding:18px 20px 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:23px;text-decoration:none;font-weight:700;border:1.5px solid var(--linha);background:#fff;color:var(--tinta);transition:transform .15s,background .15s}
+.btn:active{transform:scale(.97)}
+.btn:hover{border-color:var(--amb)}
+.btn-zap{background:#1f8a4c;border-color:#1f8a4c;color:#fff;flex:1 1 260px}
+.btn-zap:hover{background:#18743f}
+.grade{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--sombra);padding:18px}
+.card.largo{grid-column:1/-1}
+h2{display:flex;align-items:center;gap:8px;margin:0 0 14px;font:400 1.35rem/1 'Bebas Neue',sans-serif;letter-spacing:.06em}
+h2 svg{color:var(--amb)}
+h2 .n{margin-left:2px;padding:1px 9px;border-radius:12px;background:var(--fundo);font:700 .8rem 'Barlow',sans-serif;letter-spacing:0}
+.dados{display:flex;flex-direction:column;gap:14px}
+.dado{display:flex;gap:12px;align-items:flex-start}
+.dado > svg{color:var(--amb);margin-top:3px}
+.dado small{display:block;font-size:.82rem;color:var(--mudo)}
+.dado b{font-weight:600}
+.dado .extra{display:block;font-size:.85rem;color:var(--mudo);font-weight:500}
+.dado .tag-passou{color:var(--recusada)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{padding:4px 12px;border-radius:16px;border:1px solid var(--linha);background:#fff;font-size:.88rem}
+.nota{margin:0;padding:12px 14px;border-radius:12px;background:#FFF0C7;white-space:pre-line}
+.mudo{margin:0;color:var(--mudo)}
+.aviso{display:flex;gap:8px;align-items:flex-start;margin:0 16px;padding:12px 14px;border-radius:12px;background:#fbe3df;color:var(--recusada);font-weight:600}
+.videos{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.video video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px}
+.legenda{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;font-size:.85rem;color:var(--mudo)}
+.legenda span{overflow-wrap:anywhere}
+.baixar{display:grid;place-items:center;width:44px;height:44px;flex:none;border-radius:50%;border:1.5px solid var(--linha);background:#fff;color:var(--tinta)}
+.baixar:hover{border-color:var(--amb)}
+.apagado{padding:14px;border-radius:12px;border:1.5px dashed var(--linha);color:var(--mudo);font-size:.9rem}
+.fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.foto{position:relative;margin:0;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--escuro)}
+.foto img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+.foto a.ver:hover img{transform:scale(1.04)}
+.foto .baixar{position:absolute;right:8px;bottom:8px;background:rgba(255,251,242,.94)}
+.rodape{margin:8px 16px 0;padding:14px 16px;border-radius:16px;background:var(--escuro);color:#FFFBF2;display:flex;align-items:center;gap:14px}
+.rodape img{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--yel)}
+.rodape b{display:block;font:400 1.25rem/1.1 'Bebas Neue',sans-serif;letter-spacing:.05em;color:var(--yel)}
+.rodape span{font-size:.9rem;opacity:.85}
+@media (min-width:760px){main{padding:24px 16px 64px}.cabeca{border-radius:16px;overflow:hidden}.grade{padding:16px 0}.rodape{margin:8px 0 0}.aviso{margin:0}}
+@media (max-width:640px){.grade{grid-template-columns:1fr}.id{flex-direction:column;gap:10px;margin-top:-54px}.id-txt{padding-top:0}.btn{flex:1 1 auto}}
+@media (prefers-reduced-motion:reduce){.foto img,.btn{transition:none}}
+</style></head><body>
+<header class="topo">
+  <a href="/" aria-label="Porks Sobradinho"><img src="/images/logo-porks.png" alt="Porks Sobradinho"></a>
+  <span class="selo">${ic.cadeado}Material interno</span>
+</header>
+<main>
+  <section class="cabeca">
+    <div class="capa">${capa ? `<img src="${url(capa)}" alt="">` : `<div class="capa-vazia"><span>${esc(f.banda)}</span></div>`}</div>
+    <div class="id">
+      <div class="avatar">${avatar ? `<img src="${url(avatar)}" alt="Foto da banda ${esc(f.banda)}">` : `<span>${esc(ini)}</span>`}</div>
+      <div class="id-txt">
+        <h1>${esc(f.banda)}</h1>
+        <p class="sub">Inscrição pelo Johnny em ${esc(brt(f.criado_em))}</p>
+        <span class="status st-${f.status || 'nova'}"><i></i>${status}</span>
+      </div>
+    </div>
+    <div class="acoes">
+      <a class="btn btn-zap" href="${zap}" target="_blank" rel="noopener noreferrer">${ic.zap}Chamar ${esc(f.responsavel.split(' ')[0])} no WhatsApp</a>
+      <a class="btn" href="/admin#bandas?id=${encodeURIComponent(f.id)}" target="_blank" rel="noopener noreferrer">${ic.admin}Abrir no admin</a>
+      <a class="btn" href="/bandas/${esc(slug)}" target="_blank" rel="noopener noreferrer">${ic.ext}Página pública</a>
+    </div>
+  </section>
+
+  <div class="grade">
+    <section class="card">
+      <h2>${ic.cal}Negociação</h2>
+      <div class="dados">
+        ${dado(ic.gente, 'Responsável', esc(f.responsavel), `<span class="extra">${fone}</span>`)}
+        ${dado(ic.cal, 'Data pedida', `${diaTxt}, 20h`, passou ? '<span class="extra tag-passou">Essa data já passou</span>' : '')}
+        ${dado(ic.chope, 'Consumo da banda', `R$ ${f.integrantes * 50}`, `<span class="extra">${f.integrantes} músicos × R$ 50 no Clube do Chope</span>`)}
+        ${dado(ic.check, 'Termos da casa', f.aceite ? 'Aceitos' : 'Não aceitos', f.aceite ? `<span class="extra">em ${esc(brt(f.aceite))}</span>` : '')}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>${ic.gente}A banda</h2>
+      <div class="dados">
+        <div class="dado">${ic.gente}<div><small>Formação</small><b>${f.integrantes} ${f.integrantes === 1 ? 'integrante' : 'integrantes'}</b>
+          ${f.instrumentos.length ? `<div class="chips">${f.instrumentos.map(i => `<span class="chip">${esc(i)}</span>`).join('')}</div>` : ''}</div></div>
+        ${dado(ic.relogio, 'Tempo de banda', esc(f.tempo || 'Não informado'))}
+        <div class="dado">${ic.palco}<div><small>Já tocou em</small>
+          ${lugares.length ? `<div class="chips">${lugares.map(l => `<span class="chip">${esc(l)}</span>`).join('')}</div>` : '<b>Ainda não tocou em nenhuma casa</b>'}</div></div>
+      </div>
+    </section>
+
+    ${f.nota ? `<section class="card largo"><h2>${ic.nota}Observação da equipe</h2><p class="nota">${esc(f.nota)}</p></section>` : ''}
+
+    <section class="card largo">
+      <h2>${ic.video}Vídeos <span class="n">${videos.filter(a => !a.apagado_em).length}</span></h2>
+      ${videos.length ? `<div class="videos">${videos.map(a => a.apagado_em
+    ? `<div class="apagado">${esc(a.original)}: apagado depois de ${VIDEO_DIAS} dias</div>`
+    : `<figure class="video" style="margin:0"><video src="${url(a)}" controls preload="metadata" playsinline></video>
+        <figcaption class="legenda"><span>${esc(a.original)} · ${mb(a.bytes)}</span><a class="baixar" href="${url(a)}" download="${esc(a.original)}" aria-label="Baixar ${esc(a.original)}">${ic.baixar}</a></figcaption></figure>`).join('')}</div>`
+    : '<p class="mudo">A banda não mandou vídeo.</p>'}
+    </section>
+
+    <section class="card largo">
+      <h2>${ic.foto}Fotos <span class="n">${fotos.length}</span></h2>
+      ${fotos.length ? `<div class="fotos">${fotos.map(a => `<figure class="foto"><a class="ver" href="${url(a)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir ${esc(a.original)}"><img src="${url(a)}" alt="" loading="lazy"></a>
+        <a class="baixar" href="${url(a)}" download="${esc(a.original)}" aria-label="Baixar ${esc(a.original)}">${ic.baixar}</a></figure>`).join('')}</div>`
+    : '<p class="mudo">A banda não mandou foto.</p>'}
+    </section>
+  </div>
+  ${!f.concluido_em ? `<p class="aviso">A banda saiu antes de terminar o envio. Pode faltar vídeo ou foto.</p>` : ''}
+
+  <div class="rodape"><img src="/images/johnny.jpg" alt=""><div><b>Johnny · produtor musical</b><span>Página só pra equipe do Porks. Não compartilhe este link.</span></div></div>
+</main>
+</body></html>`)
 })
 
 // Serve Vite build
