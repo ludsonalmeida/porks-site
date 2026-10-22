@@ -194,3 +194,27 @@
   .adm-cprev.pequeno .adm-cprev-vazio span{display:none}
   .adm-cprev.pequeno.fita::before{display:none}
 }
+
+/* agenda: conexão com o Google */
+.adm-google{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.adm-google-off{background:#FFF4DC;border:1.5px dashed #E8C27A}
+.adm-google-form{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+.adm-google-form h2{margin:0}
+.adm-google-form p{margin:0;line-height:1.55}
+.adm-google-form .adm-btn{align-self:flex-start}
+.adm-ajuda summary{cursor:pointer;color:var(--a-amb-esc);font-weight:700;min-height:32px;display:flex;align-items:center}
+.adm-ajuda ol{margin:6px 0 0;padding-left:20px;line-height:1.6;color:var(--a-mudo)}
+.adm-google-on{align-items:center;flex-wrap:wrap;background:#EAF5EA;border:1.5px solid #B7DDB8}
+.adm-google-selo{display:grid;place-items:center;width:44px;height:44px;flex:none;border-radius:50%;background:var(--a-ok);color:#fff}
+.adm-google-txt{flex:1;min-width:220px}
+.adm-google-txt h2{margin:0 0 2px}
+.adm-google-txt p{margin:0;color:var(--a-mudo)}
+.adm-google-txt .adm-aviso{margin-top:8px}
+.adm-google-acoes{display:flex;align-items:center;gap:10px}
+.adm-show.hoje{border-color:var(--a-amb);background:#FFF4DC}
+.adm-hoje{display:inline-block;margin-top:4px;padding:1px 8px;border-radius:10px;background:var(--a-amb);color:#fff;font:700 .72rem 'Barlow',sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.adm-sem-perfil{flex:none;padding:3px 9px;border-radius:12px;background:#EFE4CC;color:var(--a-mudo);font-size:.76rem;font-weight:600;white-space:nowrap}
+@media (max-width:900px){
+  .adm-google{flex-direction:column}
+  .adm-google-acoes{width:100%}
+}

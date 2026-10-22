@@ -304,3 +304,11 @@
 .pd-envio-txt b{font:800 1.1rem 'Barlow Condensed',sans-serif;letter-spacing:.06em;color:var(--pd-yel);font-variant-numeric:tabular-nums}
 .pd-envio-barra{height:10px;border-radius:5px;background:rgba(240,224,192,.14);overflow:hidden}
 .pd-envio-barra span{display:block;height:100%;background:linear-gradient(90deg,var(--pd-red),var(--pd-amb),var(--pd-yel));transform-origin:left;transition:transform .25s ease-out}
+
+/* datas que já têm banda na agenda */
+.pd-day.ocupado{cursor:not-allowed;opacity:.55;background:repeating-linear-gradient(135deg,rgba(0,0,0,.18) 0 6px,transparent 6px 12px)}
+.pd-day.ocupado:active{transform:none}
+.pd-day.ocupado .pd-day-n{text-decoration:line-through;text-decoration-thickness:2px}
+.pd-day.ocupado .pd-day-h{min-width:0;padding:0 6px;background:rgba(214,38,30,.25);color:#fff;font-size:.6rem;letter-spacing:0;text-transform:uppercase;white-space:nowrap}
+.pd-day.ocupado .pd-day-dow small{display:block;margin-top:2px;font:700 .68rem 'Barlow',sans-serif;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.75)}
+.pd-day.ocupado .pd-day-tranca{min-width:30px;padding:0;background:rgba(214,38,30,.3)}

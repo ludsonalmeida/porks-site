@@ -204,6 +204,7 @@ function Cabecalho({ titulo, sub, acoes }) {
 const hojeIso = (dias = 0) => new Date(Date.now() - 3 * 3600e3 + dias * 864e5).toISOString().slice(0, 10)
 const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+const horaTxt = h => (h ? h.replace(':00', 'h').replace(':', 'h') : '20h')
 const diaTxt = iso => { const d = new Date(`${iso}T12:00:00`); return `${DIAS[d.getDay()]}, ${d.getDate()} ${MESES[d.getMonth()]}` }
 function haQuanto(iso) {
   const min = Math.round((Date.now() - Date.parse(iso)) / 60000)
@@ -253,7 +254,7 @@ function Inicio({ ir }) {
               {shows.map(s => (
                 <li key={s.data + s.slug}>
                   {s.avatar ? <img src={s.avatar} alt="" className="adm-mini-foto" /> : <span className="adm-mini-foto adm-mini-vazia"><Ico n="microfone" /></span>}
-                  <div><b>{s.banda}</b><small>{diaTxt(s.data)}, 20h{s.titulo ? ` · ${s.titulo}` : ''}</small></div>
+                  <div><b>{s.banda}</b><small>{diaTxt(s.data)}, {horaTxt(s.hora)}{s.titulo ? ` · ${s.titulo}` : ''}</small></div>
                 </li>
               ))}
             </ul>
@@ -313,51 +314,120 @@ function Esqueleto({ linhas = 3 }) {
   return <div className="adm-esq" aria-busy="true" aria-label="Carregando">{Array.from({ length: linhas }, (_, i) => <span key={i} />)}</div>
 }
 
-/* ─ Agenda (Google Agenda entra depois; por enquanto mostra os shows marcados nas bandas) ─ */
+/* ─ Agenda: o Google Agenda do Porks é a fonte; shows marcados no perfil da banda completam ─ */
+
+function ConexaoGoogle({ onMudou }) {
+  const [st, setSt] = useState(null)
+  const [url, setUrl] = useState('')
+  const [ocupado, setOcupado] = useState('')
+  const [erro, setErro] = useState('')
+  const api = useCallback(async (metodo, path = '', body) => {
+    const r = await fetch(`/api/admin/agenda${path}`, { method: metodo, headers: { 'Content-Type': 'application/json', 'x-admin-pass': PASS }, body: body ? JSON.stringify(body) : undefined })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || `Erro ${r.status}`)
+    return j
+  }, [])
+  useEffect(() => { api('GET').then(setSt).catch(e => setErro(e.message)) }, [api])
+
+  async function acao(nome, fn) {
+    setOcupado(nome)
+    setErro('')
+    try { setSt(await fn()); onMudou() } catch (e) { setErro(e.message) }
+    setOcupado('')
+  }
+
+  if (!st) return <section className="adm-card adm-google">{erro ? <p className="adm-aviso"><Ico n="alerta" />{erro}</p> : <Esqueleto linhas={2} />}</section>
+  if (!st.ligada) {
+    return (
+      <section className="adm-card adm-google adm-google-off">
+        <Ico n="agenda" className="adm-ico adm-ico-grande" />
+        <form className="adm-google-form" onSubmit={e => { e.preventDefault(); acao('ligar', () => api('POST', '', { url })) }}>
+          <h2>Ligar o Google Agenda do Porks</h2>
+          <p>Os shows passam a entrar aqui sozinhos e alimentam a pesquisa de satisfação, o calendário do Johnny e o perfil das bandas. O cachê do título é descartado e não aparece em lugar nenhum.</p>
+          <label className="adm-campo"><span>Endereço secreto no formato iCal</span>
+            <input value={url} onChange={e => { setUrl(e.target.value); setErro('') }} inputMode="url" autoCapitalize="none" spellCheck={false}
+              placeholder="https://calendar.google.com/calendar/ical/…/private-…/basic.ics" />
+          </label>
+          <details className="adm-ajuda">
+            <summary>Onde acho esse endereço?</summary>
+            <ol>
+              <li>No Google Agenda do Porks, clique na engrenagem e em <b>Configurações</b>.</li>
+              <li>À esquerda, em <b>Configurações das minhas agendas</b>, clique na agenda do Porks.</li>
+              <li>Desça até <b>Integrar agenda</b> e copie o <b>Endereço secreto no formato iCal</b>.</li>
+            </ol>
+          </details>
+          {erro && <p className="adm-aviso" role="alert"><Ico n="alerta" />{erro}</p>}
+          <button type="submit" className="adm-btn" disabled={!url.trim() || !!ocupado}>{ocupado ? 'Lendo a agenda…' : 'Ligar agenda'}</button>
+        </form>
+      </section>
+    )
+  }
+  return (
+    <section className="adm-card adm-google adm-google-on">
+      <span className="adm-google-selo"><Ico n="check" /></span>
+      <div className="adm-google-txt">
+        <h2>Google Agenda ligado</h2>
+        <p>
+          {st.proximos} {st.proximos === 1 ? 'show marcado' : 'shows marcados'} daqui pra frente · {st.eventos} no total
+          {st.atualizada_em && <> · atualizado {haQuanto(st.atualizada_em)}</>}
+        </p>
+        {st.erro && <p className="adm-aviso"><Ico n="alerta" />A última leitura falhou: {st.erro}</p>}
+        {erro && <p className="adm-aviso" role="alert"><Ico n="alerta" />{erro}</p>}
+      </div>
+      <div className="adm-google-acoes">
+        <button type="button" className="adm-btn adm-btn-claro" disabled={!!ocupado} onClick={() => acao('atualizar', () => api('POST', '/atualizar'))}>
+          {ocupado === 'atualizar' ? 'Atualizando…' : 'Atualizar agora'}
+        </button>
+        <button type="button" className="adm-link" disabled={!!ocupado}
+          onClick={() => { if (window.confirm('Desligar o Google Agenda? Os shows do Google somem do painel, da pesquisa e do Johnny até ligar de novo.')) acao('desligar', () => api('DELETE')) }}>
+          Desligar
+        </button>
+      </div>
+    </section>
+  )
+}
 
 function Agenda({ ir }) {
   const [shows, setShows] = useState(null)
+  const [versao, setVersao] = useState(0)
   useEffect(() => {
-    fetch(`/api/bandas/agenda?de=${hojeIso(-30)}&ate=${hojeIso(120)}`)
+    fetch(`/api/bandas/agenda?de=${hojeIso(-30)}&ate=${hojeIso(180)}&v=${versao}`, { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : [])).then(setShows).catch(() => setShows([]))
-  }, [])
+  }, [versao])
   const hoje = hojeIso()
   const prox = (shows || []).filter(s => s.data >= hoje)
   const foram = (shows || []).filter(s => s.data < hoje).reverse()
   const linha = s => (
-    <li key={s.data + s.slug} className="adm-show">
+    <li key={s.data + s.banda} className={`adm-show${s.data === hoje ? ' hoje' : ''}`}>
       <span className="adm-show-data"><b>{new Date(`${s.data}T12:00:00`).getDate()}</b>{MESES[new Date(`${s.data}T12:00:00`).getMonth()]}</span>
-      <div><b>{s.banda}</b><small>{diaTxt(s.data)}, 20h{s.titulo ? ` · ${s.titulo}` : ''}</small></div>
-      <a className="adm-icone-btn" href={s.link} target="_blank" rel="noopener noreferrer" aria-label={`Página da banda ${s.banda}`}><Ico n="externo" /></a>
+      <div>
+        <b>{s.banda}</b>
+        <small>{diaTxt(s.data)}, {horaTxt(s.hora)}{s.titulo ? ` · ${s.titulo}` : ''}</small>
+        {s.data === hoje && <span className="adm-hoje">Hoje</span>}
+      </div>
+      {s.link
+        ? <a className="adm-icone-btn" href={s.link} target="_blank" rel="noopener noreferrer" aria-label={`Página da banda ${s.banda}`}><Ico n="externo" /></a>
+        : <span className="adm-sem-perfil" title="Essa banda ainda não tem perfil no site (não se inscreveu pelo Johnny)">sem perfil</span>}
     </li>
   )
   return (
     <div className="adm-pagina">
       <Cabecalho titulo="Agenda" sub="Quem toca em cada noite do Porks." />
-
-      <section className="adm-card adm-aviso-google">
-        <Ico n="agenda" className="adm-ico adm-ico-grande" />
-        <div>
-          <h2>Ligar o Google Agenda do Porks</h2>
-          <p>Quando a agenda do Google estiver ligada, os shows entram aqui sozinhos e já alimentam os cards do site, o calendário do Johnny e a pesquisa de satisfação.</p>
-          <p className="adm-dica">Falta o endereço secreto da agenda (formato iCal). Por enquanto, a agenda abaixo vem dos shows marcados no perfil de cada banda.</p>
-        </div>
-      </section>
-
+      <ConexaoGoogle onMudou={() => setVersao(v => v + 1)} />
       {shows === null ? <Esqueleto linhas={4} /> : (
         <div className="adm-colunas">
           <section className="adm-card">
             <h2 className="adm-h2">Próximos shows ({prox.length})</h2>
             {prox.length ? <ul className="adm-shows">{prox.map(linha)}</ul> : (
               <div className="adm-vazio-mini">
-                <p>Nenhum show marcado. Pra marcar agora: abre a banda em <b>Bandas</b> e adiciona a data em <b>Shows no Porks</b>.</p>
+                <p>Nenhum show marcado. Marque no Google Agenda do Porks, ou abra a banda em <b>Bandas</b> e adicione a data em <b>Shows no Porks</b>.</p>
                 <button type="button" className="adm-btn adm-btn-claro" onClick={() => ir('bandas')}>Ir pra Bandas</button>
               </div>
             )}
           </section>
           <section className="adm-card">
             <h2 className="adm-h2">Últimos 30 dias ({foram.length})</h2>
-            {foram.length ? <ul className="adm-shows adm-shows-foram">{foram.map(linha)}</ul> : <p className="adm-dica">Nenhum show registrado no último mês.</p>}
+            {foram.length ? <ul className="adm-shows adm-shows-foram">{foram.map(linha)}</ul> : <p className="adm-dica">Nenhum show no último mês.</p>}
           </section>
         </div>
       )}

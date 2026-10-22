@@ -348,7 +348,10 @@ function publicoDe(f) {
     desde: f.criado_em,
     sobre: perfil.sobre, cidade: perfil.cidade, estilos: perfil.estilos,
     instagram: perfil.instagram, youtube: perfil.youtube, spotify: perfil.spotify,
-    shows: perfil.shows,
+    shows: (() => {
+      const vistos = new Set(perfil.shows.map(x => x.data))
+      return [...perfil.shows, ...showsGoogleDa(f).filter(x => !vistos.has(x.data))].sort((a, b) => b.data.localeCompare(a.data))
+    })(),
     capa: capa ? midiaUrl(f, capa) : null,
     avatar: avatar ? midiaUrl(f, avatar) : null,
     fotos: fotos.map(a => ({ url: midiaUrl(f, a), nome: a.nome })),
@@ -362,24 +365,125 @@ function fichaPorSlug(slug) {
   return todas.find(f => f.slug === slug) || null
 }
 
-// agenda: qual banda tocou (ou vai tocar) em cada noite, a partir dos "Shows no Porks" do perfil.
+// ── Google Agenda do Porks (fonte oficial de quem toca em cada noite) ──
+// O endereço secreto (.ics) é colado no admin e fica só no servidor. Cada evento = uma banda.
+// O CACHÊ vem no título ("Banda - R$1000") e é DESCARTADO na leitura: nunca é gravado nem exibido.
+const AGENDA_CFG = 'agenda-config.json'
+const AGENDA_CACHE = 'agenda-google.json'
+let agendaGoogle = readJson(AGENDA_CACHE, { atualizada_em: null, eventos: [], erro: null })
+
+const icsDesfaz = v => String(v || '').replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim()
+// "Velho Olho Vermelho- R$1000" -> banda; "Strangways - Especial The Smiths R$1000" -> banda + tema
+function separarTitulo(sumario) {
+  const limpo = icsDesfaz(sumario)
+    .replace(/\s*[-–—:|]?\s*R?\$\s*[\d.]+(?:,\d{1,2})?/gi, '') // cachê com R$ ou $
+    .replace(/\s+/g, ' ').replace(/[\s\-–—:|]+$/, '').trim()
+    // cachê sem símbolo no fim ("Overflow 800"); "anos 2000" e "Blink 182" ficam
+    .replace(/(?<!\banos\s*)\s*[-–—]?\s*(\d{3,4})(?:,\d{2})?$/i, (m, n) => (+n >= 300 && +n <= 5000 ? '' : m))
+    .replace(/[\s\-–—:|]+$/, '').trim()
+  const m = limpo.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+  return m ? { banda: m[1].trim(), tema: m[2].trim() } : { banda: limpo, tema: '' }
+}
+// DTSTART em UTC (Z), com TZID ou dia inteiro -> data e hora de Brasília
+function dataBrasilia(linha) {
+  const m = linha.match(/^DTSTART([^:]*):(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})(Z?))?/)
+  if (!m) return null
+  const [, params, a, me, d, h, mi, , z] = m
+  if (!h) return { data: `${a}-${me}-${d}`, hora: null }
+  if (z) {
+    const brt = new Date(Date.UTC(+a, +me - 1, +d, +h, +mi) - 3 * 3600e3)
+    return { data: brt.toISOString().slice(0, 10), hora: brt.toISOString().slice(11, 16) }
+  }
+  // TZID=America/Sao_Paulo (ou sem fuso): já é hora local
+  void params
+  return { data: `${a}-${me}-${d}`, hora: `${h}:${mi}` }
+}
+function lerIcs(texto) {
+  const corpo = String(texto).replace(/\r?\n[ \t]/g, '')
+  const eventos = []
+  for (const bloco of corpo.split('BEGIN:VEVENT').slice(1)) {
+    const campo = k => (bloco.match(new RegExp(`^${k}[^:\\n]*:(.*)$`, 'm')) || [])[1] || ''
+    if (/CANCELLED/i.test(campo('STATUS'))) continue
+    const ini = (bloco.match(/^DTSTART[^\n]*$/m) || [])[0]
+    const quando = ini && dataBrasilia(ini.trim())
+    const { banda, tema } = separarTitulo(campo('SUMMARY'))
+    if (!quando || !banda) continue
+    eventos.push({ uid: campo('UID').trim().slice(0, 120), data: quando.data, hora: quando.hora, banda: banda.slice(0, 120), tema: tema.slice(0, 120) })
+  }
+  eventos.sort((x, y) => x.data.localeCompare(y.data) || (x.hora || '').localeCompare(y.hora || ''))
+  return eventos
+}
+async function sincronizarAgenda() {
+  const cfg = readJson(AGENDA_CFG, {})
+  if (!cfg.url) return agendaGoogle
+  try {
+    const r = await fetch(cfg.url, { signal: AbortSignal.timeout(20000) })
+    if (!r.ok) throw new Error(`Google respondeu ${r.status}`)
+    const texto = await r.text()
+    if (!texto.includes('BEGIN:VCALENDAR')) throw new Error('o link não é de uma agenda (.ics)')
+    agendaGoogle = { atualizada_em: new Date().toISOString(), eventos: lerIcs(texto), erro: null }
+  } catch (e) {
+    agendaGoogle = { ...agendaGoogle, erro: e.message, tentou_em: new Date().toISOString() }
+    console.warn('[agenda] falha ao ler o Google Agenda:', e.message)
+  }
+  writeJson(AGENDA_CACHE, agendaGoogle)
+  return agendaGoogle
+}
+setInterval(() => { sincronizarAgenda().catch(() => {}) }, 10 * 60e3)
+setTimeout(() => { sincronizarAgenda().catch(() => {}) }, 5e3)
+
+// banda do Google ↔ ficha cadastrada (mesmo nome, sem acento/caixa)
+const chaveNome = n => normaliza(n).replace(/[^a-z0-9]+/g, '')
+function fichaDoNome(nome, todas) {
+  const k = chaveNome(nome)
+  return k ? todas.find(f => chaveNome(f.banda) === k) || null : null
+}
+function showsGoogleDa(f) {
+  const k = chaveNome(f.banda)
+  return agendaGoogle.eventos.filter(e => chaveNome(e.banda) === k).map(e => ({ data: e.data, titulo: e.tema }))
+}
+
+// agenda: qual banda tocou (ou vai tocar) em cada noite: Google Agenda + "Shows no Porks" do perfil.
 // ?data=AAAA-MM-DD (uma noite) ou ?de=&ate= (intervalo). Público: só nome, slug e foto.
 app.get('/api/bandas/agenda', (req, res) => {
   const dia = /^\d{4}-\d{2}-\d{2}$/
   const de = String(req.query.data || req.query.de || '')
   const ate = String(req.query.data || req.query.ate || de)
   if (!dia.test(de) || !dia.test(ate)) return res.status(400).json({ error: 'use ?data=AAAA-MM-DD ou ?de=&ate=' })
+  res.set('Cache-Control', 'public, max-age=300').json(agendaEntre(de, ate))
+})
+
+function agendaEntre(de, ate) {
   const todas = todasFichas()
   const out = []
+  const visto = new Set()
+  const comFicha = (f, data, titulo, hora, fonte) => {
+    const p = publicoDe({ ...f, slug: garantirSlug(f, todas) })
+    return { data, hora, titulo, slug: p.slug, banda: p.banda, avatar: p.avatar ? `${SITE_URL}${p.avatar}` : null, link: `${SITE_URL}/bandas/${p.slug}`, fonte }
+  }
+  for (const e of agendaGoogle.eventos) {
+    if (e.data < de || e.data > ate) continue
+    const f = fichaDoNome(e.banda, todas)
+    out.push(f ? comFicha(f, e.data, e.tema, e.hora, 'google')
+      : { data: e.data, hora: e.hora, titulo: e.tema, slug: null, banda: e.banda, avatar: null, link: null, fonte: 'google' })
+    visto.add(`${e.data}|${chaveNome(e.banda)}`)
+  }
   for (const f of todas) {
     for (const s of perfilDe(f).shows) {
-      if (s.data < de || s.data > ate) continue
-      const p = publicoDe({ ...f, slug: garantirSlug(f, todas) })
-      out.push({ data: s.data, titulo: s.titulo, slug: p.slug, banda: p.banda, avatar: p.avatar ? `${SITE_URL}${p.avatar}` : null, link: `${SITE_URL}/bandas/${p.slug}` })
+      if (s.data < de || s.data > ate || visto.has(`${s.data}|${chaveNome(f.banda)}`)) continue
+      out.push(comFicha(f, s.data, s.titulo, null, 'perfil'))
     }
   }
-  out.sort((a, b) => a.data.localeCompare(b.data) || a.banda.localeCompare(b.banda))
-  res.set('Cache-Control', 'public, max-age=300').json(out)
+  out.sort((a, b) => a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || '') || a.banda.localeCompare(b.banda))
+  return out
+}
+
+// datas já com banda (pro calendário do Johnny): só a data, sem nome nem cachê
+app.get('/api/bandas/ocupadas', (req, res) => {
+  const dia = /^\d{4}-\d{2}-\d{2}$/
+  const de = String(req.query.de || ''), ate = String(req.query.ate || '')
+  if (!dia.test(de) || !dia.test(ate)) return res.status(400).json({ error: 'use ?de=&ate=' })
+  res.set('Cache-Control', 'public, max-age=300').json([...new Set(agendaEntre(de, ate).map(x => x.data))])
 })
 
 app.get('/api/bandas/publico/:slug', (req, res) => {
@@ -413,6 +517,53 @@ app.get('/bandas/:slug', (req, res, next) => {
     <meta property="og:url" content="${SITE_URL}/bandas/${p.slug}" />
     <meta name="twitter:card" content="summary_large_image" />`
   res.send(html.replace(/<title>[\s\S]*?<\/title>/, '').replace(/<meta name="description"[^>]*>/, '').replace('</head>', `${meta}\n</head>`))
+})
+
+// ── Admin: ligar o Google Agenda ──
+const ICS_OK = /^https:\/\/calendar\.google\.com\/calendar\/ical\/[^/\s]+\/[^/\s]+\/basic\.ics$/
+const mascararIcs = u => u.replace(/(private-)[a-f0-9]+/i, '$1••••••').replace(/\/ical\/([^/]+)\//, (_, c) => `/ical/${decodeURIComponent(c)}/`)
+function estadoAgenda() {
+  const cfg = readJson(AGENDA_CFG, {})
+  const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+  return {
+    ligada: !!cfg.url,
+    endereco: cfg.url ? mascararIcs(cfg.url) : null,
+    publico: cfg.url ? !/\/private-/.test(cfg.url) : false,
+    atualizada_em: agendaGoogle.atualizada_em,
+    erro: agendaGoogle.erro || null,
+    eventos: agendaGoogle.eventos.length,
+    proximos: agendaGoogle.eventos.filter(e => e.data >= hoje).length,
+  }
+}
+app.get('/api/admin/agenda', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  res.json(estadoAgenda())
+})
+app.post('/api/admin/agenda', async (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  const url = String(req.body?.url || '').trim()
+  if (!ICS_OK.test(url)) return res.status(400).json({ error: 'Esse não parece o endereço iCal do Google Agenda. Ele começa com https://calendar.google.com/calendar/ical/ e termina em basic.ics.' })
+  if (/holiday|feriado/i.test(url)) return res.status(400).json({ error: 'Esse é o endereço da agenda de feriados, não a do Porks.' })
+  const antes = readJson(AGENDA_CFG, {})
+  writeJson(AGENDA_CFG, { url, ligada_em: new Date().toISOString() })
+  const r = await sincronizarAgenda()
+  if (r.erro) {
+    writeJson(AGENDA_CFG, antes)
+    return res.status(400).json({ error: `Não consegui ler essa agenda: ${r.erro}` })
+  }
+  res.json(estadoAgenda())
+})
+app.post('/api/admin/agenda/atualizar', async (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  await sincronizarAgenda()
+  res.json(estadoAgenda())
+})
+app.delete('/api/admin/agenda', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  writeJson(AGENDA_CFG, {})
+  agendaGoogle = { atualizada_em: null, eventos: [], erro: null }
+  writeJson(AGENDA_CACHE, agendaGoogle)
+  res.json(estadoAgenda())
 })
 
 // ── Admin: aba Bandas ──

@@ -70,6 +70,7 @@ const ICONES = {
   foto: <><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>,
   play: <path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />,
   check: <path d="m5 12 5 5 9-10" />,
+  tranca: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></>,
   esq: <path d="m15 5-7 7 7 7" />,
   dir: <path d="m9 5 7 7-7 7" />,
 }
@@ -416,15 +417,16 @@ function montarMeses() {
   return out
 }
 
-function DiaCard({ d, sel, onSel }) {
+function DiaCard({ d, sel, onSel, ocupado }) {
   if (!d) return <div className="pd-day pd-day-vazio" aria-hidden="true" />
   const on = sel === isoDate(d)
   return (
-    <button type="button" role="option" aria-selected={on} className={`pd-day${on ? ' on' : ''}`} onClick={() => onSel(isoDate(d))}
-      aria-label={`${dataExtenso(d)}, a partir das 20h`}>
-      <span className="pd-day-dow">{d.getDay() === 5 ? 'SEXTA' : 'SÁBADO'}</span>
+    <button type="button" role="option" aria-selected={on} aria-disabled={ocupado} disabled={ocupado}
+      className={`pd-day${on ? ' on' : ''}${ocupado ? ' ocupado' : ''}`} onClick={() => onSel(isoDate(d))}
+      aria-label={ocupado ? `${dataExtenso(d)}: já tem banda marcada` : `${dataExtenso(d)}, a partir das 20h`}>
+      <span className="pd-day-dow">{d.getDay() === 5 ? 'SEXTA' : 'SÁBADO'}{ocupado && <small>Já tem banda</small>}</span>
       <span className="pd-day-n">{d.getDate()}</span>
-      <span className="pd-day-h">{on ? <Ico n="check" className="pd-day-ck" /> : '20h'}</span>
+      {ocupado ? <span className="pd-day-h pd-day-tranca"><Ico n="tranca" className="pd-day-ck" /></span> : <span className="pd-day-h">{on ? <Ico n="check" className="pd-day-ck" /> : '20h'}</span>}
     </button>
   )
 }
@@ -433,6 +435,14 @@ function DataComposer({ onSend }) {
   const [meses] = useState(montarMeses)
   const [mi, setMi] = useState(0)
   const [sel, setSel] = useState(null)
+  const [ocupadas, setOcupadas] = useState(() => new Set())
+  // datas que já têm banda na agenda do Porks (só a data; nome e cachê não vêm)
+  useEffect(() => {
+    const dias = meses.flatMap(x => x.semanas.flatMap(w => [w.sex, w.sab])).filter(Boolean)
+    if (!dias.length) return
+    fetch(`/api/bandas/ocupadas?de=${isoDate(dias[0])}&ate=${isoDate(dias[dias.length - 1])}`)
+      .then(r => (r.ok ? r.json() : [])).then(l => setOcupadas(new Set(l))).catch(() => {})
+  }, [meses])
   const selData = sel ? meses.flatMap(x => x.semanas.flatMap(w => [w.sex, w.sab])).find(d => d && isoDate(d) === sel) : null
   const m = meses[mi]
   const anoAtual = new Date().getFullYear()
@@ -459,8 +469,8 @@ function DataComposer({ onSend }) {
       <div className="pd-cal-grid" role="listbox" aria-label={`Sextas e sábados de ${MESES_NOME[m.mes]}`} key={m.chave}>
         {m.semanas.map(w => (
           <div className="pd-semana" key={isoDate(w.sex || w.sab)}>
-            <DiaCard d={w.sex} sel={sel} onSel={setSel} />
-            <DiaCard d={w.sab} sel={sel} onSel={setSel} />
+            <DiaCard d={w.sex} sel={sel} onSel={setSel} ocupado={!!w.sex && ocupadas.has(isoDate(w.sex))} />
+            <DiaCard d={w.sab} sel={sel} onSel={setSel} ocupado={!!w.sab && ocupadas.has(isoDate(w.sab))} />
           </div>
         ))}
       </div>
