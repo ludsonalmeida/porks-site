@@ -7,6 +7,7 @@ import CssBaseline from '@mui/material/CssBaseline'
 const App = lazy(() => import('./App.jsx'))
 const CardapioLayout = lazy(() => import('./components/CardapioLayout.jsx'))
 const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'))
+const Produtor = lazy(() => import('./produtor/Produtor.jsx'))
 
 const cardapioTheme = createTheme({
   palette: {
@@ -49,7 +50,8 @@ createRoot(document.getElementById('root')).render(
       <Suspense fallback={null}>
         <Routes>
           <Route path="/cardapio" element={<CardapioWrapper />} />
-          <Route path="/admin" element={<Suspense fallback={null}><AdminPanel /></Suspense>} />
+          <Route path="/produtor" element={<Produtor />} />
+          <Route path="/admin"element={<Suspense fallback={null}><AdminPanel /></Suspense>} />
           <Route path="/*" element={<App />} />
         </Routes>
       </Suspense>
