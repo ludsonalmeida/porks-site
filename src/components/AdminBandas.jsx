@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './admin-bandas.css'
 import { PerfilCabeca, PerfilAbas } from '../bandas/BandaPerfil.jsx'
+import { ESTILOS, MAX_ESTILOS } from '../bandas/estilos.js'
 
 const STATUS = [
   { id: 'nova', label: 'Nova' },
@@ -310,7 +311,6 @@ function Esqueleto() {
 
 /* ─ Ficha = perfil da banda (painel largo no computador, tela cheia no celular) ─ */
 
-const ESTILOS = ['Rock nacional', 'Rock internacional', 'Pop rock', 'Classic rock', 'Hard rock', 'Metal', 'Punk', 'Grunge', 'Indie', 'Blues', 'MPB', 'Reggae', 'Samba rock', 'Sertanejo', 'Pagode', 'Forró', 'Hip-hop', 'Covers', 'Autoral']
 const ABAS_FICHA = [
   { id: 'perfil', label: 'Perfil' },
   { id: 'midia', label: 'Fotos e vídeos' },
@@ -467,7 +467,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                       {[...new Set([...ESTILOS, ...rasc.estilos])].map(e => {
                         const on = rasc.estilos.includes(e)
                         return (
-                          <button key={e} type="button" aria-pressed={on} className={`ab-chip${on ? ' on' : ''}`} disabled={!on && rasc.estilos.length >= 8}
+                          <button key={e} type="button" aria-pressed={on} className={`ab-chip${on ? ' on' : ''}`} disabled={!on && rasc.estilos.length >= MAX_ESTILOS}
                             onClick={() => muda('estilos', on ? rasc.estilos.filter(x => x !== e) : [...rasc.estilos, e])}>
                             {on && <Ico n="check" className="ab-ico-sm" />}{e}
                           </button>
@@ -476,7 +476,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                       <input className="ab-estilo-novo" placeholder="Outro estilo + Enter" maxLength={30}
                         onKeyDown={e => {
                           const v = e.currentTarget.value.trim()
-                          if (e.key === 'Enter') { e.preventDefault(); if (v && rasc.estilos.length < 8 && !rasc.estilos.includes(v)) muda('estilos', [...rasc.estilos, v]); e.currentTarget.value = '' }
+                          if (e.key === 'Enter') { e.preventDefault(); if (v && rasc.estilos.length < MAX_ESTILOS && !rasc.estilos.includes(v)) muda('estilos', [...rasc.estilos, v]); e.currentTarget.value = '' }
                         }} />
                     </div>
                   </fieldset>

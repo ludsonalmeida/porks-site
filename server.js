@@ -111,6 +111,8 @@ app.post('/api/bandas', (req, res) => {
     banda: texto(b.banda, 120),
     integrantes,
     instrumentos: (Array.isArray(b.instrumentos) ? b.instrumentos : []).map(i => texto(i, 60)).filter(Boolean).slice(0, 20),
+    // estilo escolhido no Johnny já nasce preenchido no perfil público
+    perfil: { estilos: [...new Set((Array.isArray(b.estilos) ? b.estilos : []).map(e => texto(e, 30)).filter(Boolean))].slice(0, 8) },
     lugares: texto(b.lugares, 600),
     tempo: texto(b.tempo, 40),
     responsavel: texto(b.responsavel, 120),
@@ -244,6 +246,7 @@ async function enviarEngine(id) {
         banda: f.banda,
         integrantes: f.integrantes,
         instrumentos: f.instrumentos.join(', '),
+        estilos: (f.perfil?.estilos || []).join(', '),
         lugares: f.lugares,
         tempo_formacao: f.tempo,
         data_show: f.data,

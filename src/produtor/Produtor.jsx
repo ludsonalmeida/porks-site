@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import '../index.css'
 import './produtor.css'
+import { ESTILOS, MAX_ESTILOS } from '../bandas/estilos.js'
 
 /* Johnny, o produtor musical do Porks: chat guiado pra banda que quer tocar na casa */
 
@@ -12,11 +13,12 @@ const MAX_FOTO_MB = 15
 const CONSUMO_POR_MUSICO = 50
 
 const INSTRUMENTOS = ['Bateria', 'Guitarra', 'Vocal', 'Baixo']
+
 const CASAS = ['UK', 'London', 'Casas de Rock', 'Mané Mercado', 'Vikings', 'Galpão X']
 const TEMPOS = ['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos']
 const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
 
-const ETAPAS = ['banda', 'formacao', 'lugares', 'videos', 'fotos', 'tempo', 'contato', 'data', 'aceite', 'fim']
+const ETAPAS = ['banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'tempo', 'contato', 'data', 'aceite', 'fim']
 const wait = ms => new Promise(r => setTimeout(r, ms))
 const tamanho = bytes => bytes < MB
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -176,6 +178,7 @@ function Ficha({ ficha }) {
       </div>
       <dl>
         <dt>Integrantes</dt><dd>{ficha.integrantes} · {ficha.instrumentos.join(', ')}</dd>
+        {ficha.estilos?.length > 0 && <><dt>Estilo</dt><dd>{ficha.estilos.join(', ')}</dd></>}
         <dt>Já tocou em</dt><dd>{ficha.lugares}</dd>
         <dt>Formação</dt><dd>{ficha.tempo}</dd>
         <dt>Material</dt><dd>{ficha.videos.length} {ficha.videos.length === 1 ? 'vídeo' : 'vídeos'} · {ficha.fotos.length} {ficha.fotos.length === 1 ? 'foto' : 'fotos'}</dd>
@@ -230,6 +233,30 @@ function FormacaoComposer({ onSend }) {
         <input className="pd-input pd-input-block" autoFocus value={outroTxt} onChange={e => setOutroTxt(e.target.value)} placeholder="Ex.: teclado, sax, percussão" maxLength={60} />
       )}
       <button type="button" className="pd-cta" disabled={!ok} onClick={() => onSend({ integrantes: n, instrumentos: lista })}>Confirmar formação</button>
+    </div>
+  )
+}
+
+function EstiloComposer({ onSend }) {
+  const [sel, setSel] = useState([])
+  const [txt, setTxt] = useState('')
+  const extras = txt.split(/[,\n]/).map(s => s.trim()).filter(Boolean)
+  const lista = [...new Set([...sel, ...extras])].slice(0, MAX_ESTILOS)
+  const toggle = e => setSel(s => (s.includes(e) ? s.filter(x => x !== e) : s.length + extras.length >= MAX_ESTILOS ? s : [...s, e]))
+  return (
+    <div className="pd-compose-box">
+      <div className="pd-chips">
+        {ESTILOS.map(e => (
+          <button type="button" key={e} className={`pd-chip${sel.includes(e) ? ' on' : ''}`} aria-pressed={sel.includes(e)}
+            disabled={!sel.includes(e) && lista.length >= MAX_ESTILOS} onClick={() => toggle(e)}>
+            {sel.includes(e) && <Ico n="check" className="pd-chip-ck" />}{e}
+          </button>
+        ))}
+      </div>
+      <input className="pd-input pd-input-block" value={txt} onChange={e => setTxt(e.target.value)} placeholder="Outro estilo? Escreve aqui" maxLength={80} />
+      <button type="button" className="pd-cta" disabled={!lista.length} onClick={() => onSend(lista)}>
+        {lista.length ? `Confirmar ${lista.length === 1 ? 'estilo' : `${lista.length} estilos`}` : `Marque até ${MAX_ESTILOS} estilos`}
+      </button>
     </div>
   )
 }
@@ -563,6 +590,11 @@ export default function Produtor() {
       F().integrantes = integrantes
       F().instrumentos = instrumentos
       banda(`${integrantes} ${integrantes === 1 ? 'integrante' : 'integrantes'}: ${instrumentos.join(', ')}`)
+      johnny(['E qual é a pegada da banda? Marca os estilos que vocês tocam.'], 'estilo')
+    },
+    estilo: estilos => {
+      F().estilos = estilos
+      banda(estilos.join(', '))
       johnny(['Quais lugares a banda já tocou? Pode marcar as casas abaixo e escrever outras.'], 'lugares')
     },
     lugares: txt => {
@@ -642,7 +674,7 @@ export default function Produtor() {
     try {
       if (!f.inscricao) {
         f.inscricao = await api('/api/bandas', {
-          banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, lugares: f.lugares,
+          banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, estilos: f.estilos, lugares: f.lugares,
           tempo: f.tempo, responsavel: f.responsavel, whatsapp: f.whatsapp,
           data: f.data, dataTexto: f.dataTexto, aceite: f.aceite,
         })
@@ -750,6 +782,7 @@ export default function Produtor() {
         <footer className="pd-compose" key={step}>
           {step === 'banda' && <TextoComposer placeholder="Nome da banda" onSend={handlers.banda} />}
           {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} />}
+          {step === 'estilo' && <EstiloComposer onSend={handlers.estilo} />}
           {step === 'lugares' && <LugaresComposer onSend={handlers.lugares} />}
           {step === 'videos' && <UploadComposer tipo="video" onSend={handlers.videos} onRejeita={r => rejeita('video', r)} />}
           {step === 'fotos' && <UploadComposer tipo="foto" onSend={handlers.fotos} onRejeita={r => rejeita('foto', r)} />}
