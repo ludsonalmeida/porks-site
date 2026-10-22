@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { getHeroCards, saveHeroCards, DEFAULT_CARDS } from '../utils/heroCards.js'
 import { getBreweries, saveBreweries, DEFAULT_BREWERIES } from '../utils/breweriesCards.js'
 import AdminRadio from './AdminRadio.jsx'
+import AdminBandas from './AdminBandas.jsx'
 
 const PASS = import.meta.env.VITE_ADMIN_PASS || 'porks2026'
 const MAX_W = 900
@@ -34,8 +35,8 @@ export default function AdminPanel() {
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState({})
   const [tab, setTab] = useState(() => {
-    const h = window.location.hash.replace('#', '')
-    return ['hero', 'cervejarias', 'radio'].includes(h) ? h : 'hero'
+    const h = window.location.hash.replace('#', '').split('?')[0]
+    return ['hero', 'cervejarias', 'radio', 'bandas'].includes(h) ? h : 'hero'
   })
   const [brews, setBrews] = useState(DEFAULT_BREWERIES)
   const [brewSaved, setBrewSaved] = useState(false)
@@ -177,6 +178,7 @@ export default function AdminPanel() {
           { id: 'hero',       label: 'Hero Cards',   icon: '▣' },
           { id: 'cervejarias', label: 'Cervejarias',  icon: '🍺' },
           { id: 'radio',      label: 'Rádio',        icon: '♫' },
+          { id: 'bandas',     label: 'Bandas',       icon: '★' },
         ].map(t => (
           <button
             key={t.id}
@@ -376,6 +378,10 @@ export default function AdminPanel() {
         {tab === 'radio' && (
           <AdminRadio pass={PASS} />
         )}
+
+        {tab === 'bandas' && (
+          <AdminBandas pass={PASS} />
+        )}
       </div>
     </div>
   )
@@ -533,11 +539,11 @@ const S = {
   /* ── Tab nav ── */
   tabBar: {
     background: CREAM2, borderBottom: `2px solid ${INK}`,
-    display: 'flex', gap: 0,
+    display: 'flex', flexWrap: 'wrap', gap: 0,
   },
   tabBtn: {
     fontFamily: BEBAS, fontSize: '1.1rem', letterSpacing: '.1em',
-    padding: '12px 28px', cursor: 'pointer',
+    padding: '12px 22px', cursor: 'pointer', flex: '1 1 auto', justifyContent: 'center', whiteSpace: 'nowrap',
     background: 'none', border: 'none', borderRight: `1px solid ${INK}`,
     color: MUTED, display: 'flex', alignItems: 'center', gap: 8,
     transition: 'background .15s, color .15s',

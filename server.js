@@ -279,6 +279,87 @@ function manutencaoBandas() {
 setInterval(manutencaoBandas, 10 * 60e3)
 setTimeout(manutencaoBandas, 60e3)
 
+// ── Admin: aba Bandas ──
+const STATUS_BANDA = ['nova', 'conversa', 'aprovada', 'recusada']
+const adminOk = req => chaveIgual(req.headers['x-admin-pass'], ADMIN_PASS)
+const normaliza = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+function todasFichas() {
+  let ids = []
+  try { ids = readdirSync(BANDAS_DIR).filter(idValido) } catch { return [] }
+  return ids.map(lerFicha).filter(Boolean)
+}
+function resumo(f) {
+  const ativos = f.arquivos.filter(a => !a.apagado_em)
+  return {
+    id: f.id, banda: f.banda, responsavel: f.responsavel, whatsapp: f.whatsapp,
+    data: f.data, data_texto: f.data_texto, integrantes: f.integrantes,
+    criado_em: f.criado_em, concluido: !!f.concluido_em,
+    status: f.status || 'nova',
+    videos: ativos.filter(a => a.tipo === 'video').length,
+    fotos: ativos.filter(a => a.tipo === 'foto').length,
+  }
+}
+
+app.get('/api/admin/bandas', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  const por = Math.min(50, Math.max(5, parseInt(req.query.por, 10) || 20))
+  const q = normaliza(req.query.q).trim()
+  const qDig = q.replace(/\D/g, '')
+  const status = STATUS_BANDA.includes(req.query.status) ? req.query.status : null
+  const ordem = req.query.ordem === 'show' ? 'show' : 'recentes'
+  const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+
+  let lista = todasFichas().map(resumo)
+  if (q) {
+    lista = lista.filter(b => normaliza(`${b.banda} ${b.responsavel}`).includes(q) || (qDig.length >= 4 && b.whatsapp.includes(qDig)))
+  }
+  const contagem = { todas: lista.length }
+  for (const s of STATUS_BANDA) contagem[s] = lista.filter(b => b.status === s).length
+  if (status) lista = lista.filter(b => b.status === status)
+  if (ordem === 'show') {
+    // próximos shows primeiro, datas passadas no fim
+    lista.sort((a, b) => (a.data < hoje) - (b.data < hoje) || (a.data < hoje ? b.data.localeCompare(a.data) : a.data.localeCompare(b.data)))
+  } else {
+    lista.sort((a, b) => b.criado_em.localeCompare(a.criado_em))
+  }
+  const total = lista.length
+  const paginas = Math.max(1, Math.ceil(total / por))
+  const pagina = Math.min(paginas, Math.max(1, parseInt(req.query.pagina, 10) || 1))
+  res.json({ itens: lista.slice((pagina - 1) * por, pagina * por), total, pagina, paginas, por, contagem })
+})
+
+app.get('/api/admin/bandas/:id', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  const f = lerFicha(req.params.id)
+  if (!f) return res.status(404).json({ error: 'não encontrada' })
+  const k = encodeURIComponent(f.chave_ver)
+  res.json({
+    ...resumo(f),
+    instrumentos: f.instrumentos, lugares: f.lugares, tempo: f.tempo, aceite: f.aceite,
+    nota: f.nota || '', status_em: f.status_em || null,
+    engine_lead_id: f.engine?.lead_id || null,
+    material: `/produtor/material/${f.id}?k=${k}`,
+    arquivos: f.arquivos.map(a => ({
+      tipo: a.tipo, original: a.original, bytes: a.bytes, em: a.em, apagado_em: a.apagado_em || null,
+      url: a.apagado_em ? null : `/produtor/material/${f.id}/${a.nome}?k=${k}`,
+    })),
+  })
+})
+
+app.patch('/api/admin/bandas/:id', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  const f = lerFicha(req.params.id)
+  if (!f) return res.status(404).json({ error: 'não encontrada' })
+  const { status, nota } = req.body || {}
+  if (status !== undefined) {
+    if (!STATUS_BANDA.includes(status)) return res.status(400).json({ error: 'status inválido' })
+    if (status !== (f.status || 'nova')) { f.status = status; f.status_em = new Date().toISOString() }
+  }
+  if (nota !== undefined) f.nota = String(nota).slice(0, 2000)
+  salvarFicha(f)
+  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '' })
+})
+
 // página do material pra equipe (link vai no lead do engine)
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 app.get('/produtor/material/:id/:arquivo', (req, res) => {
