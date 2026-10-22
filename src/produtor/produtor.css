@@ -312,3 +312,9 @@
 .pd-day.ocupado .pd-day-h{min-width:0;padding:0 6px;background:rgba(214,38,30,.25);color:#fff;font-size:.6rem;letter-spacing:0;text-transform:uppercase;white-space:nowrap}
 .pd-day.ocupado .pd-day-dow small{display:block;margin-top:2px;font:700 .68rem 'Barlow',sans-serif;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.75)}
 .pd-day.ocupado .pd-day-tranca{min-width:30px;padding:0;background:rgba(214,38,30,.3)}
+
+/* cachê: faixa ou valor exato */
+.pd-campo-cache{display:flex;flex-direction:column;gap:6px;color:var(--aged);font:600 .85rem 'Barlow',sans-serif}
+.pd-input-cache{display:flex;align-items:center;gap:8px}
+.pd-input-cache b{font:400 1.4rem 'Bebas Neue',sans-serif;color:var(--pd-yel, #FFC21A)}
+.pd-input-cache .pd-input{flex:1;min-width:0}

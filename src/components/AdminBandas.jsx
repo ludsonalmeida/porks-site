@@ -610,6 +610,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
                       <dt>Responsável</dt><dd>{b.responsavel}</dd>
                       <dt>WhatsApp</dt><dd>{fone(b.whatsapp)}</dd>
                       <dt>Show pedido</dt><dd>{diaShow(b.data)}, 20h{showPassou(b.data) && ' (já passou)'}</dd>
+                      <dt>Cachê médio</dt><dd>{b.cache || 'Não informou'}</dd>
                       <dt>Consumo</dt><dd>R$ {b.integrantes * 50} ({b.integrantes} × R$ 50)</dd>
                       <dt>Termos aceitos</dt><dd>{b.aceite ? dataHora(b.aceite) : '—'}</dd>
                       {b.engine_lead_id && <><dt>Engine Porks</dt><dd>Lead #{b.engine_lead_id} (tag Banda)</dd></>}

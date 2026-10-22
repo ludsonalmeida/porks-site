@@ -16,9 +16,10 @@ const INSTRUMENTOS = ['Bateria', 'Guitarra', 'Vocal', 'Baixo']
 
 const CASAS = ['UK Music Hall', 'London Street Pub', 'Cult 22', 'John Bull Pub', 'Pinella', 'Dig Rock Bar', 'Mané Mercado', 'Vikings', 'Galpão X', 'Porão do Rock']
 const TEMPOS = ['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos']
+const CACHES = ['Até R$ 500', 'R$ 500 a 800', 'R$ 800 a 1.000', 'R$ 1.000 a 1.500', 'Acima de R$ 1.500']
 const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
 
-const ETAPAS = ['banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'tempo', 'contato', 'data', 'aceite', 'fim']
+const ETAPAS = ['banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'tempo', 'cache', 'contato', 'data', 'aceite', 'fim']
 const wait = ms => new Promise(r => setTimeout(r, ms))
 const tamanho = bytes => bytes < MB
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -182,6 +183,7 @@ function Ficha({ ficha }) {
         {ficha.estilos?.length > 0 && <><dt>Estilo</dt><dd>{ficha.estilos.join(', ')}</dd></>}
         <dt>Já tocou em</dt><dd>{ficha.lugares}</dd>
         <dt>Formação</dt><dd>{ficha.tempo}</dd>
+        {ficha.cache && <><dt>Cachê médio</dt><dd>{ficha.cache}</dd></>}
         <dt>Material</dt><dd>{ficha.videos.length} {ficha.videos.length === 1 ? 'vídeo' : 'vídeos'} · {ficha.fotos.length} {ficha.fotos.length === 1 ? 'foto' : 'fotos'}</dd>
         <dt>Negociação</dt><dd>{ficha.responsavel} · {ficha.whatsapp}</dd>
         <dt>Data</dt><dd>{ficha.dataTexto[0].toUpperCase() + ficha.dataTexto.slice(1)}, a partir das 20h</dd>
@@ -358,6 +360,38 @@ function ChipsComposer({ opcoes, onSend }) {
       <div className="pd-chips pd-chips-big">
         {opcoes.map(o => <button type="button" key={o} className="pd-chip" onClick={() => onSend(o)}>{o}</button>)}
       </div>
+    </div>
+  )
+}
+
+// faixa de cachê ou valor exato (o exato vence a faixa)
+function CacheComposer({ onSend }) {
+  const [faixa, setFaixa] = useState('')
+  const [valor, setValor] = useState('')
+  const digitos = valor.replace(/\D/g, '').slice(0, 6)
+  const exato = digitos ? `R$ ${Number(digitos).toLocaleString('pt-BR')}` : ''
+  const resposta = exato || faixa
+  return (
+    <div className="pd-compose-box">
+      <div className="pd-chips">
+        {CACHES.map(c => (
+          <button type="button" key={c} className={`pd-chip${faixa === c && !exato ? ' on' : ''}`} aria-pressed={faixa === c && !exato}
+            onClick={() => { setFaixa(c); setValor('') }}>
+            {faixa === c && !exato && <Ico n="check" className="pd-chip-ck" />}{c}
+          </button>
+        ))}
+      </div>
+      <label className="pd-campo-cache">
+        <span>Ou o valor exato</span>
+        <span className="pd-input-cache">
+          <b>R$</b>
+          <input className="pd-input" inputMode="numeric" value={digitos ? Number(digitos).toLocaleString('pt-BR') : ''}
+            onChange={e => setValor(e.target.value)} placeholder="Ex.: 900" aria-label="Valor exato do cachê em reais" />
+        </span>
+      </label>
+      <button type="button" className="pd-cta" disabled={!resposta} onClick={() => onSend(resposta)}>
+        {resposta ? `Confirmar ${resposta}` : 'Escolha uma faixa ou digite o valor'}
+      </button>
     </div>
   )
 }
@@ -635,7 +669,15 @@ export default function Produtor() {
     tempo: t => {
       F().tempo = t
       banda(t)
-      johnny(['Agora preciso do nome e do WhatsApp de quem cuida da negociação da banda.'], 'contato')
+      johnny(['Pra eu levar certinho pra administração: qual é a média de cachê que a banda costuma cobrar por show?'], 'cache')
+    },
+    cache: c => {
+      F().cache = c
+      banda(c)
+      johnny([
+        'Valeu pela sinceridade! Isso é importante pra gente alinhar expectativas desde o começo. 🤝',
+        'Agora preciso do nome e do WhatsApp de quem cuida da negociação da banda.',
+      ], 'contato')
     },
     contato: ({ nome, whatsapp }) => {
       F().responsavel = nome
@@ -685,7 +727,7 @@ export default function Produtor() {
       if (!f.inscricao) {
         f.inscricao = await api('/api/bandas', {
           banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, estilos: f.estilos, lugares: f.lugares,
-          tempo: f.tempo, responsavel: f.responsavel, whatsapp: f.whatsapp,
+          tempo: f.tempo, cache: f.cache, responsavel: f.responsavel, whatsapp: f.whatsapp,
           data: f.data, dataTexto: f.dataTexto, aceite: f.aceite,
         })
         f.enviados = new Set()
@@ -797,6 +839,7 @@ export default function Produtor() {
           {step === 'videos' && <UploadComposer tipo="video" onSend={handlers.videos} onRejeita={r => rejeita('video', r)} />}
           {step === 'fotos' && <UploadComposer tipo="foto" onSend={handlers.fotos} onRejeita={r => rejeita('foto', r)} />}
           {step === 'tempo' && <ChipsComposer opcoes={TEMPOS} onSend={handlers.tempo} />}
+          {step === 'cache' && <CacheComposer onSend={handlers.cache} />}
           {step === 'contato' && <ContatoComposer onSend={handlers.contato} />}
           {step === 'data' && <DataComposer onSend={handlers.data} />}
           {step === 'aceite' && <AceiteComposer onSim={aceitar} onNao={naoConcordo} />}

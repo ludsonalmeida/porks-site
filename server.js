@@ -115,6 +115,7 @@ app.post('/api/bandas', (req, res) => {
     perfil: { estilos: [...new Set((Array.isArray(b.estilos) ? b.estilos : []).map(e => texto(e, 30)).filter(Boolean))].slice(0, 8) },
     lugares: texto(b.lugares, 600),
     tempo: texto(b.tempo, 40),
+    cache: texto(b.cache, 40), // privado: só admin, material interno e engine
     responsavel: texto(b.responsavel, 120),
     whatsapp,
     data,
@@ -249,6 +250,7 @@ async function enviarEngine(id) {
         estilos: (f.perfil?.estilos || []).join(', '),
         lugares: f.lugares,
         tempo_formacao: f.tempo,
+        cache_medio: f.cache || '',
         data_show: f.data,
         data_show_texto: f.data_texto ? `${f.data_texto}, a partir das 20h` : f.data,
         consumo_banda: `R$ ${f.integrantes * 50}`,
@@ -622,7 +624,7 @@ app.get('/api/admin/bandas/:id', (req, res) => {
   const k = encodeURIComponent(f.chave_ver)
   res.json({
     ...resumo(f),
-    instrumentos: f.instrumentos, lugares: f.lugares, tempo: f.tempo, aceite: f.aceite,
+    instrumentos: f.instrumentos, lugares: f.lugares, tempo: f.tempo, aceite: f.aceite, cache: f.cache || '',
     nota: f.nota || '', status_em: f.status_em || null,
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
@@ -820,6 +822,7 @@ h2 .n{margin-left:2px;padding:1px 9px;border-radius:12px;background:var(--fundo)
         <div class="dado">${ic.gente}<div><small>Formação</small><b>${f.integrantes} ${f.integrantes === 1 ? 'integrante' : 'integrantes'}</b>
           ${f.instrumentos.length ? `<div class="chips">${f.instrumentos.map(i => `<span class="chip">${esc(i)}</span>`).join('')}</div>` : ''}</div></div>
         ${dado(ic.relogio, 'Tempo de banda', esc(f.tempo || 'Não informado'))}
+        ${f.cache ? dado(ic.chope, 'Cachê médio que cobra', esc(f.cache)) : ''}
         <div class="dado">${ic.palco}<div><small>Já tocou em</small>
           ${lugares.length ? `<div class="chips">${lugares.map(l => `<span class="chip">${esc(l)}</span>`).join('')}</div>` : '<b>Ainda não tocou em nenhuma casa</b>'}</div></div>
       </div>
