@@ -14,7 +14,7 @@ const CONSUMO_POR_MUSICO = 50
 
 const INSTRUMENTOS = ['Bateria', 'Guitarra', 'Vocal', 'Baixo']
 
-const CASAS = ['UK', 'London', 'Casas de Rock', 'Mané Mercado', 'Vikings', 'Galpão X']
+const CASAS = ['UK Music Hall', 'London Street Pub', 'Cult 22', 'John Bull Pub', 'Pinella', 'Dig Rock Bar', 'Mané Mercado', 'Vikings', 'Galpão X', 'Porão do Rock']
 const TEMPOS = ['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', 'Mais de 5 anos']
 const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
 
