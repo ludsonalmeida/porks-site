@@ -453,6 +453,49 @@ function AceiteComposer({ onSim, onNao }) {
   )
 }
 
+function EnvioComposer({ envio, onTentar }) {
+  if (envio.erro) {
+    return (
+      <div className="pd-compose-box">
+        <button type="button" className="pd-cta pd-cta-yel" onClick={onTentar}>Tentar enviar de novo</button>
+      </div>
+    )
+  }
+  const pct = Math.round(envio.pct * 100)
+  return (
+    <div className="pd-compose-box" role="status" aria-live="polite">
+      <div className="pd-envio-txt">
+        <span>{envio.texto}</span>
+        <b>{pct}%</b>
+      </div>
+      <div className="pd-envio-barra"><span style={{ transform: `scaleX(${envio.pct})` }} /></div>
+    </div>
+  )
+}
+
+/* ─ Envio pro servidor ─ */
+
+async function api(path, body, headers = {}) {
+  const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(j.error || `erro ${r.status}`)
+  return j
+}
+
+// PUT do arquivo cru, com progresso (fetch não dá progresso de upload)
+function subirArquivo({ id, chave, tipo, file, onProgresso }) {
+  return new Promise((ok, falha) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', `/api/bandas/${id}/arquivos?tipo=${tipo}&nome=${encodeURIComponent(file.name)}`)
+    xhr.setRequestHeader('X-Upload-Key', chave)
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+    xhr.upload.onprogress = e => onProgresso(e.loaded)
+    xhr.onload = () => (xhr.status < 300 ? ok() : falha(new Error(xhr.status)))
+    xhr.onerror = () => falha(new Error('rede'))
+    xhr.send(file)
+  })
+}
+
 /* ─ Página ─ */
 
 export default function Produtor() {
@@ -460,6 +503,7 @@ export default function Produtor() {
   const [typing, setTyping] = useState(false)
   const [step, setStep] = useState(null)
   const [etapa, setEtapa] = useState(0)
+  const [envio, setEnvio] = useState({ pct: 0, texto: '' })
   const fichaRef = useRef({})
   const started = useRef(false)
   const idRef = useRef(0)
@@ -583,8 +627,51 @@ export default function Produtor() {
   async function aceitar() {
     F().aceite = new Date().toISOString()
     banda('Tô de acordo com os termos 🤘')
-    // Passo 1: só local, nada é enviado ainda. O envio entra no passo 2.
-    console.info('[produtor] ficha', { ...F(), videos: F().videos?.map(v => v.name), fotos: F().fotos?.map(v => v.name) })
+    enviar()
+  }
+
+  async function enviar() {
+    const f = F()
+    const arquivos = [
+      ...(f.videos || []).map(file => ({ tipo: 'video', file })),
+      ...(f.fotos || []).map(file => ({ tipo: 'foto', file })),
+    ].filter(a => !f.enviados?.has(a.file))
+    const total = arquivos.reduce((s, a) => s + a.file.size, 0) || 1
+    setStep('enviando')
+    setEnvio({ pct: 0, texto: 'Enviando a ficha da banda…' })
+    try {
+      if (!f.inscricao) {
+        f.inscricao = await api('/api/bandas', {
+          banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, lugares: f.lugares,
+          tempo: f.tempo, responsavel: f.responsavel, whatsapp: f.whatsapp,
+          data: f.data, dataTexto: f.dataTexto, aceite: f.aceite,
+        })
+        f.enviados = new Set()
+      }
+      const { id, chave } = f.inscricao
+      let feito = 0
+      for (const [i, a] of arquivos.entries()) {
+        const rotulo = a.tipo === 'video' ? 'vídeo' : 'foto'
+        setEnvio({ pct: feito / total, texto: `Enviando ${rotulo} ${i + 1} de ${arquivos.length}…` })
+        try {
+          await subirArquivo({ id, chave, tipo: a.tipo, file: a.file, onProgresso: n => setEnvio(e => ({ ...e, pct: (feito + n) / total })) })
+          f.enviados.add(a.file)
+        } catch (e) {
+          // erro de rede derruba o envio todo (dá pra tentar de novo); recusa do servidor só pula o arquivo
+          if (e.message === 'rede') throw e
+        }
+        feito += a.file.size
+      }
+      setEnvio({ pct: 1, texto: 'Fechando a inscrição…' })
+      await api(`/api/bandas/${id}/concluir`, {}, { 'X-Upload-Key': chave }).catch(() => {})
+    } catch {
+      setEnvio({ erro: true })
+      await johnny([
+        'Ih, a conexão caiu no meio do envio. 😕',
+        'Nada se perdeu: confere a internet e toca no botão aqui embaixo que eu continuo de onde parou.',
+      ], null, { manterResposta: true })
+      return
+    }
     await johnny([
       'Perfeito! A administração recebeu a sua solicitação e vai entrar em contato com uma resposta pra negociar o cachê. Beleza pura?',
       'Em até 72h a gente retorna! 🤘',
@@ -670,6 +757,7 @@ export default function Produtor() {
           {step === 'contato' && <ContatoComposer onSend={handlers.contato} />}
           {step === 'data' && <DataComposer onSend={handlers.data} />}
           {step === 'aceite' && <AceiteComposer onSim={aceitar} onNao={naoConcordo} />}
+          {step === 'enviando' && <EnvioComposer envio={envio} onTentar={enviar} />}
         </footer>
       )}
     </div>

@@ -298,3 +298,9 @@
 .pd-row-b .pd-bubble-wide{background:var(--pd-amb)}
 .pd-avatar{position:relative;overflow:hidden}
 .pd-avatar-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* envio da inscrição */
+.pd-envio-txt{display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--aged);font:600 .95rem 'Barlow',sans-serif}
+.pd-envio-txt b{font:800 1.1rem 'Barlow Condensed',sans-serif;letter-spacing:.06em;color:var(--pd-yel);font-variant-numeric:tabular-nums}
+.pd-envio-barra{height:10px;border-radius:5px;background:rgba(240,224,192,.14);overflow:hidden}
+.pd-envio-barra span{display:block;height:100%;background:linear-gradient(90deg,var(--pd-red),var(--pd-amb),var(--pd-yel));transform-origin:left;transition:transform .25s ease-out}
