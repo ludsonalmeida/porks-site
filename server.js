@@ -550,6 +550,23 @@ app.get('/bandas/:slug', (req, res, next) => {
   res.send(html.replace(/<title>[\s\S]*?<\/title>/, '').replace(/<meta name="description"[^>]*>/, '').replace('</head>', `${meta}\n</head>`))
 })
 
+// /produtor: preview próprio do Johnny (sem isso o link herda o "Reserve sua mesa" da home)
+app.get('/produtor', (req, res, next) => {
+  let html
+  try { html = readFileSync(join(__dirname, 'dist', 'index.html'), 'utf8') } catch { return next() }
+  const titulo = 'Toque no Porks Sobradinho · Johnny, o produtor musical'
+  const desc = 'Tem banda e quer tocar no Porks? Fale com o Johnny, nosso produtor musical: mande o material da banda e negocie uma data na agenda da casa.'
+  const meta = `<title>${esc(titulo)}</title>
+    <meta name="description" content="${esc(desc)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${esc(titulo)}" />
+    <meta property="og:description" content="${esc(desc)}" />
+    <meta property="og:image" content="${SITE_URL}/images/johnny.jpg" />
+    <meta property="og:url" content="${SITE_URL}/produtor" />
+    <meta name="twitter:card" content="summary_large_image" />`
+  res.send(html.replace(/<title>[\s\S]*?<\/title>/, '').replace(/<meta name="description"[^>]*>/, '').replace('</head>', `${meta}\n</head>`))
+})
+
 // ── Admin: ligar o Google Agenda ──
 const ICS_OK = /^https:\/\/calendar\.google\.com\/calendar\/ical\/[^/\s]+\/[^/\s]+\/basic\.ics$/
 const mascararIcs = u => u.replace(/(private-)[a-f0-9]+/i, '$1••••••').replace(/\/ical\/([^/]+)\//, (_, c) => `/ical/${decodeURIComponent(c)}/`)
