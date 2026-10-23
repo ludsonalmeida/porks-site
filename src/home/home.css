@@ -6,8 +6,7 @@
   --hm-amb:#EE7F12; --hm-amb-h:#FF9126; --hm-yel:#FFC21A; --hm-roxo:#7B3FA0;
   --hm-raio:16px; --hm-ease:cubic-bezier(.2,.7,.2,1);
 }
-html{scroll-behavior:smooth;scroll-padding-top:76px}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.hm *{transition:none!important;animation:none!important}}
+html{scroll-padding-top:76px}
 body{margin:0;background:var(--hm-bg)}
 .hm,.hm *,.hm *::before,.hm *::after{box-sizing:border-box}
 .hm{font:400 1rem/1.6 'Barlow',system-ui,sans-serif;color:var(--hm-txt);background:var(--hm-bg);-webkit-font-smoothing:antialiased;overflow-x:clip}
@@ -219,3 +218,88 @@ a.hm-show:hover{border-color:var(--hm-amb);transform:translateY(-2px)}
   transform:translateY(110%);transition:transform .25s var(--hm-ease)}
 .hm-barra.on{transform:none}
 @media (min-width:900px){.hm-barra{display:none}}
+
+/* ── acabamento (23/10): transições suaves, entradas e brilho ── */
+.hm-rv{opacity:0;transform:translateY(22px);transition:opacity .8s var(--hm-ease) var(--d,0ms),transform .8s var(--hm-ease) var(--d,0ms)}
+.hm-rv.in{opacity:1;transform:none}
+
+/* topo: entrada em cascata + foto com zoom lento */
+@keyframes hm-sobe{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+@keyframes hm-zoom{from{transform:scale(1.12)}to{transform:scale(1)}}
+.hm-hero-bg{animation:hm-zoom 9s cubic-bezier(.2,.6,.2,1) both}
+.hm-hero-in > *{animation:hm-sobe .9s var(--hm-ease) both}
+.hm-hero-in > :nth-child(2){animation-delay:.08s}
+.hm-hero-in > :nth-child(3){animation-delay:.18s}
+.hm-hero-in > :nth-child(4){animation-delay:.28s}
+.hm-hero-in > :nth-child(5){animation-delay:.36s}
+.hm-hero-in > :nth-child(6){animation-delay:.48s}
+.hm-hero::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background:radial-gradient(60% 50% at 15% 80%,rgba(238,127,18,.28),transparent 70%)}
+.hm-hero h1 em{background:linear-gradient(90deg,#FF9A2E,#FFC21A);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* botões com brilho */
+.hm-btn{transition:background .3s,border-color .3s,transform .3s var(--hm-ease),box-shadow .3s,color .3s}
+.hm-btn-amb{background:linear-gradient(180deg,#FF9126,#EE7F12);box-shadow:0 8px 24px -8px rgba(238,127,18,.65),inset 0 1px 0 rgba(255,255,255,.25)}
+.hm-btn-amb:hover{transform:translateY(-2px);box-shadow:0 14px 32px -10px rgba(238,127,18,.8),inset 0 1px 0 rgba(255,255,255,.3)}
+.hm-btn-ghost:hover,.hm-btn-roxo:hover{transform:translateY(-2px)}
+.hm-btn-roxo{box-shadow:0 8px 24px -10px rgba(123,63,160,.8)}
+.hm-btn .hm-ico{transition:transform .3s var(--hm-ease)}
+.hm-btn:hover .hm-ico{transform:scale(1.08)}
+
+/* kicker com tracinho */
+.hm-kicker{display:inline-flex;align-items:center;gap:10px}
+.hm-kicker::before{content:'';width:22px;height:2px;border-radius:2px;background:currentColor}
+
+/* faixas claras viram painéis arredondados */
+.hm-claro{margin:0 8px;border-radius:28px;position:relative;z-index:1}
+@media (min-width:768px){.hm-claro{margin:0 16px;border-radius:36px}}
+
+/* topo do site mais leve */
+.hm-topo{transition:background .35s,box-shadow .35s}
+.hm-topo-in{transition:height .35s var(--hm-ease)}
+@media (min-width:768px){.hm-topo.rolou .hm-topo-in{height:64px}}
+.hm-gaveta{animation:hm-sobe .35s var(--hm-ease) both}
+
+/* próximo show com pulso */
+.hm-pulso{display:inline-block;width:8px;height:8px;margin-right:8px;border-radius:50%;background:#3DDC84;vertical-align:1px;box-shadow:0 0 0 0 rgba(61,220,132,.6);animation:hm-pulsa 1.8s infinite}
+@keyframes hm-pulsa{70%{box-shadow:0 0 0 8px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+.hm-prox{box-shadow:0 20px 40px -20px rgba(0,0,0,.7);transition:border-color .3s,transform .3s var(--hm-ease),box-shadow .3s}
+.hm-prox:hover{box-shadow:0 24px 48px -18px rgba(238,127,18,.45)}
+.hm-prox-seta,.hm-show-ver .hm-ico,.hm-motivo-txt em .hm-ico{transition:transform .3s var(--hm-ease)}
+.hm-prox:hover .hm-prox-seta,.hm-show:hover .hm-show-ver .hm-ico,.hm-motivo:hover em .hm-ico{transform:translateX(4px)}
+
+/* cartões de show */
+.hm-show{position:relative;overflow:hidden;background:linear-gradient(135deg,#2E2116,#231910);transition:border-color .3s,transform .3s var(--hm-ease),box-shadow .3s}
+a.hm-show:hover{box-shadow:0 18px 36px -18px rgba(238,127,18,.5)}
+.hm-show::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--hm-amb);transform:scaleY(0);transition:transform .3s var(--hm-ease)}
+a.hm-show:hover::before{transform:scaleY(1)}
+.hm-data{background:linear-gradient(160deg,#FFA33F,#EE7F12);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+
+/* plug & play */
+.hm-pp{overflow:hidden}
+.hm-pp::after{content:'';position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(186,120,240,.35),transparent 70%);pointer-events:none}
+
+/* semana, motivos, avaliações */
+.hm-dia,.hm-av,.hm-duvidas details{transition:transform .3s var(--hm-ease),box-shadow .3s,border-color .3s}
+.hm-dia:hover{transform:translateY(-3px);box-shadow:0 14px 30px -16px rgba(30,20,11,.35)}
+.hm-motivo{transition:transform .35s var(--hm-ease),box-shadow .35s}
+.hm-motivo img{transition:transform .7s var(--hm-ease)}
+.hm-motivo:hover img{transform:scale(1.06)}
+.hm-motivo:hover{box-shadow:0 18px 40px -18px rgba(30,20,11,.4)}
+.hm-av{position:relative;background:linear-gradient(160deg,#2E2116,#211710)}
+.hm-av::before{content:'\201C';position:absolute;right:18px;top:-6px;font:400 6rem/1 Georgia,serif;color:rgba(238,127,18,.18)}
+.hm-av:hover{transform:translateY(-3px);border-color:rgba(238,127,18,.4)}
+.hm-cc-foto img{box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
+.hm-cerv li{transition:transform .3s var(--hm-ease)}
+.hm-cerv li:hover{transform:translateY(-3px)}
+
+/* dúvidas abrindo suave */
+.hm-duvidas details[open]{border-color:rgba(176,86,10,.35);box-shadow:0 10px 24px -16px rgba(30,20,11,.3)}
+.hm-duvidas details[open] p{animation:hm-sobe .4s var(--hm-ease) both}
+
+/* barra do celular */
+.hm-barra{transition:transform .45s var(--hm-ease)}
+
+/* costura da foto do topo */
+.hm-hero{overflow:hidden}
+.hm-hero::after{inset:-2px 0}

@@ -139,7 +139,7 @@ function Hero({ proximo }) {
           <a className="hm-prox" href={proximo.link || '#shows'}>
             <DataBloco data={proximo.data} />
             <span className="hm-prox-txt">
-              <small>Próximo show · {quando(proximo.data)}{horaTxt(proximo.hora) ? `, ${horaTxt(proximo.hora)}` : ''}</small>
+              <small><i className="hm-pulso" aria-hidden="true" />Próximo show · {quando(proximo.data)}{horaTxt(proximo.hora) ? `, ${horaTxt(proximo.hora)}` : ''}</small>
               <b>{proximo.banda}</b>
             </span>
             <Ico n="seta" className="hm-ico hm-prox-seta" />
@@ -420,8 +420,57 @@ function BarraCelular() {
   )
 }
 
+// rolagem suave própria: funciona mesmo com 'reduzir animações' ligado no sistema
+function rolarAte(alvo) {
+  const topo = document.querySelector('.hm-topo')?.offsetHeight || 0
+  const de = window.scrollY
+  const ate = Math.max(0, alvo.getBoundingClientRect().top + de - topo - 8)
+  const dist = ate - de
+  const dur = Math.min(1200, Math.max(750, Math.abs(dist) * 0.5))
+  const t0 = performance.now()
+  const curva = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+  const passo = agora => {
+    const t = Math.min(1, (agora - t0) / dur)
+    window.scrollTo(0, de + dist * curva(t))
+    if (t < 1) requestAnimationFrame(passo)
+  }
+  requestAnimationFrame(passo)
+}
+
+// elementos que entram suave ao aparecer na tela
+const REVELA = '.hm-cab, .hm-shows > li, .hm-pp, .hm-dia, .hm-cc-foto, .hm-cc > div:last-child, .hm-cerv li, .hm-motivos > li, .hm-passos li, .hm-av, .hm-visite > div, .hm-fim'
+function useRevela(dep) {
+  useEffect(() => {
+    const ob = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); ob.unobserve(e.target) }
+    }), { threshold: 0.12, rootMargin: '0px 0px -40px 0px' })
+    document.querySelectorAll(REVELA).forEach(el => {
+      if (el.classList.contains('in')) return
+      const irmaos = [...el.parentElement.children]
+      el.style.setProperty('--d', `${Math.min(irmaos.indexOf(el), 5) * 70}ms`)
+      el.classList.add('hm-rv')
+      ob.observe(el)
+    })
+    return () => ob.disconnect()
+  }, [dep])
+}
+
 export default function Home() {
   const shows = useShows()
+  useRevela(shows)
+  useEffect(() => {
+    const clique = e => {
+      const a = e.target.closest('a[href^="#"]')
+      if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return
+      const alvo = document.getElementById(a.getAttribute('href').slice(1))
+      if (!alvo) return
+      e.preventDefault()
+      rolarAte(alvo)
+      history.replaceState(null, '', a.getAttribute('href'))
+    }
+    document.addEventListener('click', clique)
+    return () => document.removeEventListener('click', clique)
+  }, [])
   return (
     <div className="hm">
       <PixelLoader />
