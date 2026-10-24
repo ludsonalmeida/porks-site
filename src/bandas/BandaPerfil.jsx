@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import './banda-perfil.css'
 
 /* ─ Perfil da banda: usado na página pública (/bandas/:slug) e na prévia do admin ─ */
@@ -109,10 +109,46 @@ const ABAS = [
   { id: 'shows', label: 'Shows' },
 ]
 
+// troca de aba sem "pulo": sublinhado desliza, conteúdo entra pro lado da aba escolhida e a altura acompanha suave
 export function PerfilAbas({ b, aba, onAba }) {
+  const abasRef = useRef(null)
+  const painelRef = useRef(null)
+  const anterior = useRef(aba)
+  const [indicador, setIndicador] = useState(null)
+  const [lado, setLado] = useState(0)
+  const [altura, setAltura] = useState(null)
+
+  // sublinhado único que desliza até a aba ativa (e mantém a aba visível na rolagem horizontal do celular)
+  useLayoutEffect(() => {
+    const el = abasRef.current?.querySelector('.bp-aba.on')
+    if (!el) return
+    const medir = () => setIndicador({ x: el.offsetLeft + 10, w: el.offsetWidth - 20 })
+    medir()
+    el.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    window.addEventListener('resize', medir)
+    return () => window.removeEventListener('resize', medir)
+  }, [aba, b])
+
+  // direção da entrada do conteúdo
+  useLayoutEffect(() => {
+    if (anterior.current === aba) return
+    setLado(Math.sign(ABAS.findIndex(a => a.id === aba) - ABAS.findIndex(a => a.id === anterior.current)))
+    anterior.current = aba
+  }, [aba])
+
+  // altura animada: acompanha o conteúdo (fotos carregando, lightbox etc.)
+  useEffect(() => {
+    const el = painelRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => setAltura(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [aba])
+
   return (
     <>
-      <div className="bp-abas" role="tablist" aria-label="Seções do perfil">
+      <div className="bp-abas" role="tablist" aria-label="Seções do perfil" ref={abasRef}>
+        {indicador && <span className="bp-abas-ind" aria-hidden="true" style={{ transform: `translateX(${indicador.x}px)`, width: indicador.w }} />}
         {ABAS.map(a => (
           <button key={a.id} type="button" role="tab" id={`bp-aba-${a.id}`} aria-selected={aba === a.id} aria-controls={`bp-painel-${a.id}`}
             className={`bp-aba${aba === a.id ? ' on' : ''}`} onClick={() => onAba(a.id)}>
@@ -122,11 +158,13 @@ export function PerfilAbas({ b, aba, onAba }) {
           </button>
         ))}
       </div>
-      <div className="bp-painel" role="tabpanel" id={`bp-painel-${aba}`} aria-labelledby={`bp-aba-${aba}`}>
-        {aba === 'geral' && <VisaoGeral b={b} onAba={onAba} />}
-        {aba === 'midia' && <Midia b={b} />}
-        {aba === 'avaliacoes' && <Avaliacoes b={b} />}
-        {aba === 'shows' && <Shows b={b} />}
+      <div className="bp-painel-caixa" style={altura == null ? undefined : { height: altura }}>
+        <div ref={painelRef} key={aba} className="bp-painel" data-lado={lado} role="tabpanel" id={`bp-painel-${aba}`} aria-labelledby={`bp-aba-${aba}`}>
+          {aba === 'geral' && <VisaoGeral b={b} onAba={onAba} />}
+          {aba === 'midia' && <Midia b={b} />}
+          {aba === 'avaliacoes' && <Avaliacoes b={b} />}
+          {aba === 'shows' && <Shows b={b} />}
+        </div>
       </div>
     </>
   )

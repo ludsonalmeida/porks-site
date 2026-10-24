@@ -1,4 +1,7 @@
 /* Painel do Porks: casca (menu, topo, navegação) + Início, Agenda e Site */
+/* o admin não carrega o index.css: zera a margem padrão do navegador (bordas brancas de 8px) */
+html,body{margin:0;padding:0}
+body:has(.adm),body:has(.adm-login){background:#1E1309}
 .adm{
   --a-fundo:#F3E6CC; --a-card:#FFFBF2; --a-tinta:#2C1C0D; --a-mudo:#6F5230; --a-linha:rgba(44,28,13,.13);
   --a-escuro:#1E1309; --a-escuro2:#2C1C0D; --a-creme:#F4E7CF; --a-amb:#D9700F; --a-amb-esc:#B85C00; --a-yel:#FFC21A; --a-red:#C92A20; --a-ok:#2e7d32;

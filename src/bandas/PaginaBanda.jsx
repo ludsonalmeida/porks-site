@@ -40,7 +40,9 @@ export default function PaginaBanda() {
 
   function irAba(id) {
     setParams(id === 'geral' ? {} : { aba: id }, { replace: true })
-    document.getElementById('bp-abas-topo')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // só rola se o visitante já passou das abas (aí volta pro começo do conteúdo); se elas estão à vista, a página fica parada
+    const topo = document.getElementById('bp-abas-topo')
+    if (topo && topo.getBoundingClientRect().top < 60) topo.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   async function compartilhar() {

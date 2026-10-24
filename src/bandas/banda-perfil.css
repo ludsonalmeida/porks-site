@@ -63,8 +63,14 @@
 .bp-aba::after{content:'';position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--bp-amb);transform:scaleX(0);transition:transform .2s var(--bp-ease)}
 .bp-aba.on{color:var(--bp-tinta)}
 .bp-aba.on::after{transform:scaleX(1)}
+/* com JS o sublinhado é um só e desliza; o ::after fica de reserva */
+.bp-abas-ind{position:absolute;left:0;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--bp-amb);pointer-events:none;transition:transform .35s var(--bp-ease),width .35s var(--bp-ease)}
+.bp-abas:has(.bp-abas-ind) .bp-aba::after{display:none}
 .bp-aba-n{min-width:22px;padding:0 6px;border-radius:11px;background:var(--bp-fundo);font-size:.78rem;text-align:center;font-variant-numeric:tabular-nums}
-.bp-painel{padding:16px;animation:bp-fade .2s ease-out}
+.bp-painel-caixa{overflow:hidden;transition:height .35s var(--bp-ease)}
+.bp-painel{padding:16px;animation:bp-entra .32s var(--bp-ease) both}
+.bp-painel[data-lado="1"]{--bp-de:18px}
+.bp-painel[data-lado="-1"]{--bp-de:-18px}
 
 /* cards */
 .bp-geral,.bp-avaliacoes,.bp-midia,.bp-shows{display:flex;flex-direction:column;gap:14px}
@@ -174,6 +180,7 @@
 .bp-toast:empty{display:none}
 
 @keyframes bp-fade{from{opacity:0}to{opacity:1}}
+@keyframes bp-entra{from{opacity:0;transform:translateX(var(--bp-de,0))}to{opacity:1;transform:none}}
 @keyframes bp-brilho{to{background-position:-200% 0}}
 
 @media (min-width:720px){
@@ -192,5 +199,5 @@
 }
 @media (prefers-reduced-motion:reduce){
   .bp-painel,.bp-lightbox,.bp-esq{animation:none}
-  .bp-foto img,.bp-aba::after,.bp-barra-trilho div{transition:none}
+  .bp-foto img,.bp-aba::after,.bp-barra-trilho div,.bp-abas-ind,.bp-painel-caixa{transition:none}
 }

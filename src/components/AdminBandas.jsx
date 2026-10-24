@@ -262,7 +262,7 @@ export default function AdminBandas({ pass }) {
               <button key={b.id} type="button" className="ab-linha" onClick={() => { empilhouRef.current = true; mudar({ id: b.id }, { empilhar: true }) }}
                 aria-label={`Abrir ficha da banda ${b.banda}`}>
                 <span className="ab-c-banda">
-                  <b>{b.banda}{b.tipo === 'pp' && <span className="ab-pp">Plug & Play</span>}</b>
+                  <b>{b.banda}{b.tipo === 'pp' && <span className="ab-pp">Plug & Play</span>}{b.retorno_de && <span className="ab-casa">Banda da casa</span>}</b>
                   <small><Ico n="pessoas" className="ab-ico-sm" />{b.tipo === 'pp' ? (b.instrumentos || []).join(', ') || 'Músico' : `${b.integrantes} ${b.integrantes === 1 ? 'integrante' : 'integrantes'}`}{!b.concluido && <em className="ab-incompleto"> · envio incompleto</em>}</small>
                 </span>
                 {b.tipo === 'pp'
@@ -302,7 +302,7 @@ export default function AdminBandas({ pass }) {
       )}
 
       {f.id && (
-        <Ficha key={f.id} id={f.id} api={api} pass={pass}
+        <Ficha key={f.id} id={f.id} api={api} pass={pass} onAbrir={id => mudar({ id })}
           onFechar={() => { if (empilhouRef.current) { empilhouRef.current = false; window.history.back() } else mudar({ id: '' }) }}
           onMudou={() => setVersao(v => v + 1)} />
       )}
@@ -337,7 +337,7 @@ const ABAS_FICHA = [
 ]
 const rascunhoDe = b => ({ banda: b.banda, ...b.perfil, estilos: [...b.perfil.estilos], shows: b.perfil.shows.map(s => ({ ...s })) })
 
-function Ficha({ id, api, pass, onFechar, onMudou }) {
+function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
   const [b, setB] = useState(null)
   const [erro, setErro] = useState('')
   const [aba, setAba] = useState(null) // definida quando a ficha chega (Plug & Play abre na negociação)
@@ -351,7 +351,7 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
   const fecharRef = useRef(null)
 
   const carregar = useCallback(() => api(`/api/admin/bandas/${id}`)
-    .then(d => { setB(d); setNota(d.nota); setRasc(r => r || rascunhoDe(d)); setAba(a => a || (d.tipo === 'pp' ? 'gestao' : 'perfil')) })
+    .then(d => { setB(d); setNota(d.nota); setRasc(r => r || rascunhoDe(d)); setAba(a => a || (d.tipo === 'pp' || d.retorno_de ? 'gestao' : 'perfil')) })
     .catch(e => setErro(e.message === 'Erro 404' ? 'Essa ficha não existe mais.' : e.message)), [api, id])
 
   useEffect(() => { carregar() }, [carregar])
@@ -457,12 +457,19 @@ function Ficha({ id, api, pass, onFechar, onMudou }) {
 
           {b && (
             <>
+              {b.retorno_de && (
+                <div className="ab-casa-topo">
+                  <span className="ab-casa">Banda da casa</span>
+                  <span>Pedido de nova data de banda já aprovada. Perfil, fotos e vídeos ficam na ficha original.</span>
+                  <button type="button" className="ab-btn" onClick={() => onAbrir(b.retorno_de)}>Abrir ficha original</button>
+                </div>
+              )}
               {b.tipo === 'pp'
                 ? <div className="ab-pp-topo"><span className="ab-pp">Plug & Play</span><span>Inscrição de músico pras quintas, das 19h às 23h50. Sem cachê, R$ 50 de bônus no dia.</span></div>
                 : <div className="bp-perfil ab-previa-cabeca"><PerfilCabeca b={b.publico} onIrAba={id => { setAba('previa'); setAbaPrevia(id) }} /></div>}
 
               <div className="ab-fabas" role="tablist" aria-label="Seções da ficha">
-                {ABAS_FICHA.filter(a => b.tipo !== 'pp' || a.id === 'gestao' || a.id === 'midia').map(a => (
+                {ABAS_FICHA.filter(a => b.retorno_de ? a.id === 'gestao' : b.tipo !== 'pp' || a.id === 'gestao' || a.id === 'midia').map(a => (
                   <button key={a.id} type="button" role="tab" aria-selected={aba === a.id} className={`ab-faba${aba === a.id ? ' on' : ''}`} onClick={() => setAba(a.id)}>
                     {a.label}{a.id === 'perfil' && sujo && <span className="ab-faba-ponto" aria-label="sem salvar" />}
                   </button>

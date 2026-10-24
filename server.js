@@ -101,28 +101,36 @@ app.post('/api/bandas', (req, res) => {
   const dia = new Date(`${data}T12:00:00-03:00`)
   const erros = []
   if (!texto(b.banda, 120)) erros.push('banda')
-  if (texto(b.responsavel, 120).split(' ').length < 2) erros.push('responsavel')
+  if (!b.retorno && texto(b.responsavel, 120).split(' ').length < 2) erros.push('responsavel')
   if (!/^\d{2}9\d{8}$/.test(whatsapp)) erros.push('whatsapp')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(dia) || !(pp ? [4] : [5, 6]).includes(dia.getUTCDay())) erros.push('data')
   if (!b.aceite) erros.push('aceite')
+  // banda da casa pedindo nova data: o servidor confere nome + WhatsApp de novo e copia a ficha original
+  const casa = !pp && b.retorno ? bandaDaCasa(b.banda, whatsapp) : null
+  if (b.retorno && casa?.id !== b.retorno) erros.push('retorno')
   if (erros.length) return res.status(400).json({ error: 'dados inválidos', campos: erros })
 
   const id = `${data}-${randomBytes(6).toString('hex')}`
-  const integrantes = pp ? 1 : Math.min(30, Math.max(1, parseInt(b.integrantes, 10) || 1)) // Plug & Play: inscrição individual
+  const integrantes = pp ? 1 : Math.min(30, Math.max(1, parseInt(casa ? casa.integrantes : b.integrantes, 10) || 1)) // Plug & Play: inscrição individual
   const ficha = {
     id,
     tipo: pp ? 'pp' : 'agenda',
     ...(pp ? { quintas, quintas_aprovadas: [] } : {}),
+    ...(casa ? { retorno_de: casa.id } : {}),
     criado_em: new Date().toISOString(),
-    banda: texto(b.banda, 120),
+    banda: casa ? casa.banda : texto(b.banda, 120),
     integrantes,
-    instrumentos: (Array.isArray(b.instrumentos) ? b.instrumentos : []).map(i => texto(i, 60)).filter(Boolean).slice(0, 20),
+    instrumentos: casa ? casa.instrumentos : (Array.isArray(b.instrumentos) ? b.instrumentos : []).map(i => texto(i, 60)).filter(Boolean).slice(0, 20),
     // estilo escolhido no Johnny já nasce preenchido no perfil público
-    perfil: { estilos: [...new Set((Array.isArray(b.estilos) ? b.estilos : []).map(e => texto(e, 30)).filter(Boolean))].slice(0, 8) },
-    lugares: texto(b.lugares, 600),
-    tempo: texto(b.tempo, 40),
-    cache: pp ? '' : texto(b.cache, 40), // privado: só admin, material interno e engine
-    responsavel: texto(b.responsavel, 120),
+    perfil: {
+      estilos: casa ? perfilDe(casa).estilos : [...new Set((Array.isArray(b.estilos) ? b.estilos : []).map(e => texto(e, 30)).filter(Boolean))].slice(0, 8),
+      // @ informado pro Johnny já aparece no perfil público
+      instagram: casa ? perfilDe(casa).instagram : (texto(b.instagram, 60).replace(/^@/, '').match(/^[a-zA-Z0-9._]{1,30}$/) || [''])[0],
+    },
+    lugares: casa ? casa.lugares : texto(b.lugares, 600),
+    tempo: casa ? casa.tempo : texto(b.tempo, 40),
+    cache: pp ? '' : casa ? casa.cache || '' : texto(b.cache, 40), // privado: só admin, material interno e engine
+    responsavel: casa ? casa.responsavel : texto(b.responsavel, 120),
     whatsapp,
     data,
     data_texto: texto(b.dataTexto, 60),
@@ -242,7 +250,9 @@ async function enviarEngine(id) {
     const pp = f.tipo === 'pp'
     const tagNome = pp ? 'Plug & Play' : 'Banda'
     if (!tagsEngine[tagNome]) tagsEngine[tagNome] = (await engine('/api/tags', { name: tagNome, color: pp ? '#7B3FA0' : '#EE7F12' })).id
-    const conta = t => f.arquivos.filter(a => a.tipo === t).length
+    // pedido de banda da casa: vídeos, fotos e material ficam na ficha original
+    const orig = (f.retorno_de && lerFicha(f.retorno_de)) || f
+    const conta = t => orig.arquivos.filter(a => a.tipo === t && !a.apagado_em).length
     const lead = await engine('/api/leads', {
       name: f.responsavel,
       phone: `55${f.whatsapp}`,
@@ -265,7 +275,8 @@ async function enviarEngine(id) {
         consumo_banda: `R$ ${f.integrantes * 50}`,
         videos: conta('video'),
         fotos: conta('foto'),
-        material: `${SITE_URL}/produtor/material/${f.id}?k=${f.chave_ver}`,
+        material: `${SITE_URL}/produtor/material/${orig.id}?k=${orig.chave_ver}`,
+        ...(f.retorno_de ? { banda_da_casa: 'sim', perfil: `${SITE_URL}/bandas/${garantirSlug(orig)}` } : {}),
         termos_aceitos_em: f.aceite,
         inscricao_id: f.id,
       },
@@ -372,8 +383,10 @@ function publicoDe(f) {
 }
 function fichaPorSlug(slug) {
   const todas = todasFichas()
-  for (const f of todas) garantirSlug(f, todas)
-  return todas.find(f => f.slug === slug && f.tipo !== 'pp') || null
+  // pedido de nova data (retorno_de) não tem perfil próprio: a página é da ficha original
+  const comPerfil = todas.filter(f => f.tipo !== 'pp' && !f.retorno_de)
+  for (const f of comPerfil) garantirSlug(f, todas)
+  return comPerfil.find(f => f.slug === slug) || null
 }
 
 // ── Google Agenda do Porks (fonte oficial de quem toca em cada noite) ──
@@ -447,8 +460,36 @@ setTimeout(() => { sincronizarAgenda().catch(() => {}) }, 5e3)
 const chaveNome = n => normaliza(n).replace(/[^a-z0-9]+/g, '')
 function fichaDoNome(nome, todas) {
   const k = chaveNome(nome)
-  return k ? todas.find(f => f.tipo !== 'pp' && chaveNome(f.banda) === k) || null : null
+  return k ? todas.find(f => f.tipo !== 'pp' && !f.retorno_de && chaveNome(f.banda) === k) || null : null
 }
+
+// banda da casa = já teve inscrição aprovada. Devolve a ficha original (dona do perfil e do material).
+// Sem WhatsApp só diz se o nome é de uma banda aprovada; com WhatsApp exige que bata com alguma inscrição aprovada.
+function bandaDaCasa(nome, whatsapp, todas = todasFichas()) {
+  const k = chaveNome(nome)
+  if (!k) return null
+  const aprovadas = todas.filter(f => f.tipo !== 'pp' && f.status === 'aprovada' && chaveNome(f.banda) === k)
+  const f = whatsapp === undefined ? aprovadas[0] : aprovadas.find(x => x.whatsapp === whatsapp)
+  if (!f) return null
+  return (f.retorno_de && todas.find(x => x.id === f.retorno_de)) || f
+}
+const tentativasCasa = new Map()
+app.post('/api/bandas/reconhecer', (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip
+  const agora = Date.now()
+  const lista = (tentativasCasa.get(ip) || []).filter(t => agora - t < 3600e3)
+  if (lista.length >= 30) return res.status(429).json({ error: 'Muitas tentativas. Tenta de novo daqui a pouco.' })
+  lista.push(agora)
+  tentativasCasa.set(ip, lista)
+  const { nome, whatsapp } = req.body || {}
+  if (whatsapp === undefined) return res.json({ casa: !!bandaDaCasa(nome) })
+  const f = bandaDaCasa(nome, String(whatsapp).replace(/\D/g, ''))
+  if (!f) return res.json({ casa: false })
+  res.json({
+    casa: true, ref: f.id, banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos,
+    estilos: perfilDe(f).estilos, responsavel: f.responsavel,
+  })
+})
 function showsGoogleDa(f) {
   const k = chaveNome(f.banda)
   return agendaGoogle.eventos.filter(e => chaveNome(e.banda) === k).map(e => ({ data: e.data, titulo: e.tema }))
@@ -631,6 +672,7 @@ function resumo(f) {
     criado_em: f.criado_em, concluido: !!f.concluido_em,
     tipo: f.tipo === 'pp' ? 'pp' : 'agenda', quintas: f.quintas || [], quintas_aprovadas: f.quintas_aprovadas || [],
     status: f.status || 'nova',
+    retorno_de: f.retorno_de || null,
     videos: ativos.filter(a => a.tipo === 'video').length,
     fotos: ativos.filter(a => a.tipo === 'foto').length,
   }
@@ -672,19 +714,20 @@ app.get('/api/admin/bandas/:id', (req, res) => {
   const f = lerFicha(req.params.id)
   if (!f) return res.status(404).json({ error: 'não encontrada' })
   const k = encodeURIComponent(f.chave_ver)
+  const orig = (f.retorno_de && lerFicha(f.retorno_de)) || f // pedido de banda da casa mostra o perfil da original
   res.json({
     ...resumo(f),
     instrumentos: f.instrumentos, lugares: f.lugares, tempo: f.tempo, aceite: f.aceite, cache: f.cache || '',
     nota: f.nota || '', status_em: f.status_em || null,
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
-    slug: garantirSlug(f),
+    slug: garantirSlug(orig),
     perfil: perfilDe(f),
     vagas_quintas: f.tipo === 'pp' ? (() => {
       const conta = musicosAprovadosNaQuinta(todasFichas().filter(x => x.id !== f.id))
       return Object.fromEntries((f.quintas || []).map(q => [q, conta[q] || 0]))
     })() : null,
-    publico: (garantirSlug(f), publicoDe(f)),
+    publico: (garantirSlug(orig), publicoDe(orig)),
     arquivos: f.arquivos.map(a => ({
       tipo: a.tipo, original: a.original, bytes: a.bytes, em: a.em, apagado_em: a.apagado_em || null,
       nome: a.nome,

@@ -25,7 +25,9 @@ const PP_BONUS = 50
 const PP_QUINTAS = 12
 const TIPOS = ['Negociar uma data na agenda do Porks', 'Plug & Play das quintas']
 const ETAPAS_PP = ['tipo', 'banda', 'formacao', 'estilo', 'videos', 'contato', 'quintas', 'aceite', 'fim']
-const ETAPAS = ['tipo', 'banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'tempo', 'cache', 'contato', 'data', 'aceite', 'fim']
+const ETAPAS = ['tipo', 'banda', 'formacao', 'estilo', 'lugares', 'videos', 'fotos', 'instagram', 'tempo', 'cache', 'contato', 'data', 'aceite', 'fim']
+// banda já aprovada: confirma o WhatsApp e vai direto pra data
+const ETAPAS_CASA = ['tipo', 'banda', 'confirma', 'data', 'aceite', 'fim']
 const wait = ms => new Promise(r => setTimeout(r, ms))
 const tamanho = bytes => bytes < MB
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
@@ -237,7 +239,7 @@ function Ficha({ ficha }) {
   return (
     <div className="pd-ficha">
       <div className="pd-ficha-head">
-        <span>{pp ? 'PLUG & PLAY' : 'FICHA DA BANDA'}</span>
+        <span>{pp ? 'PLUG & PLAY' : ficha.casa ? 'BANDA DA CASA' : 'FICHA DA BANDA'}</span>
         <b>{ficha.banda}</b>
       </div>
       <dl>
@@ -256,9 +258,18 @@ function Ficha({ ficha }) {
 }
 
 function FichaAgenda({ ficha }) {
+  if (ficha.casa) {
+    return (
+      <>
+        <dt>Negociação</dt><dd>{ficha.responsavel} · {ficha.whatsapp}</dd>
+        {ficha.dataTexto && <><dt>Data</dt><dd>{ficha.dataTexto[0].toUpperCase() + ficha.dataTexto.slice(1)}, a partir das 20h</dd></>}
+      </>
+    )
+  }
   return (
     <>
         <dt>Já tocou em</dt><dd>{ficha.lugares}</dd>
+        {ficha.instagram && <><dt>Instagram</dt><dd>@{ficha.instagram}</dd></>}
         <dt>Formação</dt><dd>{ficha.tempo}</dd>
         {ficha.cache && <><dt>Cachê médio</dt><dd>{ficha.cache}</dd></>}
         <dt>Material</dt><dd>{ficha.videos.length} {ficha.videos.length === 1 ? 'vídeo' : 'vídeos'} · {ficha.fotos.length} {ficha.fotos.length === 1 ? 'foto' : 'fotos'}</dd>
@@ -269,6 +280,28 @@ function FichaAgenda({ ficha }) {
 }
 
 /* ─ Composers (a área de resposta muda a cada pergunta) ─ */
+
+// banda da casa: confirma o WhatsApp de quem negocia (ou segue como banda nova)
+function ConfirmaComposer({ onSend, onOutra }) {
+  const [tel, setTel] = useState('')
+  const digitos = tel.replace(/\D/g, '')
+  const ok = digitos.length === 11 && digitos[2] === '9'
+  return (
+    <form className="pd-compose-box" onSubmit={e => { e.preventDefault(); if (ok) onSend(tel) }}>
+      <label className="pd-field">
+        <span className="pd-lbl">WhatsApp de quem negocia pela banda</span>
+        <span className="pd-field-wrap">
+          <svg className="pd-field-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" /></svg>
+          <input className="pd-input pd-input-block" autoFocus value={tel} onChange={e => setTel(maskPhone(e.target.value))} placeholder="(61) 9 9999-9999" inputMode="tel" autoComplete="tel" />
+          {ok && <span className="pd-field-ok">✓</span>}
+        </span>
+      </label>
+      {digitos.length === 11 && !ok && <div className="pd-erro">Confere o número: celular começa com 9 depois do DDD.</div>}
+      <button className="pd-cta" disabled={!ok}>Confirmar</button>
+      <button type="button" className="pd-link" onClick={onOutra}>Somos outra banda com esse nome</button>
+    </form>
+  )
+}
 
 function TextoComposer({ placeholder, onSend, maxLength = 80 }) {
   const [v, setV] = useState('')
@@ -358,6 +391,28 @@ function LugaresComposer({ onSend }) {
       <button type="button" className="pd-cta" disabled={!lista.length} onClick={() => onSend(lista.join(', '))}>Enviar</button>
       <button type="button" className="pd-link" onClick={() => onSend('Ainda não tocamos em nenhuma casa')}>Ainda não tocamos em nenhuma casa</button>
     </div>
+  )
+}
+
+// @ da banda: aceita "@banda", "banda" ou o link do perfil
+const arrobaDe = v => v.trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '').replace(/^@/, '')
+function InstagramComposer({ onSend }) {
+  const [v, setV] = useState('')
+  const arroba = arrobaDe(v)
+  const ok = /^[a-zA-Z0-9._]{1,30}$/.test(arroba)
+  return (
+    <form className="pd-compose-box" onSubmit={e => { e.preventDefault(); if (ok) onSend(arroba) }}>
+      <label className="pd-field">
+        <span className="pd-lbl">Instagram da banda</span>
+        <span className="pd-field-wrap">
+          <svg className="pd-field-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".6" fill="currentColor" /></svg>
+          <input className="pd-input pd-input-block" autoFocus value={v} onChange={e => setV(e.target.value)} placeholder="@dabanda" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={120} />
+          {ok && <span className="pd-field-ok">✓</span>}
+        </span>
+      </label>
+      <button className="pd-cta" disabled={!ok}>Enviar</button>
+      <button type="button" className="pd-link" onClick={() => onSend('')}>A banda não tem Instagram</button>
+    </form>
   )
 }
 
@@ -772,12 +827,49 @@ export default function Produtor() {
         'Bora começar: qual é o nome da banda?',
       ], 'banda')
     },
-    banda: nome => {
+    banda: async nome => {
       F().banda = nome
       banda(nome)
+      if (!pp()) {
+        setStep(null)
+        const r = await api('/api/bandas/reconhecer', { nome }).catch(() => ({}))
+        if (r.casa) {
+          F().tentativasCasa = 0
+          johnny([`${nome}! Vocês já são de casa por aqui. 🔥`, 'Pra eu puxar a ficha de vocês sem perguntar tudo de novo, me confirma o WhatsApp de quem cuida da negociação.'], 'confirma')
+          return
+        }
+      }
       johnny(pp()
         ? [`Prazer, ${nome}! 🔥`, 'Qual instrumento você toca?']
         : [`${nome}! Gostei. 🔥`, 'Me conta a formação: quantos são e quem toca o quê?'], 'formacao')
+    },
+    confirma: async whatsapp => {
+      banda(whatsapp)
+      setStep(null)
+      const r = await api('/api/bandas/reconhecer', { nome: F().banda, whatsapp }).catch(() => ({}))
+      if (r.casa) {
+        Object.assign(F(), {
+          casa: r.ref, banda: r.banda, integrantes: r.integrantes, instrumentos: r.instrumentos,
+          estilos: r.estilos, responsavel: r.responsavel, whatsapp,
+        })
+        etapasRef.current = ETAPAS_CASA
+        johnny([
+          `Achei! Fala, ${r.responsavel.split(' ')[0]}! 🤘`,
+          { tipo: 'ficha', ficha: { ...F() } },
+          'Já tá tudo aqui, não precisa mandar nada de novo.',
+          'Qual data vocês querem agora? Aqui a música ao vivo rola sextas e sábados, a partir das 20h.',
+        ], 'data')
+        return
+      }
+      if (++F().tentativasCasa < 2) {
+        johnny(['Hmm, esse número não bate com a ficha da banda. 🤔', 'Confere e manda de novo, ou toca em "Somos outra banda com esse nome".'], 'confirma')
+        return
+      }
+      johnny(['Não achei esse número na ficha da banda. Pode ser outro responsável, sem problema.', 'Bora pelo caminho normal, é rapidinho. Me conta a formação: quantos são e quem toca o quê?'], 'formacao')
+    },
+    outraBanda: () => {
+      banda('Somos outra banda com esse nome')
+      johnny(['Ah, beleza! Então bora conhecer vocês.', 'Me conta a formação: quantos são e quem toca o quê?'], 'formacao')
     },
     formacao: ({ integrantes, instrumentos }) => {
       F().integrantes = integrantes
@@ -826,6 +918,14 @@ export default function Produtor() {
       banda(files.length ? { tipo: 'foto', files } : 'Não tenho foto agora')
       johnny([
         files.length ? 'Boa, já dá pra imaginar o flyer. 📸' : 'Beleza, se rolar a parceria a gente pede depois.',
+        'A banda tem Instagram? Vou colocar no perfil de vocês aqui no site do Porks, pra galera seguir. 📲',
+      ], 'instagram')
+    },
+    instagram: arroba => {
+      F().instagram = arroba
+      banda(arroba ? `@${arroba}` : 'A banda não tem Instagram')
+      johnny([
+        arroba ? 'Anotado, já vai pro perfil da banda. 🤘' : 'Tranquilo, dá pra colocar depois.',
         'Quanto tempo a banda tem de formação?',
       ], 'tempo')
     },
@@ -899,13 +999,13 @@ export default function Produtor() {
     ].filter(a => !f.enviados?.has(a.file))
     const total = arquivos.reduce((s, a) => s + a.file.size, 0) || 1
     setStep('enviando')
-    setEnvio({ pct: 0, texto: 'Enviando a ficha da banda…' })
+    setEnvio({ pct: 0, texto: f.casa ? 'Enviando o pedido de data…' : 'Enviando a ficha da banda…' })
     try {
       if (!f.inscricao) {
         f.inscricao = await api('/api/bandas', {
-          banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, estilos: f.estilos, lugares: f.lugares,
+          banda: f.banda, integrantes: f.integrantes, instrumentos: f.instrumentos, estilos: f.estilos, lugares: f.lugares, instagram: f.instagram,
           tempo: f.tempo, cache: f.cache, responsavel: f.responsavel, whatsapp: f.whatsapp,
-          data: f.data, dataTexto: f.dataTexto, aceite: f.aceite, tipo: f.tipo, quintas: f.quintas,
+          data: f.data, dataTexto: f.dataTexto, aceite: f.aceite, tipo: f.tipo, quintas: f.quintas, retorno: f.casa,
         })
         f.enviados = new Set()
       }
@@ -933,7 +1033,11 @@ export default function Produtor() {
       ], null, { manterResposta: true })
       return
     }
-    await johnny(pp() ? [
+    await johnny(F().casa ? [
+      'Fechado! Pedido de data enviado pra administração. Como vocês já são de casa, agora é só alinhar o cachê dessa data.',
+      'Em até 72h a gente retorna! 🤘',
+      { tipo: 'ficha', ficha: { ...F() } },
+    ] : pp() ? [
       'Fechado! A gente vai entrar em contato pra te incluir nas quintas que você marcou. Beleza pura?',
       'Em até 72h a gente retorna! 🤘',
       { tipo: 'ficha', ficha: { ...F() } },
@@ -1016,11 +1120,13 @@ export default function Produtor() {
         <footer className="pd-compose" key={step}>
           {step === 'tipo' && <TipoComposer onSend={handlers.tipo} />}
           {step === 'banda' && <TextoComposer placeholder={F().tipo === 'pp' ? 'Seu nome ou apelido' : 'Nome da banda'} onSend={handlers.banda} />}
+          {step === 'confirma' && <ConfirmaComposer onSend={handlers.confirma} onOutra={handlers.outraBanda} />}
           {step === 'formacao' && <FormacaoComposer onSend={handlers.formacao} solo={F().tipo === 'pp'} />}
           {step === 'estilo' && <EstiloComposer onSend={handlers.estilo} />}
           {step === 'lugares' && <LugaresComposer onSend={handlers.lugares} />}
           {step === 'videos' && <UploadComposer tipo="video" onSend={handlers.videos} onRejeita={r => rejeita('video', r)} />}
           {step === 'fotos' && <UploadComposer tipo="foto" onSend={handlers.fotos} onRejeita={r => rejeita('foto', r)} />}
+          {step === 'instagram' && <InstagramComposer onSend={handlers.instagram} />}
           {step === 'tempo' && <ChipsComposer opcoes={TEMPOS} onSend={handlers.tempo} />}
           {step === 'cache' && <CacheComposer onSend={handlers.cache} />}
           {step === 'contato' && <ContatoComposer onSend={handlers.contato} />}
