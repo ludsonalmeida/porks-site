@@ -1,5 +1,5 @@
 import express from 'express'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync, createWriteStream } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, rmSync, renameSync, createWriteStream } from 'fs'
 import { randomBytes, timingSafeEqual } from 'crypto'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -49,6 +49,7 @@ app.post('/api/breweries', (req, res) => {
 // Ficha + arquivos ficam no volume em /uploads/bandas/<id>/. Ao concluir, o lead
 // vai pro Engine Porks (tag "Banda"); se o engine falhar, o laço reenvia depois.
 const BANDAS_DIR = join(DATA_DIR, 'bandas')
+const BANDAS_LIXEIRA = join(DATA_DIR, 'bandas-excluidas') // fora do site; restaurar = mover a pasta de volta
 const ENGINE_URL = process.env.ENGINE_URL || 'https://broadcast.sobradinhoporks.com.br'
 const ENGINE_TOKEN = process.env.ENGINE_TOKEN || ''
 
@@ -763,6 +764,29 @@ app.get('/api/admin/bandas/:id', (req, res) => {
   })
 })
 
+// Excluir inscrição: some do admin, da agenda e da página pública. A pasta não é apagada:
+// vai pra lixeira no volume. Pedido de nova data depende da ficha original, por isso trava.
+app.delete('/api/admin/bandas/:id', (req, res) => {
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
+  const f = lerFicha(req.params.id)
+  if (!f) return res.status(404).json({ error: 'não encontrada' })
+  const ligados = todasFichas().filter(x => x.retorno_de === f.id)
+  if (ligados.length) {
+    const n = ligados.length
+    return res.status(409).json({ error: `Essa banda tem ${n} ${n === 1 ? 'pedido' : 'pedidos'} de nova data ligado${n === 1 ? '' : 's'}. Exclua ${n === 1 ? 'esse pedido' : 'esses pedidos'} antes.` })
+  }
+  try {
+    mkdirSync(BANDAS_LIXEIRA, { recursive: true })
+    salvarFicha({ ...f, excluida_em: new Date().toISOString() })
+    renameSync(join(BANDAS_DIR, f.id), join(BANDAS_LIXEIRA, f.id))
+  } catch (e) {
+    console.error('[bandas] excluir', f.id, e.message)
+    salvarFicha(f)
+    return res.status(500).json({ error: 'Não consegui excluir agora. Tente de novo.' })
+  }
+  console.log('[bandas] excluida', f.id, f.banda)
+  res.json({ ok: true })
+})
 app.patch('/api/admin/bandas/:id', (req, res) => {
   if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
   const f = lerFicha(req.params.id)

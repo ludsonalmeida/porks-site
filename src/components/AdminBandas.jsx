@@ -28,6 +28,7 @@ const ICONES = {
   baixar: <><path d="M12 4v11M7 10l5 5 5-5" /><path d="M5 20h14" /></>,
   externo: <><path d="M14 4h6v6M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>,
   check: <path d="m5 12 5 5 9-10" />,
+  lixeira: <><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /><path d="M10 11v5M14 11v5" /></>,
   alerta: <><path d="M12 3 2 20h20z" /><path d="M12 10v4M12 17h.01" /></>,
   link: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
   instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /></>,
@@ -348,6 +349,8 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
   const [salvo, setSalvo] = useState('')
   const [enviando, setEnviando] = useState(null) // { feito, total }
   const [copiado, setCopiado] = useState(false)
+  const [excluir, setExcluir] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
   const fecharRef = useRef(null)
 
   const carregar = useCallback(() => api(`/api/admin/bandas/${id}`)
@@ -423,6 +426,17 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
     onMudou()
   }
 
+  async function confirmarExclusao() {
+    setExcluindo(true); setErro('')
+    try {
+      await api(`/api/admin/bandas/${id}`, { method: 'DELETE' })
+      onMudou()
+      onFechar()
+    } catch (e) {
+      setErro(e.message); setExcluir(false); setExcluindo(false)
+    }
+  }
+
   async function copiarLink() {
     const url = `${window.location.origin}/bandas/${b.slug}`
     try { await navigator.clipboard.writeText(url) } catch { window.prompt('Copie o link da banda:', url); return }
@@ -443,16 +457,31 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
             <h3 id="ab-ficha-titulo">{b?.banda || 'Ficha da banda'}</h3>
             {b && <span>Inscrita em {dataHora(b.criado_em)}</span>}
           </div>
-          {b && b.tipo !== 'pp' && (
+          {b && (
             <div className="ab-cab-acoes">
-              <button type="button" className="ab-cab-btn" onClick={copiarLink}><Ico n={copiado ? 'check' : 'link'} className="ab-ico-sm" />{copiado ? 'Copiado' : 'Copiar link'}</button>
-              <a className="ab-cab-btn" href={`/bandas/${b.slug}`} target="_blank" rel="noopener noreferrer"><Ico n="externo" className="ab-ico-sm" /><span>Página pública</span></a>
+              {b.tipo !== 'pp' && <>
+                <button type="button" className="ab-cab-btn" onClick={copiarLink}><Ico n={copiado ? 'check' : 'link'} className="ab-ico-sm" />{copiado ? 'Copiado' : 'Copiar link'}</button>
+                <a className="ab-cab-btn" href={`/bandas/${b.slug}`} target="_blank" rel="noopener noreferrer"><Ico n="externo" className="ab-ico-sm" /><span>Página pública</span></a>
+              </>}
+              <button type="button" className="ab-cab-btn" onClick={() => setExcluir(true)}><Ico n="lixeira" className="ab-ico-sm" />Excluir</button>
             </div>
           )}
         </header>
 
         <div className="ab-painel-corpo">
           {erro && <div className="ab-aviso" role="alert"><Ico n="alerta" className="ab-ico-sm" />{erro}</div>}
+          {b && excluir && (
+            <div className="ab-excluir" role="alertdialog" aria-labelledby="ab-excluir-tit">
+              <div>
+                <b id="ab-excluir-tit">Excluir a inscrição de {b.banda}?</b>
+                <span>{b.tipo === 'pp' || b.retorno_de ? 'Ela sai da lista de inscrições.' : 'Ela sai da lista, e a página pública da banda sai do ar.'}{b.status === 'aprovada' && ' Essa inscrição está aprovada.'}</span>
+              </div>
+              <div className="ab-excluir-acoes">
+                <button type="button" className="ab-btn ab-btn-claro" disabled={excluindo} onClick={() => setExcluir(false)}>Cancelar</button>
+                <button type="button" className="ab-btn ab-btn-perigo" disabled={excluindo} onClick={confirmarExclusao}>{excluindo ? 'Excluindo…' : 'Sim, excluir'}</button>
+              </div>
+            </div>
+          )}
           {!b && !erro && <div className="ab-painel-esq"><span className="ab-esq-b" /><span className="ab-esq-b" /><span className="ab-esq-b" /></div>}
 
           {b && (
