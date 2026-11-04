@@ -421,6 +421,12 @@ const PERFIL_VAZIO = { sobre: '', cidade: '', estilos: [], instagram: '', youtub
 function perfilDe(f) {
   return { ...PERFIL_VAZIO, ...(f.perfil || {}) }
 }
+// "Shows no Porks" do perfil é histórico: show futuro só vai pro site pela data negociada + aprovação
+const showsPassados = f => {
+  const hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+  return perfilDe(f).shows.filter(s => s.data <= hoje)
+}
+const tituloDoShow = (f, data) => perfilDe(f).shows.find(s => s.data === data)?.titulo || ''
 function limparPerfil(p, f) {
   const nomes = new Set(f.arquivos.filter(a => a.tipo === 'foto' && !a.apagado_em).map(a => a.nome))
   const rede = v => texto(v, 200).replace(/^@/, '')
@@ -457,9 +463,10 @@ function publicoDe(f) {
     sobre: perfil.sobre, cidade: perfil.cidade, estilos: perfil.estilos,
     instagram: perfil.instagram, youtube: perfil.youtube, spotify: perfil.spotify,
     shows: (() => {
-      const vistos = new Set(perfil.shows.map(x => x.data))
+      const passados = showsPassados(f)
+      const vistos = new Set(passados.map(x => x.data))
       const novos = [...showsGoogleDa(f), ...showsAprovadosDa(f)].filter(x => !vistos.has(x.data) && vistos.add(x.data))
-      return [...perfil.shows, ...novos].sort((a, b) => b.data.localeCompare(a.data))
+      return [...passados, ...novos].sort((a, b) => b.data.localeCompare(a.data))
     })(),
     capa: capa ? midiaUrl(f, capa) : null,
     avatar: avatar ? midiaUrl(f, avatar) : null,
@@ -591,7 +598,7 @@ function showsGoogleDa(f) {
 function showsAprovadosDa(f) {
   return todasFichas()
     .filter(x => x.tipo !== 'pp' && x.status === 'aprovada' && x.data && (x.id === f.id || x.retorno_de === f.id))
-    .map(x => ({ data: x.data, titulo: '' }))
+    .map(x => ({ data: x.data, titulo: tituloDoShow(f, x.data) }))
 }
 
 // agenda: qual banda tocou (ou vai tocar) em cada noite: Google Agenda + "Shows no Porks" do perfil
@@ -621,7 +628,7 @@ function agendaEntre(de, ate) {
     visto.add(`${e.data}|${chaveNome(e.banda)}`)
   }
   for (const f of todas) {
-    for (const s of perfilDe(f).shows) {
+    for (const s of showsPassados(f)) {
       if (s.data < de || s.data > ate || visto.has(`${s.data}|${chaveNome(f.banda)}`)) continue
       visto.add(`${s.data}|${chaveNome(f.banda)}`)
       out.push(comFicha(f, s.data, s.titulo, null, 'perfil'))
@@ -633,7 +640,7 @@ function agendaEntre(de, ate) {
     const chave = `${f.data}|${chaveNome(dono.banda)}`
     if (visto.has(chave)) continue
     visto.add(chave)
-    out.push(comFicha(dono, f.data, '', '20:00', 'johnny'))
+    out.push(comFicha(dono, f.data, tituloDoShow(dono, f.data), '20:00', 'johnny'))
   }
   out.sort((a, b) => a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || '') || a.banda.localeCompare(b.banda))
   return out

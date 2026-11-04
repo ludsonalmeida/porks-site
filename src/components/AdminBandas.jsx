@@ -576,8 +576,8 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
 
                   <fieldset className="ab-campo">
                     <legend>Shows no Porks</legend>
-                    <p className="ab-dica">Pra mudar a data negociada, use a aba Negociação. Aqui ficam os outros shows da banda.</p>
-                    {rasc.shows.length === 0 && <p className="ab-dica">Nenhum show ainda. Quando a banda tocar (ou tiver data marcada), adiciona aqui.</p>}
+                    <p className="ab-dica">Histórico dos shows que já aconteceram. Show futuro vai em Data do show, na aba Negociação, e aparece no site quando a banda for aprovada.</p>
+                    {rasc.shows.length === 0 && <p className="ab-dica">Nenhum show no histórico ainda.</p>}
                     <ul className="ab-shows">
                       {rasc.shows.map((s, i) => (
                         <li key={i}>
@@ -588,7 +588,7 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
                         </li>
                       ))}
                     </ul>
-                    <button type="button" className="ab-btn ab-btn-claro" onClick={() => muda('shows', [...rasc.shows, { data: b.data, titulo: '' }])}>+ Adicionar show</button>
+                    <button type="button" className="ab-btn ab-btn-claro" onClick={() => muda('shows', [...rasc.shows, { data: '', titulo: '' }])}>+ Adicionar show</button>
                   </fieldset>
 
                   <div className="ab-salvar-barra">
