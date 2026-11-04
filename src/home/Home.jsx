@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { waLink } from '../utils/wa.js'
 import { getBreweries, fetchBreweries } from '../utils/breweriesCards.js'
 import PixelLoader from '../components/PixelLoader'
 import './home.css'
@@ -10,12 +9,15 @@ const MAPS = 'https://maps.google.com/?cid=2138163599891563158'
 const INSTA = 'https://www.instagram.com/porks_sobradinho/'
 const FONE = '(61) 9 3500-3917'
 
-// clique no WhatsApp = conversão do Google Ads (antes só o botão flutuante disparava)
+const RESERVAS_URL = 'https://reservas.sobradinhoporks.com.br/reserva'
+const reservaLink = secao => `${RESERVAS_URL}?utm_source=site&utm_medium=home&utm_campaign=reserva&utm_content=${secao}`
+
+// clique em reservar = conversão do Google Ads
 function conversao() {
   if (typeof window.gtag === 'function') window.gtag('event', 'conversion', { send_to: 'AW-17637617336/UOtdCOa115AcELjdotpB' })
 }
-function Wa({ secao, className, children }) {
-  return <a href={waLink(secao)} className={className} target="_blank" rel="noopener noreferrer" onClick={conversao}>{children}</a>
+function Reservar({ secao, className, children }) {
+  return <a href={reservaLink(secao)} className={className} onClick={conversao}>{children}</a>
 }
 
 const ICONES = {
@@ -102,7 +104,7 @@ function Topo() {
         <nav className="hm-nav" aria-label="Principal">
           {LINKS.map(l => <a key={l.href} href={l.href}>{l.label}</a>)}
         </nav>
-        <Wa secao="nav" className="hm-btn hm-btn-sm hm-btn-amb hm-topo-cta"><Ico n="wa" />Reservar</Wa>
+        <Reservar secao="nav" className="hm-btn hm-btn-sm hm-btn-amb hm-topo-cta"><Ico n="cal" />Reservar</Reservar>
         <button type="button" className="hm-menu-btn" aria-label={aberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={aberto} onClick={() => setAberto(a => !a)}>
           <Ico n={aberto ? 'fechar' : 'menu'} />
         </button>
@@ -125,9 +127,9 @@ function Hero({ proximo }) {
       <div className="hm-hero-in hm-wrap">
         <p className="hm-kicker">Porks Sobradinho · Porco & Chope</p>
         <h1>Rock ao vivo, chope gelado e <em>zero couvert.</em></h1>
-        <p className="hm-hero-sub">Banda toda sexta e sábado, petiscos de porco e mais de 15 chopes artesanais. Reserve sua mesa pelo WhatsApp em 2 minutos.</p>
+        <p className="hm-hero-sub">Banda toda sexta e sábado, petiscos de porco e mais de 15 chopes artesanais. Reserve sua mesa online em 2 minutos.</p>
         <div className="hm-hero-btns">
-          <Wa secao="hero" className="hm-btn hm-btn-amb hm-btn-lg"><Ico n="wa" />Reservar mesa</Wa>
+          <Reservar secao="hero" className="hm-btn hm-btn-amb hm-btn-lg"><Ico n="cal" />Reservar mesa</Reservar>
           <a href="#shows" className="hm-btn hm-btn-ghost hm-btn-lg"><Ico n="cal" />Ver shows</a>
         </div>
         <ul className="hm-selos" aria-label="Destaques">
@@ -190,7 +192,7 @@ function Shows({ shows }) {
           </aside>
         </div>
         <div className="hm-centro">
-          <Wa secao="agenda" className="hm-btn hm-btn-amb"><Ico n="wa" />Reservar mesa pro show</Wa>
+          <Reservar secao="agenda" className="hm-btn hm-btn-amb"><Ico n="cal" />Reservar mesa pro show</Reservar>
         </div>
       </div>
     </section>
@@ -282,25 +284,25 @@ function Reservas() {
         <div className="hm-cab">
           <p className="hm-kicker">Reservas</p>
           <h2 id="hm-res-t">Qual é o motivo da noite?</h2>
-          <p className="hm-cab-sub">Escolha e chame a gente no WhatsApp. A confirmação chega no próprio chat.</p>
+          <p className="hm-cab-sub">Escolha o motivo e reserve online. A confirmação chega no seu WhatsApp.</p>
         </div>
         <ul className="hm-motivos">
           {MOTIVOS.map(m => (
             <li key={m.secao}>
-              <Wa secao={m.secao} className="hm-motivo">
+              <Reservar secao={m.secao} className="hm-motivo">
                 <img src={m.img} alt="" loading="lazy" />
                 <span className="hm-motivo-txt">
                   <b>{m.titulo}</b>
                   <span>{m.txt}</span>
                   <em>Reservar<Ico n="seta" /></em>
                 </span>
-              </Wa>
+              </Reservar>
             </li>
           ))}
         </ul>
         <ol className="hm-passos" aria-label="Como reservar">
-          <li><span>1</span>Chama no WhatsApp</li>
-          <li><span>2</span>Diz o dia e quantas pessoas</li>
+          <li><span>1</span>Escolhe o dia e o horário</li>
+          <li><span>2</span>Diz quantas pessoas vêm</li>
           <li><span>3</span>Recebe a confirmação</li>
         </ol>
       </div>
@@ -345,7 +347,7 @@ function Avaliacoes() {
 /* ── visite + dúvidas ── */
 const DUVIDAS = [
   { q: 'Tem couvert ou taxa de entrada?', a: 'Não. No Porks não tem couvert nem entrada, nem em dia de show.' },
-  { q: 'Como funciona a reserva?', a: 'Chama no WhatsApp com o dia, o horário e quantas pessoas vêm. A gente confirma a disponibilidade e manda a confirmação no chat.' },
+  { q: 'Como funciona a reserva?', a: 'Escolha o dia, o horário e quantas pessoas vêm no nosso sistema de reservas. A confirmação chega no seu WhatsApp.' },
   { q: 'Dá pra reservar pra grupo grande ou evento?', a: 'Dá sim. De uma mesa pra 4 até turmas grandes e eventos de empresa. Conta pra gente quantas pessoas e o motivo.' },
   { q: 'Tem delivery?', a: 'Tem, pelo iFood. Procura por Porks Sobradinho ou toca no botão Delivery aqui no site.' },
 ]
@@ -385,7 +387,7 @@ function Rodape() {
       <div className="hm-wrap">
         <div className="hm-fim">
           <h2>Bora garantir sua mesa?</h2>
-          <Wa secao="footer" className="hm-btn hm-btn-amb hm-btn-lg"><Ico n="wa" />Reservar pelo WhatsApp</Wa>
+          <Reservar secao="footer" className="hm-btn hm-btn-amb hm-btn-lg"><Ico n="cal" />Reservar mesa</Reservar>
         </div>
         <div className="hm-rod-linha">
           <img src="/images/logo-porks.png" alt="Porks Sobradinho" width="96" height="45" loading="lazy" />
@@ -414,7 +416,7 @@ function BarraCelular() {
   }, [])
   return (
     <div className={`hm-barra${mostra ? ' on' : ''}`}>
-      <Wa secao="sticky" className="hm-btn hm-btn-amb"><Ico n="wa" />Reservar mesa</Wa>
+      <Reservar secao="sticky" className="hm-btn hm-btn-amb"><Ico n="cal" />Reservar mesa</Reservar>
       <a href="#shows" className="hm-btn hm-btn-ghost"><Ico n="cal" />Shows</a>
     </div>
   )
