@@ -756,6 +756,34 @@ function subirArquivo({ id, chave, tipo, file, onProgresso }) {
   })
 }
 
+// celular perde sinal no meio do vídeo: tenta o mesmo arquivo de novo antes de desistir dele
+async function subirComRetentativas({ onNovaTentativa, ...args }) {
+  const inicio = Date.now()
+  let enviados = 0
+  let tentativas = 0
+  let erro
+  while (tentativas < 3) {
+    tentativas++
+    try {
+      return await subirArquivo({ ...args, onProgresso: n => { enviados = Math.max(enviados, n); args.onProgresso(n) } })
+    } catch (e) {
+      erro = e
+      if (e.message !== 'rede' && Number(e.message) < 500) break // recusa do servidor: repetir não adianta
+      if (tentativas < 3) {
+        onNovaTentativa()
+        await new Promise(ok => setTimeout(ok, tentativas * 3000))
+      }
+    }
+  }
+  const falha = new Error('arquivo')
+  falha.detalhe = {
+    nome: args.file.name, tipo: args.tipo, bytes: args.file.size, enviados, tentativas,
+    segundos: Math.round((Date.now() - inicio) / 1000), online: navigator.onLine,
+    visivel: document.visibilityState, erro: erro.message,
+  }
+  throw falha
+}
+
 /* ─ Página ─ */
 
 export default function Produtor() {
@@ -1010,28 +1038,41 @@ export default function Produtor() {
         f.enviados = new Set()
       }
       const { id, chave } = f.inscricao
+      const falhas = []
       let feito = 0
       for (const [i, a] of arquivos.entries()) {
         const rotulo = a.tipo === 'video' ? 'vídeo' : 'foto'
         setEnvio({ pct: feito / total, texto: `Enviando ${rotulo} ${i + 1} de ${arquivos.length}…` })
         try {
-          await subirArquivo({ id, chave, tipo: a.tipo, file: a.file, onProgresso: n => setEnvio(e => ({ ...e, pct: (feito + n) / total })) })
+          await subirComRetentativas({
+            id, chave, tipo: a.tipo, file: a.file,
+            onProgresso: n => setEnvio(e => ({ ...e, pct: (feito + n) / total })),
+            onNovaTentativa: () => setEnvio(e => ({ ...e, texto: `Reenviando ${rotulo} ${i + 1} de ${arquivos.length}…` })),
+          })
           f.enviados.add(a.file)
         } catch (e) {
-          // erro de rede derruba o envio todo (dá pra tentar de novo); recusa do servidor só pula o arquivo
-          if (e.message === 'rede') throw e
+          // um arquivo que não sobe não derruba a inscrição: segue com os outros
+          falhas.push(e.detalhe)
         }
         feito += a.file.size
       }
       setEnvio({ pct: 1, texto: 'Fechando a inscrição…' })
-      await api(`/api/bandas/${id}/concluir`, {}, { 'X-Upload-Key': chave }).catch(() => {})
+      await api(`/api/bandas/${id}/concluir`, { falhas }, { 'X-Upload-Key': chave }).catch(() => {})
+      f.faltaram = falhas.map(x => x.nome)
+      if (falhas.length) {
+        f.videos = (f.videos || []).filter(v => f.enviados.has(v))
+        f.fotos = (f.fotos || []).filter(v => f.enviados.has(v))
+      }
     } catch {
       setEnvio({ erro: true })
       await johnny([
-        'Ih, a conexão caiu no meio do envio. 😕',
-        'Nada se perdeu: confere a internet e toca no botão aqui embaixo que eu continuo de onde parou.',
+        'Ih, não consegui mandar sua ficha agora. 😕',
+        'Suas respostas estão guardadas aqui: confere a internet e toca no botão embaixo que eu tento de novo.',
       ], null, { manterResposta: true })
       return
+    }
+    if (F().faltaram.length) {
+      await johnny([`Sua inscrição chegou! Só ${F().faltaram.length === 1 ? 'este arquivo ficou' : 'estes arquivos ficaram'} pra trás: ${F().faltaram.join(', ')}. Se a gente precisar, pede pelo WhatsApp.`])
     }
     await johnny(F().casa ? [
       'Fechado! Pedido de data enviado pra administração. Como vocês já são de casa, agora é só alinhar o cachê dessa data.',

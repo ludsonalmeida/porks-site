@@ -713,6 +713,7 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
                       {b.engine_lead_id && <><dt>Engine Porks</dt><dd>Lead #{b.engine_lead_id} (tag Banda)</dd></>}
                     </dl>
                     {!b.concluido && <p className="ab-aviso"><Ico n="alerta" className="ab-ico-sm" />A banda saiu antes de terminar o envio. Pode faltar vídeo ou foto.</p>}
+                    {b.envio_falhas?.length > 0 && <p className="ab-aviso"><Ico n="alerta" className="ab-ico-sm" />Não chegou: {b.envio_falhas.map(x => x.nome).join(', ')}. Se precisar, peça pelo WhatsApp.</p>}
                   </section>
                 </div>
               )}

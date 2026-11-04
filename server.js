@@ -170,14 +170,17 @@ app.post('/api/bandas', (req, res) => {
   if (b.retorno && casa?.id !== b.retorno) erros.push('retorno')
   if (erros.length) return res.status(400).json({ error: 'dados inválidos', campos: erros })
 
-  const id = `${data}-${randomBytes(6).toString('hex')}`
+  // recarregou a página ou tentou de novo: continua a inscrição aberta, sem ficha e lead repetidos
+  const aberta = todasFichas().find(x => x.whatsapp === whatsapp && x.data === data && (x.tipo === 'pp') === pp
+    && !x.concluido_em && Date.now() - Date.parse(x.criado_em) < 24 * 3600e3)
+  const id = aberta?.id || `${data}-${randomBytes(6).toString('hex')}`
   const integrantes = pp ? 1 : Math.min(30, Math.max(1, parseInt(casa ? casa.integrantes : b.integrantes, 10) || 1)) // Plug & Play: inscrição individual
   const ficha = {
     id,
     tipo: pp ? 'pp' : 'agenda',
     ...(pp ? { quintas, quintas_aprovadas: [] } : {}),
     ...(casa ? { retorno_de: casa.id } : {}),
-    criado_em: new Date().toISOString(),
+    criado_em: aberta?.criado_em || new Date().toISOString(),
     banda: casa ? casa.banda : texto(b.banda, 120),
     integrantes,
     instrumentos: casa ? casa.instrumentos : (Array.isArray(b.instrumentos) ? b.instrumentos : []).map(i => texto(i, 60)).filter(Boolean).slice(0, 20),
@@ -195,15 +198,15 @@ app.post('/api/bandas', (req, res) => {
     data,
     data_texto: texto(b.dataTexto, 60),
     aceite: texto(b.aceite, 40),
-    chave_upload: randomBytes(18).toString('base64url'),
-    chave_ver: randomBytes(18).toString('base64url'),
-    arquivos: [],
+    chave_upload: aberta?.chave_upload || randomBytes(18).toString('base64url'),
+    chave_ver: aberta?.chave_ver || randomBytes(18).toString('base64url'),
+    arquivos: aberta?.arquivos || [],
     concluido_em: null,
-    engine: null,
+    engine: aberta?.engine || null,
   }
   mkdirSync(join(BANDAS_DIR, id), { recursive: true })
   salvarFicha(ficha)
-  console.log(`[bandas] nova inscrição ${id} ${ficha.banda}`)
+  console.log(`[bandas] ${aberta ? 'retomou' : 'nova'} inscrição ${id} ${ficha.banda}`)
   res.json({ id, chave: ficha.chave_upload })
 })
 
@@ -230,16 +233,27 @@ function receberArquivo(req, res, f, maxQtd) {
   if (!lim) return res.status(400).json({ error: 'tipo inválido' })
   const nomeOriginal = texto(req.query.nome, 120) || 'arquivo'
   const ext = (nomeOriginal.split('.').pop() || '').toLowerCase()
-  if (!lim.ext.includes(ext)) return res.status(415).json({ error: `formato .${ext} não aceito` })
   const tamanho = parseInt(req.headers['content-length'], 10)
-  if (!tamanho) return res.status(411).json({ error: 'tamanho ausente' })
+  // lê o corpo até o fim: resposta com upload pela metade pode virar erro de rede no navegador
+  const recusar = (status, error) => {
+    console.warn(`[bandas] arquivo recusado ${f.id} ${tipo} "${nomeOriginal}" ${tamanho || 0} bytes: ${error}`)
+    req.resume()
+    res.status(status).json({ error })
+  }
+  if (!lim.ext.includes(ext)) return recusar(415, `formato .${ext} não aceito`)
+  if (!tamanho) return recusar(411, 'tamanho ausente')
   if (tamanho > lim.bytes) {
-    return res.status(413).json({ error: tipo === 'video' ? 'O vídeo é muito grande: tem mais de 100 MB, tem que ser menos.' : 'A foto passou de 15 MB.' })
+    return recusar(413, tipo === 'video' ? 'O vídeo é muito grande: tem mais de 100 MB, tem que ser menos.' : 'A foto passou de 15 MB.')
+  }
+  // tentativa anterior já trouxe esse arquivo
+  if (f.arquivos.some(a => a.original === nomeOriginal && a.bytes === tamanho && !a.apagado_em)) {
+    req.resume()
+    return res.json({ ok: true, repetido: true })
   }
   const r = reservados.get(f.id) || { video: 0, foto: 0 }
   const max = maxQtd || lim.max
   if (f.arquivos.filter(a => a.tipo === tipo).length + r[tipo] >= max) {
-    return res.status(409).json({ error: `limite de ${max} ${tipo === 'video' ? 'vídeos' : 'fotos'}` })
+    return recusar(409, `limite de ${max} ${tipo === 'video' ? 'vídeos' : 'fotos'}`)
   }
   r[tipo]++
   reservados.set(f.id, r)
@@ -250,9 +264,11 @@ function receberArquivo(req, res, f, maxQtd) {
   const out = createWriteStream(destino)
   let bytes = 0
   let falhou = false
+  const inicio = Date.now()
   const abortar = (status, msg) => {
     if (falhou) return
     falhou = true
+    console.warn(`[bandas] envio falhou ${f.id} ${tipo} "${nomeOriginal}": ${msg}, ${bytes}/${tamanho} bytes em ${Math.round((Date.now() - inicio) / 1000)}s`)
     liberar()
     out.destroy()
     rmSync(destino, { force: true })
@@ -264,7 +280,7 @@ function receberArquivo(req, res, f, maxQtd) {
     bytes += chunk.length
     if (bytes > lim.bytes) abortar(413, 'arquivo maior que o limite')
   })
-  req.on('aborted', () => abortar(400, 'envio interrompido'))
+  req.on('close', () => { if (!req.complete) abortar(400, 'envio interrompido') })
   out.on('error', () => abortar(500, 'falha ao gravar'))
   out.on('finish', () => {
     if (falhou) return
@@ -282,6 +298,16 @@ app.post('/api/bandas/:id/concluir', async (req, res) => {
   if (!f || !chaveIgual(req.headers['x-upload-key'], f.chave_upload)) return res.status(404).json({ error: 'inscrição não encontrada' })
   if (!f.concluido_em) {
     f.concluido_em = new Date().toISOString()
+    // arquivos que a banda escolheu e não chegaram: a equipe vê na ficha, e o log guarda o motivo
+    const falhas = (Array.isArray(req.body?.falhas) ? req.body.falhas : []).slice(0, 15).map(x => ({
+      nome: texto(x?.nome, 120), tipo: texto(x?.tipo, 10), bytes: Number(x?.bytes) || 0, enviados: Number(x?.enviados) || 0,
+      tentativas: Number(x?.tentativas) || 0, segundos: Number(x?.segundos) || 0,
+      online: !!x?.online, visivel: texto(x?.visivel, 12), erro: texto(x?.erro, 40),
+    }))
+    if (falhas.length) {
+      f.envio_falhas = falhas
+      console.warn(`[bandas] ${f.id} concluída com ${falhas.length} arquivo(s) sem subir:`, JSON.stringify(falhas))
+    }
     salvarFicha(f)
     console.log(`[bandas] concluída ${f.id} (${f.arquivos.length} arquivos)`)
     enviarEngine(f.id).catch(() => {})
@@ -804,7 +830,7 @@ app.get('/api/admin/bandas/:id', (req, res) => {
   res.json({
     ...resumo(f),
     instrumentos: f.instrumentos, lugares: f.lugares, tempo: f.tempo, aceite: f.aceite, cache: f.cache || '',
-    nota: f.nota || '', status_em: f.status_em || null,
+    nota: f.nota || '', status_em: f.status_em || null, envio_falhas: f.envio_falhas || [],
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
     slug: garantirSlug(orig),
