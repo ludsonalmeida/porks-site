@@ -830,7 +830,7 @@ app.get('/api/admin/bandas/:id', (req, res) => {
   res.json({
     ...resumo(f),
     instrumentos: f.instrumentos, lugares: f.lugares, tempo: f.tempo, aceite: f.aceite, cache: f.cache || '',
-    nota: f.nota || '', status_em: f.status_em || null, envio_falhas: f.envio_falhas || [],
+    nota: f.nota || '', status_em: f.status_em || null, envio_falhas: f.envio_falhas || [], data_pedida: f.data_pedida || null,
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
     slug: garantirSlug(orig),
@@ -875,7 +875,7 @@ app.patch('/api/admin/bandas/:id', (req, res) => {
   if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
   const f = lerFicha(req.params.id)
   if (!f) return res.status(404).json({ error: 'não encontrada' })
-  const { status, nota, perfil, banda, quintas_aprovadas } = req.body || {}
+  const { status, nota, perfil, banda, quintas_aprovadas, data } = req.body || {}
   if (quintas_aprovadas !== undefined && f.tipo === 'pp') {
     const pedidas = new Set(f.quintas || [])
     const novas = [...new Set((Array.isArray(quintas_aprovadas) ? quintas_aprovadas : []).map(String))].filter(q => pedidas.has(q)).sort()
@@ -886,6 +886,15 @@ app.patch('/api/admin/bandas/:id', (req, res) => {
     f.quintas_aprovadas = novas
   }
   if (perfil !== undefined) f.perfil = limparPerfil(perfil || {}, f)
+  // a equipe remarca a data: agenda, perfil público e calendário do Johnny leem daqui
+  if (data !== undefined && f.tipo !== 'pp' && data !== f.data) {
+    const nova = new Date(`${data}T12:00:00-03:00`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(nova)) return res.status(400).json({ error: 'data inválida' })
+    f.data_pedida = f.data_pedida || f.data
+    f.perfil = { ...perfilDe(f), shows: perfilDe(f).shows.filter(s => s.data !== data).map(s => (s.data === f.data ? { ...s, data } : s)) }
+    f.data = data
+    f.data_texto = nova.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' }).replace('-feira', '')
+  }
   if (banda !== undefined && texto(banda, 120)) f.banda = texto(banda, 120)
   if (status !== undefined) {
     if (!STATUS_BANDA.includes(status)) return res.status(400).json({ error: 'status inválido' })
@@ -893,7 +902,7 @@ app.patch('/api/admin/bandas/:id', (req, res) => {
   }
   if (nota !== undefined) f.nota = String(nota).slice(0, 2000)
   salvarFicha(f)
-  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '', perfil: perfilDe(f), banda: f.banda, publico: publicoDe(f), quintas_aprovadas: f.quintas_aprovadas || [] })
+  res.json({ ok: true, status: f.status || 'nova', status_em: f.status_em || null, nota: f.nota || '', data: f.data, data_pedida: f.data_pedida || null, perfil: perfilDe(f), banda: f.banda, publico: publicoDe(f), quintas_aprovadas: f.quintas_aprovadas || [] })
 })
 
 // página do material pra equipe (link vai no lead do engine)

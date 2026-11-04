@@ -355,6 +355,7 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
   const [aba, setAba] = useState(null) // definida quando a ficha chega (Plug & Play abre na negociação)
   const [abaPrevia, setAbaPrevia] = useState('geral')
   const [nota, setNota] = useState('')
+  const [dataShow, setDataShow] = useState('')
   const [rasc, setRasc] = useState(null)
   const [salvando, setSalvando] = useState('')
   const [salvo, setSalvo] = useState('')
@@ -405,6 +406,13 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
     } finally {
       setSalvando('')
     }
+  }
+
+  async function salvarData() {
+    const r = await salvar({ data: dataShow }, 'data')
+    if (!r) return
+    setDataShow('')
+    setRasc(x => (x ? { ...x, shows: r.perfil.shows.map(s => ({ ...s })) } : x)) // perfil aberto não traz a data antiga de volta
   }
 
   async function salvarPerfil() {
@@ -568,6 +576,7 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
 
                   <fieldset className="ab-campo">
                     <legend>Shows no Porks</legend>
+                    <p className="ab-dica">Pra mudar a data negociada, use a aba Negociação. Aqui ficam os outros shows da banda.</p>
                     {rasc.shows.length === 0 && <p className="ab-dica">Nenhum show ainda. Quando a banda tocar (ou tiver data marcada), adiciona aqui.</p>}
                     <ul className="ab-shows">
                       {rasc.shows.map((s, i) => (
@@ -671,6 +680,21 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
                     </section>
                   )}
 
+                  {b.tipo !== 'pp' && (
+                    <section className="ab-sec" aria-labelledby="ab-data-tit">
+                      <h4 id="ab-data-tit">Data do show</h4>
+                      <div className="ab-data-show">
+                        <input type="date" aria-label="Data do show" value={dataShow || b.data} onChange={e => setDataShow(e.target.value)} />
+                        <button type="button" className="ab-btn" disabled={!dataShow || dataShow === b.data || !!salvando} onClick={salvarData}>
+                          {salvando === 'data' ? 'Salvando…' : 'Salvar data'}
+                        </button>
+                      </div>
+                      <p className="ab-dica" aria-live="polite">
+                        {salvo === 'data' ? <><Ico n="check" className="ab-ico-sm" />Data salva</> : b.status === 'aprovada' ? 'Banda aprovada: essa é a data que aparece no site.' : 'Essa data vai pro site quando a banda for aprovada.'}
+                      </p>
+                    </section>
+                  )}
+
                   <section className="ab-sec" aria-labelledby="ab-st-tit">
                     <h4 id="ab-st-tit">Status <small>(só a equipe vê)</small></h4>
                     <div className="ab-st-opcoes" role="group" aria-label="Status da banda">
@@ -705,7 +729,7 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
                         <dt>Toca</dt><dd>{b.instrumentos.join(', ')}</dd>
                         <dt>Bônus</dt><dd>R$ 50 por músico, só no dia</dd>
                       </> : <>
-                        <dt>Show pedido</dt><dd>{diaShow(b.data)}, 20h{showPassou(b.data) && ' (já passou)'}</dd>
+                        <dt>Show pedido</dt><dd>{diaShow(b.data_pedida || b.data)}, 20h{!b.data_pedida && showPassou(b.data) && ' (já passou)'}</dd>
                         <dt>Cachê médio</dt><dd>{b.cache || 'Não informou'}</dd>
                         <dt>Consumo</dt><dd>R$ {b.integrantes * 50} ({b.integrantes} × R$ 50)</dd>
                       </>}

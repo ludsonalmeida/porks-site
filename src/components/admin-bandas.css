@@ -138,6 +138,8 @@
 .ab-nota{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:.9rem}
 .ab-nota textarea{width:100%;padding:10px 12px;border:2px solid var(--ab-tinta);background:#fff;font:500 1rem/1.5 'Barlow',sans-serif;color:var(--ab-tinta);resize:vertical}
 .ab-nota-acoes{display:flex;align-items:center;gap:12px}
+.ab-data-show{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ab-data-show input{flex:1 1 170px;min-height:46px;padding:10px 12px;border:2px solid var(--ab-tinta);background:#fff;font:500 1rem/1.3 'Barlow',sans-serif;color:var(--ab-tinta)}
 
 .ab-dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0}
 .ab-dl dt{font-weight:600;color:var(--ab-mudo)}
