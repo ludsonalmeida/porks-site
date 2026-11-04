@@ -703,6 +703,7 @@ function resumo(f) {
     retorno_de: f.retorno_de || null,
     videos: ativos.filter(a => a.tipo === 'video').length,
     fotos: ativos.filter(a => a.tipo === 'foto').length,
+    avaliacoes: (({ media, total }) => ({ media, total }))(avaliacoesDe(f)),
   }
 }
 

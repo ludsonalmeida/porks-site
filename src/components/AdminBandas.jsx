@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './admin-bandas.css'
-import { PerfilCabeca, PerfilAbas } from '../bandas/BandaPerfil.jsx'
+import { PerfilCabeca, PerfilAbas, Estrelas } from '../bandas/BandaPerfil.jsx'
 import { ESTILOS, MAX_ESTILOS } from '../bandas/estilos.js'
 
 const STATUS = [
@@ -257,7 +257,7 @@ export default function AdminBandas({ pass }) {
         <>
           <div className={`ab-lista${carregando ? ' ab-carregando' : ''}`} aria-busy={carregando}>
             <div className="ab-linha ab-linha-cab" aria-hidden="true">
-              <span>Banda</span><span>Show pedido</span><span>Responsável</span><span>Material</span><span>Status</span><span>Inscrição</span>
+              <span>Banda</span><span>Show pedido</span><span>Responsável</span><span>Material</span><span>Avaliações</span><span>Status</span><span>Inscrição</span>
             </div>
             {dados.itens.map(b => (
               <button key={b.id} type="button" className="ab-linha" onClick={() => { empilhouRef.current = true; mudar({ id: b.id }, { empilhar: true }) }}
@@ -273,6 +273,11 @@ export default function AdminBandas({ pass }) {
                 <span className="ab-c-mat">
                   <span title="Vídeos"><Ico n="video" className="ab-ico-sm" />{b.videos}</span>
                   <span title="Fotos"><Ico n="foto" className="ab-ico-sm" />{b.fotos}</span>
+                </span>
+                <span className="ab-c-nota">
+                  {b.avaliacoes?.total
+                    ? <><Estrelas nota={b.avaliacoes.media} /><small><b>{b.avaliacoes.media.toFixed(1).replace('.', ',')}</b> · {b.avaliacoes.total} {b.avaliacoes.total === 1 ? 'avaliação' : 'avaliações'}</small></>
+                    : <small>Sem avaliações</small>}
                 </span>
                 <span className="ab-c-st"><Status s={b.status} /></span>
                 <span className="ab-c-quando">{haQuanto(b.criado_em)}</span>
@@ -320,6 +325,7 @@ function Esqueleto() {
           <span className="ab-esq-b" style={{ width: '55%' }} />
           <span className="ab-esq-b" style={{ width: '60%' }} />
           <span className="ab-esq-b" style={{ width: '40%' }} />
+          <span className="ab-esq-b" style={{ width: '60%' }} />
           <span className="ab-esq-b" style={{ width: '50%' }} />
           <span className="ab-esq-b" style={{ width: '35%' }} />
         </div>
