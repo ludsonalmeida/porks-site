@@ -27,7 +27,8 @@ export default function PaginaBanda() {
 
   useEffect(() => {
     let vivo = true
-    fetch(`/api/bandas/publico/${encodeURIComponent(slug)}`)
+    const equipe = new URLSearchParams(window.location.search).has('equipe') ? '?equipe=1' : '' // aberto pelo painel não conta visualização
+    fetch(`/api/bandas/publico/${encodeURIComponent(slug)}${equipe}`)
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(d => { if (vivo) setB(DEMO ? { ...d, avaliacoes: avaliacoesDemo() } : d) })
       .catch(s => { if (vivo) setErro(s === 404 ? 404 : 'rede') })

@@ -461,13 +461,13 @@ function Ficha({ id, api, pass, onFechar, onMudou, onAbrir }) {
           <button ref={fecharRef} type="button" className="ab-fechar" onClick={fechar} aria-label="Fechar ficha"><Ico n="fechar" /></button>
           <div className="ab-painel-tit">
             <h3 id="ab-ficha-titulo">{b?.banda || 'Ficha da banda'}</h3>
-            {b && <span>Inscrita em {dataHora(b.criado_em)}</span>}
+            {b && <span>Inscrita em {dataHora(b.criado_em)}{b.tipo !== 'pp' && ` · ${b.visualizacoes.toLocaleString('pt-BR')} ${b.visualizacoes === 1 ? 'visualização' : 'visualizações'}`}</span>}
           </div>
           {b && (
             <div className="ab-cab-acoes">
               {b.tipo !== 'pp' && <>
                 <button type="button" className="ab-cab-btn" onClick={copiarLink}><Ico n={copiado ? 'check' : 'link'} className="ab-ico-sm" />{copiado ? 'Copiado' : 'Copiar link'}</button>
-                <a className="ab-cab-btn" href={`/bandas/${b.slug}`} target="_blank" rel="noopener noreferrer"><Ico n="externo" className="ab-ico-sm" /><span>Página pública</span></a>
+                <a className="ab-cab-btn" href={`/bandas/${b.slug}?equipe=1`} target="_blank" rel="noopener noreferrer"><Ico n="externo" className="ab-ico-sm" /><span>Página pública</span></a>
               </>}
               <button type="button" className="ab-cab-btn" onClick={() => setExcluir(true)}><Ico n="lixeira" className="ab-ico-sm" />Excluir</button>
             </div>

@@ -79,6 +79,38 @@ function avaliacoesDe(f) {
   const media = total ? achadas.reduce((s, n) => s + n.media * n.total, 0) / total : 0
   return { media: Math.round(media * 100) / 100, total, notas, itens: [] }
 }
+
+// Visualizações do perfil público: só o total por banda vai pro disco. Quem já viu hoje fica
+// em memória (mesmo IP + navegador conta 1x por dia, sem guardar dado do visitante).
+const VISITAS_ARQ = 'bandas-visualizacoes.json'
+const ROBO = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|headless|lighthouse|curl|wget/i
+const visualizacoes = readJson(VISITAS_ARQ, {})
+let vistosHoje = { dia: '', quem: new Set() }
+let visualizacoesSujas = false
+function contarVisualizacao(req, id) {
+  const ua = String(req.headers['user-agent'] || '')
+  if (!ua || ROBO.test(ua) || req.query.equipe) return
+  const dia = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+  if (vistosHoje.dia !== dia) vistosHoje = { dia, quem: new Set() }
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip
+  const chave = `${id}|${ip}|${ua}`
+  if (vistosHoje.quem.has(chave)) return
+  vistosHoje.quem.add(chave)
+  visualizacoes[id] = (visualizacoes[id] || 0) + 1
+  visualizacoesSujas = true
+}
+function gravarVisualizacoes() {
+  if (!visualizacoesSujas) return
+  visualizacoesSujas = false
+  try {
+    const tmp = join(DATA_DIR, `${VISITAS_ARQ}.tmp`)
+    writeFileSync(tmp, JSON.stringify(visualizacoes), 'utf8')
+    renameSync(tmp, join(DATA_DIR, VISITAS_ARQ))
+  } catch (e) { visualizacoesSujas = true; console.warn('[bandas] visualizações:', e.message) }
+}
+setInterval(gravarVisualizacoes, 60e3).unref()
+process.on('SIGTERM', () => { gravarVisualizacoes(); process.exit(0) })
+
 const SITE_URL = process.env.SITE_URL || 'https://sobradinhoporks.com.br'
 const MB = 1024 * 1024
 const LIMITES = {
@@ -612,6 +644,7 @@ app.get('/api/bandas/ocupadas', (req, res) => {
 app.get('/api/bandas/publico/:slug', (req, res) => {
   const f = fichaPorSlug(String(req.params.slug))
   if (!f) return res.status(404).json({ error: 'banda não encontrada' })
+  contarVisualizacao(req, f.id)
   res.json(publicoDe(f))
 })
 app.get('/bandas-midia/:id/:arquivo', (req, res) => {
@@ -774,6 +807,7 @@ app.get('/api/admin/bandas/:id', (req, res) => {
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
     slug: garantirSlug(orig),
+    visualizacoes: visualizacoes[orig.id] || 0,
     perfil: perfilDe(f),
     vagas_quintas: f.tipo === 'pp' ? (() => {
       const conta = musicosAprovadosNaQuinta(todasFichas().filter(x => x.id !== f.id))
