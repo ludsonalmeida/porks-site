@@ -400,7 +400,8 @@ function publicoDe(f) {
     instagram: perfil.instagram, youtube: perfil.youtube, spotify: perfil.spotify,
     shows: (() => {
       const vistos = new Set(perfil.shows.map(x => x.data))
-      return [...perfil.shows, ...showsGoogleDa(f).filter(x => !vistos.has(x.data))].sort((a, b) => b.data.localeCompare(a.data))
+      const novos = [...showsGoogleDa(f), ...showsAprovadosDa(f)].filter(x => !vistos.has(x.data) && vistos.add(x.data))
+      return [...perfil.shows, ...novos].sort((a, b) => b.data.localeCompare(a.data))
     })(),
     capa: capa ? midiaUrl(f, capa) : null,
     avatar: avatar ? midiaUrl(f, avatar) : null,
@@ -523,7 +524,15 @@ function showsGoogleDa(f) {
   return agendaGoogle.eventos.filter(e => chaveNome(e.banda) === k).map(e => ({ data: e.data, titulo: e.tema }))
 }
 
-// agenda: qual banda tocou (ou vai tocar) em cada noite: Google Agenda + "Shows no Porks" do perfil.
+// Datas aprovadas no Johnny: a inscrição da banda e os pedidos de nova data ligados a ela
+function showsAprovadosDa(f) {
+  return todasFichas()
+    .filter(x => x.tipo !== 'pp' && x.status === 'aprovada' && x.data && (x.id === f.id || x.retorno_de === f.id))
+    .map(x => ({ data: x.data, titulo: '' }))
+}
+
+// agenda: qual banda tocou (ou vai tocar) em cada noite: Google Agenda + "Shows no Porks" do perfil
+// + inscrições aprovadas no Johnny (saem daqui sozinhas se mudar o status ou excluir a ficha).
 // ?data=AAAA-MM-DD (uma noite) ou ?de=&ate= (intervalo). Público: só nome, slug e foto.
 app.get('/api/bandas/agenda', (req, res) => {
   const dia = /^\d{4}-\d{2}-\d{2}$/
@@ -551,8 +560,17 @@ function agendaEntre(de, ate) {
   for (const f of todas) {
     for (const s of perfilDe(f).shows) {
       if (s.data < de || s.data > ate || visto.has(`${s.data}|${chaveNome(f.banda)}`)) continue
+      visto.add(`${s.data}|${chaveNome(f.banda)}`)
       out.push(comFicha(f, s.data, s.titulo, null, 'perfil'))
     }
+  }
+  for (const f of todas) {
+    if (f.tipo === 'pp' || f.status !== 'aprovada' || !f.data || f.data < de || f.data > ate) continue
+    const dono = (f.retorno_de && todas.find(x => x.id === f.retorno_de)) || f
+    const chave = `${f.data}|${chaveNome(dono.banda)}`
+    if (visto.has(chave)) continue
+    visto.add(chave)
+    out.push(comFicha(dono, f.data, '', '20:00', 'johnny'))
   }
   out.sort((a, b) => a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || '') || a.banda.localeCompare(b.banda))
   return out
