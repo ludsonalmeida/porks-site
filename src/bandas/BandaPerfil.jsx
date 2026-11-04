@@ -297,7 +297,8 @@ function Midia({ b }) {
 }
 
 function ResumoNotas({ av, compacto }) {
-  const max = Math.max(1, ...[5, 4, 3, 2, 1].map(n => av.itens.filter(x => x.nota === n).length))
+  const qtd = n => (av.notas ? av.notas[n] || 0 : av.itens.filter(x => x.nota === n).length)
+  const max = Math.max(1, ...[5, 4, 3, 2, 1].map(qtd))
   return (
     <div className={`bp-resumo${compacto ? ' compacto' : ''}`}>
       <div className="bp-resumo-nota">
@@ -307,7 +308,7 @@ function ResumoNotas({ av, compacto }) {
       </div>
       <div className="bp-barras">
         {[5, 4, 3, 2, 1].map(n => {
-          const q = av.itens.filter(x => x.nota === n).length
+          const q = qtd(n)
           return (
             <div key={n} className="bp-barra" aria-label={`${n} estrelas: ${q}`}>
               <span>{n}</span>
@@ -327,8 +328,7 @@ function Avaliacoes({ b }) {
       <section className="bp-card">
         <ResumoNotas av={av} />
         <div className="bp-avaliar">
-          <button type="button" className="bp-btn" disabled aria-describedby="bp-em-breve"><Ico n="estrela" />Avaliar banda</button>
-          <span id="bp-em-breve" className="bp-mudo">Em breve: depois do show, o público vai poder dar estrelas aqui.</span>
+          <span className="bp-mudo">As notas vêm de quem esteve no Porks na noite do show e respondeu à nossa pesquisa.</span>
         </div>
       </section>
       {av.itens.length ? (
@@ -344,7 +344,7 @@ function Avaliacoes({ b }) {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : av.total ? null : (
         <div className="bp-vazio"><Ico n="balao" className="bp-vazio-ico" /><b>Nenhuma avaliação ainda</b><span>Quem assistir ao show vai poder contar o que achou.</span></div>
       )}
     </div>

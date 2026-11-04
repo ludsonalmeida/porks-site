@@ -51,6 +51,33 @@ app.post('/api/breweries', (req, res) => {
 const BANDAS_DIR = join(DATA_DIR, 'bandas')
 const ENGINE_URL = process.env.ENGINE_URL || 'https://broadcast.sobradinhoporks.com.br'
 const ENGINE_TOKEN = process.env.ENGINE_TOKEN || ''
+
+// Nota das bandas: vem da pesquisa CSAT/NPS do Engine (quem veio na noite do show).
+// Fica em memória e é relida a cada 5 min; se o Engine cair, mantém a última leitura.
+let notasBandas = []
+async function atualizarNotasBandas() {
+  if (!ENGINE_TOKEN) return
+  try {
+    const r = await fetch(`${ENGINE_URL}/api/pesquisas/bandas/avaliacoes`, {
+      headers: { Authorization: `Bearer ${ENGINE_TOKEN}` }, signal: AbortSignal.timeout(10000),
+    })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const j = await r.json()
+    if (Array.isArray(j.bandas)) notasBandas = j.bandas
+  } catch (e) { console.warn('[bandas] notas do engine:', e.message) }
+}
+atualizarNotasBandas()
+setInterval(atualizarNotasBandas, 5 * 60e3).unref()
+// A agenda pode trazer a banda antes de existir ficha: casa por slug ou pelo nome.
+function avaliacoesDe(f) {
+  const nome = String(f.banda || '').trim().toLowerCase()
+  const achadas = notasBandas.filter(n => (n.slug && n.slug === f.slug) || n.chave === nome)
+  const total = achadas.reduce((s, n) => s + n.total, 0)
+  const notas = {}
+  for (const k of [1, 2, 3, 4, 5]) notas[k] = achadas.reduce((s, n) => s + (n.notas?.[k] || 0), 0)
+  const media = total ? achadas.reduce((s, n) => s + n.media * n.total, 0) / total : 0
+  return { media: Math.round(media * 100) / 100, total, notas, itens: [] }
+}
 const SITE_URL = process.env.SITE_URL || 'https://sobradinhoporks.com.br'
 const MB = 1024 * 1024
 const LIMITES = {
@@ -378,7 +405,7 @@ function publicoDe(f) {
     avatar: avatar ? midiaUrl(f, avatar) : null,
     fotos: fotos.map(a => ({ url: midiaUrl(f, a), nome: a.nome })),
     videos: f.arquivos.filter(a => a.tipo === 'video' && !a.apagado_em).map(a => ({ url: midiaUrl(f, a), nome: a.nome })),
-    avaliacoes: { media: 0, total: 0, itens: [] }, // mecanismo de avaliação entra depois
+    avaliacoes: avaliacoesDe(f),
   }
 }
 function fichaPorSlug(slug) {
