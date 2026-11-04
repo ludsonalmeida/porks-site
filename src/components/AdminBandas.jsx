@@ -18,6 +18,7 @@ const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'o
 const ICONES = {
   busca: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
   zap: <><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z" /></>,
+  olho: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></>,
   video: <><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3z" /></>,
   foto: <><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>,
   fechar: <path d="M6 6l12 12M18 6 6 18" />,
@@ -257,7 +258,7 @@ export default function AdminBandas({ pass }) {
         <>
           <div className={`ab-lista${carregando ? ' ab-carregando' : ''}`} aria-busy={carregando}>
             <div className="ab-linha ab-linha-cab" aria-hidden="true">
-              <span>Banda</span><span>Show pedido</span><span>Responsável</span><span>Material</span><span>Avaliações</span><span>Status</span><span>Inscrição</span>
+              <span>Banda</span><span>Show pedido</span><span>Responsável</span><span>Material</span><span>Avaliações</span><span>Visualizações</span><span>Status</span><span>Inscrição</span>
             </div>
             {dados.itens.map(b => (
               <button key={b.id} type="button" className="ab-linha" onClick={() => { empilhouRef.current = true; mudar({ id: b.id }, { empilhar: true }) }}
@@ -278,6 +279,9 @@ export default function AdminBandas({ pass }) {
                   {b.avaliacoes?.total
                     ? <><Estrelas nota={b.avaliacoes.media} /><small><b>{b.avaliacoes.media.toFixed(1).replace('.', ',')}</b> · {b.avaliacoes.total} {b.avaliacoes.total === 1 ? 'avaliação' : 'avaliações'}</small></>
                     : <small>Sem avaliações</small>}
+                </span>
+                <span className="ab-c-vis" title="Visualizações do perfil público">
+                  {b.visualizacoes !== null && <><Ico n="olho" className="ab-ico-sm" />{b.visualizacoes.toLocaleString('pt-BR')}</>}
                 </span>
                 <span className="ab-c-st"><Status s={b.status} /></span>
                 <span className="ab-c-quando">{haQuanto(b.criado_em)}</span>
@@ -327,6 +331,7 @@ function Esqueleto() {
           <span className="ab-esq-b" style={{ width: '40%' }} />
           <span className="ab-esq-b" style={{ width: '60%' }} />
           <span className="ab-esq-b" style={{ width: '50%' }} />
+          <span className="ab-esq-b" style={{ width: '45%' }} />
           <span className="ab-esq-b" style={{ width: '35%' }} />
         </div>
       ))}

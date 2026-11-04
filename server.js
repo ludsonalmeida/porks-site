@@ -760,6 +760,7 @@ function resumo(f) {
     videos: ativos.filter(a => a.tipo === 'video').length,
     fotos: ativos.filter(a => a.tipo === 'foto').length,
     avaliacoes: (({ media, total }) => ({ media, total }))(avaliacoesDe(f)),
+    visualizacoes: f.tipo === 'pp' ? null : visualizacoes[f.retorno_de || f.id] || 0, // Plug & Play não tem página pública
   }
 }
 
@@ -807,7 +808,6 @@ app.get('/api/admin/bandas/:id', (req, res) => {
     engine_lead_id: f.engine?.lead_id || null,
     material: `/produtor/material/${f.id}?k=${k}`,
     slug: garantirSlug(orig),
-    visualizacoes: visualizacoes[orig.id] || 0,
     perfil: perfilDe(f),
     vagas_quintas: f.tipo === 'pp' ? (() => {
       const conta = musicosAprovadosNaQuinta(todasFichas().filter(x => x.id !== f.id))
