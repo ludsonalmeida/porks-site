@@ -552,7 +552,7 @@ setTimeout(() => { sincronizarAgenda().catch(() => {}) }, 5e3)
 
 // banda do Google ↔ ficha cadastrada (mesmo nome, sem acento/caixa)
 // Banda com um nome no Google Agenda e outro no cadastro do Johnny: agenda -> cadastro
-const APELIDOS_BANDA = { bandacaramelo: 'caramelorockbr' }
+const APELIDOS_BANDA = { bandacaramelo: 'caramelorockbr', grupoavvarock: 'grupoavva' }
 const chaveNome = n => {
   const k = normaliza(n).replace(/[^a-z0-9]+/g, '')
   return APELIDOS_BANDA[k] || k
