@@ -163,7 +163,7 @@ app.post('/api/bandas', (req, res) => {
   if (!texto(b.banda, 120)) erros.push('banda')
   if (!b.retorno && texto(b.responsavel, 120).split(' ').length < 2) erros.push('responsavel')
   if (!/^\d{2}9\d{8}$/.test(whatsapp)) erros.push('whatsapp')
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(dia) || !(pp ? [4] : [5, 6]).includes(dia.getUTCDay())) erros.push('data')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || isNaN(dia) || (pp && dia.getUTCDay() !== 4)) erros.push('data')
   if (!b.aceite) erros.push('aceite')
   // banda da casa pedindo nova data: o servidor confere nome + WhatsApp de novo e copia a ficha original
   const casa = !pp && b.retorno ? bandaDaCasa(b.banda, whatsapp) : null

@@ -32,18 +32,16 @@ const wait = ms => new Promise(r => setTimeout(r, ms))
 const tamanho = bytes => bytes < MB
   ? `${Math.max(1, Math.round(bytes / 1024))} KB`
   : `${(bytes / MB).toFixed(bytes < 10 * MB ? 1 : 0).replace('.', ',')} MB`
+const DIAS_SEMANA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
 const brl = n => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })
 
-function proximasSextasESabados(semanas = 10) {
+// todos os dias a partir de amanhã até o limite (show pode ser em qualquer dia da semana)
+function proximosDias(limite) {
   const out = []
   const d = new Date()
   d.setHours(0, 0, 0, 0)
   d.setDate(d.getDate() + 1)
-  while (out.length < semanas * 2) {
-    const dow = d.getDay()
-    if (dow === 5 || dow === 6) out.push(new Date(d))
-    d.setDate(d.getDate() + 1)
-  }
+  while (d <= limite) { out.push(new Date(d)); d.setDate(d.getDate() + 1) }
   return out
 }
 
@@ -64,7 +62,7 @@ function proximasQuintas(n = PP_QUINTAS) {
 const quintaCurta = iso => { const d = new Date(`${iso}T12:00:00`); return `${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}` }
 
 function dataExtenso(d) {
-  const dia = d.getDay() === 5 ? 'sexta' : 'sábado'
+  const dia = DIAS_SEMANA[d.getDay()]
   return `${dia}, ${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}`
 }
 
@@ -489,7 +487,7 @@ function UploadComposer({ tipo, onSend, onRejeita }) {
 
 // 1ª escolha: show na agenda ou Plug & Play (cartões grandes, fáceis de tocar)
 const OPCOES_TIPO = [
-  { valor: TIPOS[0], icone: 'palco', titulo: 'Show na agenda', linha: 'Sua banda numa sexta ou sábado, a partir das 20h. Cachê a combinar.' },
+  { valor: TIPOS[0], icone: 'palco', titulo: 'Show na agenda', linha: 'Sua banda no dia que preferir, a partir das 20h. Cachê a combinar.' },
   { valor: TIPOS[1], icone: 'plug', titulo: 'Plug & Play', linha: 'Quintas, das 19h às 23h50. Chega, pluga e toca junto. Sem cachê.' },
 ]
 function TipoComposer({ onSend }) {
@@ -584,37 +582,34 @@ function ContatoComposer({ onSend }) {
 const MESES_NOME = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 const MESES_A_FRENTE = 6
 
-// sextas e sábados dos próximos meses, agrupados por mês e por fim de semana
+// todos os dias dos próximos meses, agrupados por mês (grade de 7 colunas, domingo primeiro)
 function montarMeses() {
   const limite = new Date()
   limite.setHours(0, 0, 0, 0)
   limite.setMonth(limite.getMonth() + MESES_A_FRENTE, 0)
   const out = []
-  for (const d of proximasSextasESabados(MESES_A_FRENTE * 5)) {
-    if (d > limite) break
+  for (const d of proximosDias(limite)) {
     const chave = `${d.getFullYear()}-${d.getMonth()}`
     let m = out[out.length - 1]
     if (!m || m.chave !== chave) {
-      m = { chave, mes: d.getMonth(), ano: d.getFullYear(), semanas: [] }
+      m = { chave, mes: d.getMonth(), ano: d.getFullYear(), dias: [] }
       out.push(m)
     }
-    const ult = m.semanas[m.semanas.length - 1]
-    if (d.getDay() === 6 && ult?.sex && !ult.sab && d.getDate() === ult.sex.getDate() + 1) ult.sab = d
-    else m.semanas.push(d.getDay() === 5 ? { sex: d } : { sab: d })
+    m.dias.push(d)
   }
   return out
 }
 
+const INICIAIS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+
 function DiaCard({ d, sel, onSel, ocupado }) {
-  if (!d) return <div className="pd-day pd-day-vazio" aria-hidden="true" />
   const on = sel === isoDate(d)
   return (
     <button type="button" role="option" aria-selected={on} aria-disabled={ocupado} disabled={ocupado}
-      className={`pd-day${on ? ' on' : ''}${ocupado ? ' ocupado' : ''}`} onClick={() => onSel(isoDate(d))}
+      className={`pd-dia7${on ? ' on' : ''}${ocupado ? ' ocupado' : ''}`} onClick={() => onSel(isoDate(d))}
       aria-label={ocupado ? `${dataExtenso(d)}: já tem banda marcada` : `${dataExtenso(d)}, a partir das 20h`}>
-      <span className="pd-day-dow">{d.getDay() === 5 ? 'SEXTA' : 'SÁBADO'}{ocupado && <small>Já tem banda</small>}</span>
-      <span className="pd-day-n">{d.getDate()}</span>
-      {ocupado ? <span className="pd-day-h pd-day-tranca"><Ico n="tranca" className="pd-day-ck" /></span> : <span className="pd-day-h">{on ? <Ico n="check" className="pd-day-ck" /> : '20h'}</span>}
+      <span className="pd-dia7-n">{d.getDate()}</span>
+      {ocupado ? <Ico n="tranca" className="pd-dia7-ico" /> : on ? <Ico n="check" className="pd-dia7-ico" /> : null}
     </button>
   )
 }
@@ -626,12 +621,12 @@ function DataComposer({ onSend }) {
   const [ocupadas, setOcupadas] = useState(() => new Set())
   // datas que já têm banda na agenda do Porks (só a data; nome e cachê não vêm)
   useEffect(() => {
-    const dias = meses.flatMap(x => x.semanas.flatMap(w => [w.sex, w.sab])).filter(Boolean)
+    const dias = meses.flatMap(x => x.dias)
     if (!dias.length) return
     fetch(`/api/bandas/ocupadas?de=${isoDate(dias[0])}&ate=${isoDate(dias[dias.length - 1])}`)
       .then(r => (r.ok ? r.json() : [])).then(l => setOcupadas(new Set(l))).catch(() => {})
   }, [meses])
-  const selData = sel ? meses.flatMap(x => x.semanas.flatMap(w => [w.sex, w.sab])).find(d => d && isoDate(d) === sel) : null
+  const selData = sel ? meses.flatMap(x => x.dias).find(d => isoDate(d) === sel) : null
   const m = meses[mi]
   const anoAtual = new Date().getFullYear()
 
@@ -654,16 +649,14 @@ function DataComposer({ onSend }) {
           )
         })}
       </div>
-      <div className="pd-cal-grid" role="listbox" aria-label={`Sextas e sábados de ${MESES_NOME[m.mes]}`} key={m.chave}>
-        {m.semanas.map(w => (
-          <div className="pd-semana" key={isoDate(w.sex || w.sab)}>
-            <DiaCard d={w.sex} sel={sel} onSel={setSel} ocupado={!!w.sex && ocupadas.has(isoDate(w.sex))} />
-            <DiaCard d={w.sab} sel={sel} onSel={setSel} ocupado={!!w.sab && ocupadas.has(isoDate(w.sab))} />
-          </div>
-        ))}
+      <div className="pd-cal7" role="listbox" aria-label={`Dias de ${MESES_NOME[m.mes]}`} key={m.chave}>
+        {INICIAIS.map((x, i) => <span className="pd-cal7-dow" aria-hidden="true" key={i}>{x}</span>)}
+        {Array.from({ length: m.dias[0].getDay() }, (_, i) => <span className="pd-cal7-vazio" aria-hidden="true" key={`v${i}`} />)}
+        {m.dias.map(d => <DiaCard key={isoDate(d)} d={d} sel={sel} onSel={setSel} ocupado={ocupadas.has(isoDate(d))} />)}
       </div>
+      <p className="pd-cal7-leg"><Ico n="tranca" className="pd-dia7-ico" /> Já tem banda · shows a partir das 20h</p>
       <button type="button" className="pd-cta" disabled={!selData} onClick={() => onSend(selData)}>
-        {selData ? `Quero ${dataExtenso(selData)}` : 'Escolha uma sexta ou sábado'}
+        {selData ? `Quero ${dataExtenso(selData)}` : 'Escolha um dia'}
       </button>
     </div>
   )
@@ -885,7 +878,7 @@ export default function Produtor() {
           `Achei! Fala, ${r.responsavel.split(' ')[0]}! 🤘`,
           { tipo: 'ficha', ficha: { ...F() } },
           'Já tá tudo aqui, não precisa mandar nada de novo.',
-          'Qual data vocês querem agora? Aqui a música ao vivo rola sextas e sábados, a partir das 20h.',
+          'Qual data vocês querem agora? Pode ser qualquer dia da semana, a partir das 20h.',
         ], 'data')
         return
       }
@@ -978,7 +971,7 @@ export default function Produtor() {
         johnny([`Valeu, ${nome.split(' ')[0]}!`, 'Quais quintas você quer tocar? Pode marcar mais de uma.'], 'quintas')
         return
       }
-      johnny([`Valeu, ${nome.split(' ')[0]}!`, 'Qual data te interessa? Aqui no Porks a música ao vivo rola sextas e sábados, a partir das 20h.'], 'data')
+      johnny([`Valeu, ${nome.split(' ')[0]}!`, 'Qual data te interessa? Aqui no Porks pode ser qualquer dia da semana, a partir das 20h.'], 'data')
     },
     quintas: lista => {
       F().quintas = lista
