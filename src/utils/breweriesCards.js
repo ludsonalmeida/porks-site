@@ -32,9 +32,9 @@ export async function fetchBreweries() {
 
 export async function saveBreweries(items, pass) {
   localStorage.setItem(KEY, JSON.stringify(items))
-  await fetch(`${API}?pass=${encodeURIComponent(pass)}`, {
+  await fetch(API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-admin-pass': pass },
     body: JSON.stringify(items),
   })
 }

@@ -6,7 +6,9 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PORT = process.env.PORT || 3000
-const ADMIN_PASS = process.env.ADMIN_PASS || 'porks2026'
+// Sem ADMIN_PASS no ambiente o painel fica fechado (nunca há senha no código).
+const ADMIN_PASS = process.env.ADMIN_PASS || randomBytes(24).toString('hex')
+if (!process.env.ADMIN_PASS) console.warn('[admin] ADMIN_PASS ausente: painel fechado')
 const DATA_DIR = process.env.DATA_DIR || '/uploads'
 
 try { mkdirSync(DATA_DIR, { recursive: true }) } catch {}
@@ -28,7 +30,7 @@ function writeJson(file, data) {
 // Hero cards
 app.get('/api/hero-cards', (_req, res) => res.json(readJson('hero-cards.json', [])))
 app.post('/api/hero-cards', (req, res) => {
-  if (req.query.pass !== ADMIN_PASS) return res.status(401).json({ error: 'unauthorized' })
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
   const cards = req.body
   if (!Array.isArray(cards)) return res.status(400).json({ error: 'expected array' })
   writeJson('hero-cards.json', cards)
@@ -38,7 +40,7 @@ app.post('/api/hero-cards', (req, res) => {
 // Breweries
 app.get('/api/breweries', (_req, res) => res.json(readJson('breweries.json', [])))
 app.post('/api/breweries', (req, res) => {
-  if (req.query.pass !== ADMIN_PASS) return res.status(401).json({ error: 'unauthorized' })
+  if (!adminOk(req)) return res.status(401).json({ error: 'unauthorized' })
   const items = req.body
   if (!Array.isArray(items)) return res.status(400).json({ error: 'expected array' })
   writeJson('breweries.json', items)
@@ -775,6 +777,14 @@ app.delete('/api/admin/agenda', (req, res) => {
 // ── Admin: aba Bandas ──
 const STATUS_BANDA = ['nova', 'conversa', 'aprovada', 'recusada']
 const adminOk = req => chaveIgual(req.headers['x-admin-pass'], ADMIN_PASS)
+// 10 senhas erradas em 15 min (no painel todo) pausam o login
+let errosLogin = []
+app.post('/api/admin/login', (req, res) => {
+  errosLogin = errosLogin.filter(t => Date.now() - t < 15 * 60e3)
+  if (errosLogin.length >= 10) return res.status(429).json({ error: 'Muitas tentativas. Espere 15 minutos.' })
+  if (!adminOk(req)) { errosLogin.push(Date.now()); return res.status(401).json({ error: 'Senha incorreta. Confere e tenta de novo.' }) }
+  res.json({ ok: true })
+})
 const normaliza = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 function todasFichas() {
   let ids = []

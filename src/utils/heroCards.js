@@ -33,9 +33,9 @@ export async function fetchHeroCards() {
 // Save to API + local cache
 export async function saveHeroCards(cards, pass) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cards))
-  await fetch(`${API}?pass=${encodeURIComponent(pass)}`, {
+  await fetch(API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-admin-pass': pass },
     body: JSON.stringify(cards),
   })
 }

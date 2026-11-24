@@ -5,7 +5,9 @@ import AdminRadio from './AdminRadio.jsx'
 import AdminBandas from './AdminBandas.jsx'
 import './admin.css'
 
-const PASS = import.meta.env.VITE_ADMIN_PASS || 'porks2026'
+// A senha digitada vale só nesta aba; quem confere é o servidor.
+let PASS = ''
+try { PASS = sessionStorage.getItem('porks_admin_chave') || '' } catch { /* sem storage */ }
 const MAX_W = 900
 
 function resizeToBase64(file) {
@@ -77,10 +79,13 @@ function Login({ onEntrar }) {
   const [erro, setErro] = useState('')
   return (
     <div className="adm-login">
-      <form className="adm-login-card" onSubmit={e => {
+      <form className="adm-login-card" onSubmit={async e => {
         e.preventDefault()
-        if (senha === PASS) onEntrar()
-        else setErro('Senha incorreta. Confere e tenta de novo.')
+        try {
+          const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'x-admin-pass': senha } })
+          if (r.ok) onEntrar(senha)
+          else setErro((await r.json().catch(() => ({}))).error || 'Não deu pra entrar.')
+        } catch { setErro('Sem conexão. Tenta de novo.') }
       }}>
         <img src="/images/logo-porks.png" alt="Porks Sobradinho" className="adm-login-logo" />
         <h1>Painel do Porks</h1>
@@ -104,7 +109,7 @@ function Login({ onEntrar }) {
 
 export default function AdminPanel() {
   const [authed, setAuthed] = useState(() => {
-    try { return sessionStorage.getItem('porks_admin') === '1' } catch { return false }
+    return !!PASS
   })
   const [secao, setSecao] = useState(secaoDoHash)
   const [novas, setNovas] = useState(null)
@@ -133,10 +138,11 @@ export default function AdminPanel() {
     window.scrollTo({ top: 0 })
   }
 
-  if (!authed) return <Login onEntrar={() => { try { sessionStorage.setItem('porks_admin', '1') } catch { /* sem storage */ } setAuthed(true) }} />
+  if (!authed) return <Login onEntrar={s => { PASS = s; try { sessionStorage.setItem('porks_admin_chave', s) } catch { /* sem storage */ } setAuthed(true) }} />
 
   function sair() {
-    try { sessionStorage.removeItem('porks_admin') } catch { /* sem storage */ }
+    PASS = ''
+    try { sessionStorage.removeItem('porks_admin_chave') } catch { /* sem storage */ }
     setAuthed(false)
   }
 
